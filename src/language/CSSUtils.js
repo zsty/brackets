@@ -62,7 +62,7 @@ define(function (require, exports, module) {
      */
     function _extractAllSelectors(text) {
         var selectors = [];
-        var mode = CodeMirror.getMode({indentUnit: 2}, "css");
+        var mode = CodeMirror.getMode({}, "css");
         var state = CodeMirror.startState(mode);
 
         var lines = CodeMirror.splitLines(text);
@@ -367,7 +367,6 @@ define(function (require, exports, module) {
      */
     function findMatchingRules(selector, htmlDocument) {
         var result          = new $.Deferred(),
-            cssFilesResult  = FileIndexManager.getFileInfoList("css"),
             resultSelectors = [];
         
         // Synchronously search for matches in <style> blocks

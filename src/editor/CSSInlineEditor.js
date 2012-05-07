@@ -30,6 +30,7 @@ define(function (require, exports, module) {
     
     // Load dependent modules
     var CSSUtils                = require("language/CSSUtils"),
+        LESSUtils               = require("language/LESSUtils"),
         EditorManager           = require("editor/EditorManager"),
         HTMLUtils               = require("language/HTMLUtils"),
         MultiRangeInlineEditor  = require("editor/MultiRangeInlineEditor").MultiRangeInlineEditor;
@@ -113,7 +114,8 @@ define(function (require, exports, module) {
 
         var result = new $.Deferred();
 
-        CSSUtils.findMatchingRules(selectorName, hostEditor.document)
+        // CSSUtils.findMatchingRules(selectorName, hostEditor.document)
+        LESSUtils.findMatchingRules(selectorName, hostEditor.document)
             .done(function (rules) {
                 if (rules && rules.length > 0) {
                     var cssInlineEditor = new MultiRangeInlineEditor(rules);

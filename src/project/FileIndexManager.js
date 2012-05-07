@@ -323,7 +323,7 @@ define(function (require, exports, module) {
         var result = new $.Deferred();
 
         if (!_indexList.hasOwnProperty(indexName)) {
-            throw new Error("indexName not found");
+            throw new Error("Index not found: " + indexName);
         }
 
         syncFileIndex()
@@ -345,7 +345,7 @@ define(function (require, exports, module) {
         var result = new $.Deferred();
 
         if (!_indexList.hasOwnProperty(indexName)) {
-            throw new Error("indexName not found");
+            throw new Error("Index not found: " + indexName);
         }
 
         syncFileIndex()
@@ -392,6 +392,13 @@ define(function (require, exports, module) {
         function (entry) {
             var filename = entry.name;
             return PathUtils.filenameExtension(filename) === ".css";
+        }
+    );
+    _addIndex(
+        "less",
+        function (entry) {
+            var filename = entry.name;
+            return PathUtils.filenameExtension(filename) === ".less";
         }
     );
     
