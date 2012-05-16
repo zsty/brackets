@@ -60,18 +60,20 @@ define(function (require, exports, module) {
         KeyMap                  = require("command/KeyMap"),
         Commands                = require("command/Commands"),
         CommandManager          = require("command/CommandManager"),
+        BuildInfoUtils          = require("utils/BuildInfoUtils"),
         CodeHintManager         = require("editor/CodeHintManager"),
+        JSLintUtils             = require("language/JSLintUtils"),
         PerfUtils               = require("utils/PerfUtils"),
         FileIndexManager        = require("project/FileIndexManager"),
-        QuickFileOpen           = require("search/QuickFileOpen"),
+        QuickOpen               = require("search/QuickOpen"),
         Menus                   = require("command/Menus"),
         FileUtils               = require("file/FileUtils"),
         Strings                 = require("strings"),
         Dialogs                 = require("widgets/Dialogs"),
-        ExtensionLoader         = require("utils/ExtensionLoader");
+        ExtensionLoader         = require("utils/ExtensionLoader"),
+        SidebarView             = require("project/SidebarView");
         
     //Load modules that self-register and just need to get included in the main project
-    require("language/JSLintUtils");
     require("editor/CodeHintManager");
     require("editor/EditorCommandHandlers");
     require("debug/DebugCommandHandlers");
@@ -106,6 +108,8 @@ define(function (require, exports, module) {
         EditorManager           : EditorManager,
         Commands                : Commands,
         WorkingSetView          : WorkingSetView,
+        JSLintUtils             : JSLintUtils,
+        PerfUtils               : PerfUtils,
         CommandManager          : require("command/CommandManager"),
         FileSyncManager         : FileSyncManager,
         FileIndexManager        : FileIndexManager,
@@ -151,23 +155,26 @@ define(function (require, exports, module) {
                 });
         }
         
-        function initProject() {
-            ProjectManager.loadProject();
-
-            // Open project button
-            $("#btn-open-project").click(function () {
-                CommandManager.execute(Commands.FILE_OPEN_FOLDER);
-            });
-        }
-        
-        
         function initCommandHandlers() {
             // Most command handlers are automatically registered when their module is loaded (see "modules
             // that self-register" above for some). A few commands need an extra kick here though:
             
             DocumentCommandHandlers.init($("#main-toolbar"));
             
+            // About dialog
             CommandManager.register(Commands.HELP_ABOUT, function () {
+                // If we've successfully determined a "build number" via .git metadata, add it to dialog
+                var bracketsSHA = BuildInfoUtils.getBracketsSHA(),
+                    bracketsAppSHA = BuildInfoUtils.getBracketsAppSHA(),
+                    versionLabel = "";
+                if (bracketsSHA) {
+                    versionLabel += " (" + bracketsSHA.substr(0, 7) + ")";
+                }
+                if (bracketsAppSHA) {
+                    versionLabel += " (shell " + bracketsAppSHA.substr(0, 7) + ")";
+                }
+                $("#about-build-number").text(versionLabel);
+                
                 Dialogs.showModalDialog(Dialogs.DIALOG_ID_ABOUT);
             });
         }
@@ -202,6 +209,7 @@ define(function (require, exports, module) {
                     {"Shift-F3": Commands.EDIT_FIND_PREVIOUS, "platform": "win"},
                     {"Ctrl-Alt-F": Commands.EDIT_REPLACE, "platform": "mac"},
                     {"Ctrl-H": Commands.EDIT_REPLACE, "platform": "win"},
+                    {"Ctrl-D": Commands.EDIT_DUPLICATE},
                     {"Ctrl-/": Commands.EDIT_LINE_COMMENT},
 
                     // VIEW
@@ -209,6 +217,9 @@ define(function (require, exports, module) {
                     
                     // Navigate
                     {"Ctrl-Shift-O": Commands.NAVIGATE_QUICK_OPEN},
+                    {"Ctrl-T": Commands.NAVIGATE_GOTO_DEFINITION},
+                    {"Ctrl-L": Commands.NAVIGATE_GOTO_LINE, "platform": "mac"},
+                    {"Ctrl-G": Commands.NAVIGATE_GOTO_LINE, "platform": "win"},
                     {"Ctrl-E": Commands.SHOW_INLINE_EDITOR},
                     {"Alt-Up": Commands.QUICK_EDIT_PREV_MATCH},
                     {"Alt-Down": Commands.QUICK_EDIT_NEXT_MATCH},
@@ -250,7 +261,7 @@ define(function (require, exports, module) {
         $("body").addClass("platform-" + brackets.platform);
 
 
-        EditorManager.setEditorHolder($('#editorHolder'));
+        EditorManager.setEditorHolder($('#editor-holder'));
 
         // Let the user know Brackets doesn't run in a web browser yet
         if (brackets.inBrowser) {
@@ -262,11 +273,14 @@ define(function (require, exports, module) {
         }
     
         initListeners();
-        initProject();
         initCommandHandlers();
         initKeyBindings();
         Menus.init(); // key bindings should be initialized first
         initWindowListeners();
+        
+        // Read "build number" SHAs off disk at the time the matching Brackets JS code is being loaded, instead
+        // of later, when they may have been updated to a different version
+        BuildInfoUtils.init();
 
         // Load extensions
 
@@ -307,6 +321,8 @@ define(function (require, exports, module) {
         }
         
         PerfUtils.addMeasurement("Application Startup");
+        
+        ProjectManager.loadProject();
     });
     
 });
