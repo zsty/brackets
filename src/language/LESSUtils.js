@@ -82,19 +82,32 @@ define(function (require, exports, module) {
         function beginSelector() {
             pendingRule.pendingSelector = {
                 selector: "",
-                selectorStartLine: i,       // FIXME: this may be wrong because we call beginSelector() at the separating "," which may be on a preceding line
-                selectorStartChar: col
+                selectorStartLine: -1,
+                selectorStartChar: -1
             };
+            // We don't record start line/char yet because that's the pos of the NEXT token
         }
         function addToSelector() {
+            // Newlines in the middle of the selector ......
+            // FIXME: wrong! turns "h1\nfoo:bar" into "h1 foo : bar" - only add space on FIRST token of new line
             if (i > pendingRule.pendingSelector.selectorStartLine) {
-                pendingRule.pendingSelector.selector += " "; // TODO: only add if no trailing ws already
+                pendingRule.pendingSelector.selector += " ";
             }
             pendingRule.pendingSelector.selector += token;
+            
+            // Is this first token in the selector? If so, record selector start position
+            if (pendingRule.pendingSelector.selectorStartLine === -1) {
+                pendingRule.pendingSelector.selectorStartLine = i;
+                pendingRule.pendingSelector.selectorStartChar = col;
+            }
+            
+            // Continuously update selector end position so we already have it stored when we encounter a
+            // token that's not part of this selector
+            // FIXME
         }
         function finishSelector() {
             pendingRule.pendingSelector.selectorEndLine = i;       // FIXME: this may be wrong because we call finishSelector() at the separating "," or "{" which may be on a later line
-            pendingRule.pendingSelector.selectorEndChar = col - 1;
+            pendingRule.pendingSelector.selectorEndChar = col - 1;  // FIXME: this seems wrong even in simpler cases like "h1,\nh2,\nh3 {" -- we get col=0 -> endChar=-1
             pendingRule.pendingSelector.selector = pendingRule.pendingSelector.selector.trim();
             pendingRule.selectors.push(pendingRule.pendingSelector);
             pendingRule.pendingSelector = null;
@@ -258,8 +271,8 @@ define(function (require, exports, module) {
         }
         expandRulesToSelectors();
         
-//        console.log("RESULT");
-//        console.log(selectors);
+        console.log("RESULT");
+        console.log(selectors);
         return selectors;
     }
     
