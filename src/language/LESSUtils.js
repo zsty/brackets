@@ -77,10 +77,12 @@ define(function (require, exports, module) {
         var selectors = [];
         
         
+        var col;
+        
         function beginSelector() {
             pendingRule.pendingSelector = {
                 selector: "",
-                selectorStartLine: i,
+                selectorStartLine: i,       // FIXME: this may be wrong because we call beginSelector() at the separating "," which may be on a preceding line
                 selectorStartChar: col
             };
         }
@@ -91,7 +93,7 @@ define(function (require, exports, module) {
             pendingRule.pendingSelector.selector += token;
         }
         function finishSelector() {
-            pendingRule.pendingSelector.selectorEndLine = i;
+            pendingRule.pendingSelector.selectorEndLine = i;       // FIXME: this may be wrong because we call finishSelector() at the separating "," or "{" which may be on a later line
             pendingRule.pendingSelector.selectorEndChar = col - 1;
             pendingRule.pendingSelector.selector = pendingRule.pendingSelector.selector.trim();
             pendingRule.selectors.push(pendingRule.pendingSelector);
@@ -99,9 +101,11 @@ define(function (require, exports, module) {
         }
         
         function isSelectorLikeToken() {
-            if (style === "tag" || style === "atom") return true;
+            if (style === "tag" || style === "atom") {
+                return true;
+            }
             if (style === null) {
-                return /[+>*\/&]/.test(token);
+                return (/[+>*\/&:]/).test(token);
             }
             return false;
         }
@@ -112,19 +116,14 @@ define(function (require, exports, module) {
                 style = mode.token(stream, state);
                 token = stream.current();
                 
-                var col = 0;
+                col = 0;
 
                 // DEBUG STATEMENT -- printer(token, style, i, stream.start, state.stack);
-                console.log("Token "+style+" \t'"+token+"'\t@  ["+state.stack+"]");
-                
-                // Comment separated from next rule by anything other than whitespace isn't counted
-                if (token.trim() !== "") {
-                    lastComment = null;
-                }
+//                console.log("Token " + style + " \t'" + token + "'\t@  [" + state.stack + "]");
                 
                 if (style === "comment") {
                     // Comment on the same line as the last rule's "}" isn't counted
-                    if (text.substring(0, stream.start).indexOf('}') === -1) {
+                    if (lines[i].substring(0, stream.start).indexOf('}') === -1) {
                         lastComment = {line: i, col: col};
                     }
                     
@@ -186,18 +185,27 @@ define(function (require, exports, module) {
                     }
                 }
                 
+                // Comment separated from next rule by anything other than whitespace isn't counted
+                // We don't do this at the top of the loop because at that point we haven't yet decided whether the
+                // current token is the start of that next rule (and if it is we don't want to drop the comment yet)
+                if (style !== "comment" && token.trim() !== "") {
+                    lastComment = null;
+                }
+                
                 // advance the stream past this token
                 stream.start = stream.pos;
             }
         }
         
-        console.log(doneRules);
+//        console.log(doneRules);
         
         // Convert doneRules[] to selectors[]
         function getSelectorPrefixes(rule) {
             var s, p;
             
-            if (!rule.parent) return [""];
+            if (!rule.parent) {
+                return [""];
+            }
             var parentPrefixes = getSelectorPrefixes(rule.parent);
             var prefixes = [];
             for (s = 0; s < rule.parent.selectors.length; s++) {
@@ -250,9 +258,8 @@ define(function (require, exports, module) {
         }
         expandRulesToSelectors();
         
-        
-        console.log("RESULT");
-        console.log(selectors);
+//        console.log("RESULT");
+//        console.log(selectors);
         return selectors;
     }
     

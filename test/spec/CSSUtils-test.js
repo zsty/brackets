@@ -220,7 +220,7 @@ define(function (require, exports, module) {
             });
         });
         
-        xdescribe("with real-world Bootstrap CSS code", function () {
+        describe("with real-world Bootstrap CSS code", function () {
             
             beforeEach(function () {
                 init(this, bootstrapCssFileEntry);
