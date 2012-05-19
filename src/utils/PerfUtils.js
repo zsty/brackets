@@ -165,6 +165,11 @@ define(function (require, exports, module) {
             return;
         }
 
+        // TODO: This test is only needed when running w/node. Figure out how to remove it.
+        if (!window.brackets) {
+            return;
+        }
+
         var elapsedTime = brackets.app.getElapsedMilliseconds();
         name = toMeasurementId(name);
         

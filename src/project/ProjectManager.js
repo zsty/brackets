@@ -574,6 +574,7 @@ define(function (require, exports, module) {
      *  fails to load.
      */
     function loadProject(rootPath) {
+	rootPath = "c:/Users/Glenn/brackets-app/brackets/src"; // TODO: Change this
         // reset tree node id's
         _projectInitialLoad.id = 0;
 

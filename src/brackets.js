@@ -69,6 +69,7 @@ define(function (require, exports, module) {
         FileUtils               = require("file/FileUtils"),
         Strings                 = require("strings"),
         Dialogs                 = require("widgets/Dialogs"),
+        ServerProxy             = require("utils/ServerProxy"),
         ExtensionLoader         = require("utils/ExtensionLoader"),
         SidebarView             = require("project/SidebarView"),
         Async                   = require("utils/Async");
@@ -113,7 +114,12 @@ define(function (require, exports, module) {
             bracketsReadyHandlers.push(handler);
         }
     }
+
+    brackets.fs = ServerProxy.getFileSystem();
+    brackets.app = ServerProxy.getAppProxy();
     
+    brackets.inBrowser = !brackets.hasOwnProperty("fs");
+
     // TODO: Issue 949 - the following code should be shared
     
     function _initGlobalBrackets() {

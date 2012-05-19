@@ -238,7 +238,7 @@ define(function (require, exports, module) {
     
     NativeFileSystem.Entry.prototype.getMetadata = function (successCallBack, errorCallback) {
         brackets.fs.stat(this.fullPath, function (err, stat) {
-            if (err === brackets.fs.NO_ERROR) {
+            if (!err) {
                 var metadata = new NativeFileSystem.Metadata(stat.mtime);
                 successCallBack(metadata);
             } else {
@@ -320,7 +320,7 @@ define(function (require, exports, module) {
 
             brackets.fs.writeFile(fileEntry.fullPath, data, _FSEncodings.UTF8, function (err) {
 
-                if ((err !== brackets.fs.NO_ERROR) && self.onerror) {
+                if (err && self.onerror) {
                     var fileError = NativeFileSystem._nativeToFileError(err);
 
                     // TODO (issue #241): set readonly FileSaver.error attribute
@@ -567,7 +567,7 @@ define(function (require, exports, module) {
 
         // Use stat() to check if file exists
         brackets.fs.stat(fileFullPath, function (err, stats) {
-            if ((err === brackets.fs.NO_ERROR)) {
+            if (!err) {
                 // NO_ERROR implies the path already exists
 
                 // throw error if the file the path is a directory
