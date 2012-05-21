@@ -35,6 +35,11 @@ define(function (require, exports, module) {
     var isOpen = false;
     var pendingCmds;
 
+    function sendCommand(cmd) {
+        console.log("sending: " + cmd);
+        ws.send(cmd);
+    }
+
     ws.onopen = function () {
         isOpen = true;
         if (pendingCmds) {
@@ -42,7 +47,7 @@ define(function (require, exports, module) {
                 sendCommand(cmd);
             });
         }
-    }
+    };
 
     ws.onmessage = function (message) {
         var m = JSON.parse(message.data);
@@ -65,11 +70,6 @@ define(function (require, exports, module) {
             return;
         }
         sendCommand(cmd);
-    }
-
-    function sendCommand(cmd) {
-        console.log("sending: " + cmd);
-        ws.send(cmd);
     }
 
     var fs = {};
