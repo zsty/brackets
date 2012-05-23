@@ -43,6 +43,9 @@
 
     <!-- JavaScript -->
 
+    <!-- WebViews in Cocoa don't have Function.prototype.bind nor FileError. Lame! -->
+    <script src="utils/WebViewShim.js"></script>
+    
     <!-- Pre-load third party scripts that cannot be async loaded. -->
     <script src="thirdparty/jquery-1.7.min.js"></script>
     <script src="thirdparty/CodeMirror2/lib/codemirror.js"></script>
