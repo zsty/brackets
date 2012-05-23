@@ -31,7 +31,8 @@ define(function (require, exports, module) {
 
     var messageCount = 0;
     var callbacks = {};
-    var ws = new WebSocket("ws://localhost:3000");
+    var wsUrl = window.location.href.replace("http://", "ws://");
+    var ws = new WebSocket(wsUrl);
     var isOpen = false;
     var pendingCmds;
 
