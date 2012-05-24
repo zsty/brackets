@@ -150,7 +150,7 @@ define(function (require, exports, module) {
      * @return None. This is an asynchronous call that sends all return information to the callback.
      */
     fs.showOpenDialog = function (allowMultipleSelection, chooseDirectory, title, initialPath, fileTypes, callback) {
-        console.log("Error: showOpenDialog not implemented yet");
+        callCommand("app", "showOpenDialog", [allowMultipleSelection, chooseDirectory, title, initialPath, fileTypes], true, callback);
     };
     
     /**
