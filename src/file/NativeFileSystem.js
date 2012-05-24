@@ -69,7 +69,15 @@ define(function (require, exports, module) {
                 initialPath,
                 fileTypes,
                 function (err, data) {
+                    // TODO: node callback can return "0" instead of 0
+                    if (err === "0") {
+                        err = 0;
+                    }
                     if (!err) {
+                        // TODO: node callback can return stringified arrays
+                        if (!Array.isArray(data)) {
+                            data = JSON.parse(data);
+                        }
                         successCallback(data);
                     } else if (errorCallback) {
                         errorCallback(NativeFileSystem._nativeToFileError(err));
