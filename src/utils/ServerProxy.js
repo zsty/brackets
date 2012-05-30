@@ -29,6 +29,8 @@
 define(function (require, exports, module) {
     'use strict';
 
+    var CommandManager = require("command/CommandManager");
+    
     var messageCount = 0;
     var callbacks = {};
     var wsUrl = window.location.href.replace("http://", "ws://");
@@ -53,7 +55,9 @@ define(function (require, exports, module) {
     ws.onmessage = function (message) {
         var m = JSON.parse(message.data);
         console.log("received: " + m.id);
-        if (callbacks.hasOwnProperty(m.id)) {
+        if (m.id === "runCommand") {
+            CommandManager.execute(m.commandId);
+        } else if (callbacks.hasOwnProperty(m.id)) {
             callbacks[m.id].apply(window, m.result);
             delete callbacks[m.id];
         }
@@ -311,6 +315,14 @@ define(function (require, exports, module) {
     function getAppProxy() {
         return app;
     }
+    
+    app.addMenu = function (id, name, position, relativeID) {
+        callCommand("app", "addMenu", [id, name, position, relativeID], false);
+    };
+    
+    app.addMenuItem = function (parentMenuId, id, name, cmd, keyBindings, position, relativeID) {
+        callCommand("app", "addMenuItem", [parentMenuId, id, name, cmd, keyBindings, position, relativeID], false);
+    };
 
     exports.getFileSystem = getFileSystem;
     exports.getAppProxy = getAppProxy;
