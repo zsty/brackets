@@ -33,7 +33,7 @@ define(function (require, exports, module) {
     
     var messageCount = 0;
     var callbacks = {};
-    var wsUrl = window.location.href.replace("http://", "ws://");
+    var wsUrl = "ws://" + window.location.host;
     var ws = new WebSocket(wsUrl);
     var isOpen = false;
     var pendingCmds;
