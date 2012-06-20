@@ -667,6 +667,8 @@ define(function (require, exports, module) {
         //the folder-browse dialog.
         CommandManager.execute(Commands.FILE_CLOSE_ALL, { promptOnly: true })
             .done(function () {
+                loadProject(prompt("Enter directory path"));
+                /*
                 // Pop up a folder browse dialog
                 NativeFileSystem.showOpenDialog(false, true, "Choose a folder", _projectRoot.fullPath, null,
                     function (files) {
@@ -689,6 +691,7 @@ define(function (require, exports, module) {
                         );
                     }
                     );
+                */
             });
         // if fail, don't open new project: user canceled (or we failed to save its unsaved changes)
     }

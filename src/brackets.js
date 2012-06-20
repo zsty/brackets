@@ -115,11 +115,6 @@ define(function (require, exports, module) {
         }
     }
 
-    brackets.fs = ServerProxy.getFileSystem();
-    brackets.app = ServerProxy.getAppProxy();
-    
-    brackets.inBrowser = !brackets.hasOwnProperty("fs");
-
     // TODO: Issue 949 - the following code should be shared
     
     function _initGlobalBrackets() {
@@ -145,6 +140,9 @@ define(function (require, exports, module) {
         // Load native shell when brackets is run in a native shell rather than the browser
         // TODO: (issue #266) load conditionally
         brackets.shellAPI = require("utils/ShellAPI");
+
+        brackets.fs = ServerProxy.getFileSystem();
+        brackets.app = ServerProxy.getAppProxy();
         
         brackets.inBrowser = !brackets.hasOwnProperty("fs");
         
