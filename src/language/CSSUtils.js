@@ -40,31 +40,9 @@ define(function (require, exports, module) {
         HTMLUtils           = require("language/HTMLUtils"),
         FileIndexManager    = require("project/FileIndexManager"),
         NativeFileSystem    = require("file/NativeFileSystem").NativeFileSystem;
-
-    /**
-     * Extracts all CSS selectors from the given text
-     * Returns an array of selectors. Each selector is an object with the following properties:
-         selector:                 the text of the selector (note: comma separated selector groups like 
-                                   "h1, h2" are broken into separate selectors)
-         ruleStartLine:            line in the text where the rule (including preceding comment) appears
-         ruleStartChar:            column in the line where the rule (including preceding comment) starts
-         selectorStartLine:        line in the text where the selector appears
-         selectorStartChar:        column in the line where the selector starts
-         selectorEndLine:          line where the selector ends
-         selectorEndChar:          column where the selector ends
-         selectorGroupStartLine:   line where the comma-separated selector group (e.g. .foo, .bar, .baz)
-                                   starts that this selector (e.g. .baz) is part of. Particularly relevant for
-                                   groups that are on multiple lines.
-         selectorGroupStartChar:   column in line where the selector group starts.
-         declListStartLine:        line where the declaration list for the rule starts
-         declListStartChar:        column in line where the declaration list for the rule starts
-         declListEndLine:          line where the declaration list for the rule ends
-         declListEndChar:          column in the line where the declaration list for the rule ends
-     * @param text {!String} CSS text to extract from
-     * @return {Array.<Object>} Array with objects specifying selectors.
-     */
-    function extractAllSelectors(text) {
-        var selectors = [];
+    
+    function parse(text) {
+        var selectors = [], mediaQueries = [];
         var mode = CodeMirror.getMode({indentUnit: 2}, "css");
         var state, lines, lineCount;
         var token, style, stream, line;
@@ -285,6 +263,7 @@ define(function (require, exports, module) {
         }
         
         function _parseAtRule() {
+            var mediaStartLine, mediaStartChar;
 
             // reset these fields to ignore comments preceding @rules
             ruleStartLine = -1;
@@ -296,6 +275,8 @@ define(function (require, exports, module) {
             
             if (token.match(/@media/i)) {
                 // @media rule holds a rule list
+                mediaStartLine = line;
+                mediaStartChar = stream.start;
                 
                 // Skip everything until the opening '{'
                 while (token !== "{") {
@@ -307,7 +288,13 @@ define(function (require, exports, module) {
 
                 // Parse rules until we see '}'
                 _parseRuleList("}");
-
+                
+                mediaQueries.push({
+                    ruleStartLine: mediaStartLine,
+                    ruleStartChar: mediaStartChar,
+                    ruleEndLine: line,
+                    ruleEndChar: stream.end
+                });
             } else if (token.match(/@(charset|import|namespace)/i)) {
                 
                 // This code handles @rules in this format:
@@ -376,7 +363,34 @@ define(function (require, exports, module) {
             _parseRuleList();
         }
 
-        return selectors;
+        return { selectors: selectors, mediaQueries: mediaQueries };
+    }
+    
+
+    /**
+     * Extracts all CSS selectors from the given text
+     * Returns an array of selectors. Each selector is an object with the following properties:
+         selector:                 the text of the selector (note: comma separated selector groups like 
+                                   "h1, h2" are broken into separate selectors)
+         ruleStartLine:            line in the text where the rule (including preceding comment) appears
+         ruleStartChar:            column in the line where the rule (including preceding comment) starts
+         selectorStartLine:        line in the text where the selector appears
+         selectorStartChar:        column in the line where the selector starts
+         selectorEndLine:          line where the selector ends
+         selectorEndChar:          column where the selector ends
+         selectorGroupStartLine:   line where the comma-separated selector group (e.g. .foo, .bar, .baz)
+                                   starts that this selector (e.g. .baz) is part of. Particularly relevant for
+                                   groups that are on multiple lines.
+         selectorGroupStartChar:   column in line where the selector group starts.
+         declListStartLine:        line where the declaration list for the rule starts
+         declListStartChar:        column in line where the declaration list for the rule starts
+         declListEndLine:          line where the declaration list for the rule ends
+         declListEndChar:          column in the line where the declaration list for the rule ends
+     * @param text {!String} CSS text to extract from
+     * @return {Array.<Object>} Array with objects specifying selectors.
+     */
+    function extractAllSelectors(text) {
+        return parse(text).selectors;
     }
     
     /*
@@ -573,4 +587,5 @@ define(function (require, exports, module) {
     exports._findAllMatchingSelectorsInText = _findAllMatchingSelectorsInText; // For testing only
     exports.findMatchingRules = findMatchingRules;
     exports.extractAllSelectors = extractAllSelectors;
+    exports.parse = parse;
 });
