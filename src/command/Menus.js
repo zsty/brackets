@@ -950,6 +950,7 @@ define(function (require, exports, module) {
         menu.addMenuItem(Commands.TOGGLE_QUICK_EDIT,        "Ctrl-E");
         menu.addMenuItem(Commands.QUICK_EDIT_PREV_MATCH,    {key: "Alt-Up", displayKey: "Alt-\u2191"});
         menu.addMenuItem(Commands.QUICK_EDIT_NEXT_MATCH,    {key: "Alt-Down", displayKey: "Alt-\u2193"});
+        menu.addMenuItem(Commands.JUMP_TO_SOURCE,           "F4");
 
         /*
          * Debug menu
@@ -1007,6 +1008,7 @@ define(function (require, exports, module) {
         var editor_cmenu = registerContextMenu(ContextMenuIds.EDITOR_MENU);
         editor_cmenu.addMenuItem(Commands.TOGGLE_QUICK_EDIT);
         editor_cmenu.addMenuItem(Commands.EDIT_SELECT_ALL);
+        editor_cmenu.addMenuItem(Commands.JUMP_TO_SOURCE);
 
         var inline_editor_cmenu = registerContextMenu(ContextMenuIds.INLINE_EDITOR_MENU);
         inline_editor_cmenu.addMenuItem(Commands.TOGGLE_QUICK_EDIT);
@@ -1014,6 +1016,7 @@ define(function (require, exports, module) {
         inline_editor_cmenu.addMenuDivider();
         inline_editor_cmenu.addMenuItem(Commands.QUICK_EDIT_PREV_MATCH);
         inline_editor_cmenu.addMenuItem(Commands.QUICK_EDIT_NEXT_MATCH);
+        inline_editor_cmenu.addMenuItem(Commands.JUMP_TO_SOURCE);
         
         /**
          * Context menu for code editors (both full-size and inline)

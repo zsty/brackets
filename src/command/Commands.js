@@ -90,6 +90,7 @@ define(function (require, exports, module) {
     exports.TOGGLE_QUICK_EDIT           = "navigate.toggleQuickEdit";
     exports.QUICK_EDIT_NEXT_MATCH       = "navigate.nextMatch";
     exports.QUICK_EDIT_PREV_MATCH       = "navigate.previousMatch";
+    exports.JUMP_TO_SOURCE              = "navigate.jumpToSource";
 
     // Debug
     exports.DEBUG_REFRESH_WINDOW        = "debug.refreshWindow"; // string must MATCH string in native code (brackets_extensions)

@@ -66,6 +66,8 @@ define(function (require, exports, module) {
         Commands           = require("command/Commands"),
         CommandManager     = require("command/CommandManager"),
         Menus              = require("command/Menus"),
+        FileIndexManager   = require("project/FileIndexManager"),
+        JSUtils            = require("language/JSUtils"),
         PerfUtils          = require("utils/PerfUtils"),
         PreferencesManager = require("preferences/PreferencesManager"),
         Strings            = require("strings"),
@@ -236,6 +238,83 @@ define(function (require, exports, module) {
         var editor = EditorManager.getFocusedEditor();
         if (editor) {
             editor._selectAllVisible();
+        }
+    }
+    
+    function _findInProject(functionName) {
+        var result = new $.Deferred();
+        
+        FileIndexManager.getFileInfoList("all")
+            .done(function (fileInfos) {
+                PerfUtils.markStart(PerfUtils.JAVASCRIPT_FIND_FUNCTION);
+                
+                JSUtils.findMatchingFunctions(functionName, fileInfos)
+                    .done(function (functions) {
+                        PerfUtils.addMeasurement(PerfUtils.JAVASCRIPT_FIND_FUNCTION);
+                        result.resolve(functions);
+                    })
+                    .fail(function () {
+                        PerfUtils.finalizeMeasurement(PerfUtils.JAVASCRIPT_FIND_FUNCTION);
+                        result.reject();
+                    });
+            })
+            .fail(function () {
+                result.reject();
+            });
+        
+        return result.promise();
+    }
+
+    function _openSourceDocument(doc, startLine) {
+        if (doc) {
+            CommandManager.execute(Commands.FILE_OPEN, { fullPath: doc.file.fullPath })
+                .done(function () {
+                    EditorManager.getCurrentFullEditor().setCursorPos(startLine);
+                });
+        }
+    }
+    
+    function _jumpToSourceCode() {
+        var editor = EditorManager.getFocusedEditor(),
+            inlineWidget = EditorManager.getFocusedInlineWidget(),
+            doc = null,
+            startLine,
+            functionName,
+            sel = editor ? editor.getSelection() : null,
+            hasValidSelection = (sel && sel.start.line === sel.end.line && sel.start.ch !== sel.end.ch);
+        
+        if (inlineWidget && inlineWidget.editor === editor) {
+            doc = editor.document;
+            startLine = editor._visibleRange.startLine;
+        }
+        
+        if (editor && editor.getModeForSelection() === "javascript" && hasValidSelection) {
+            var token = editor._codeMirror.getTokenAt(sel.start);
+            
+            // If the pos is at the beginning of a name, token will be the 
+            // preceding whitespace or dot. In that case, try the next pos.
+            if (token.string.trim().length === 0 || token.string === ".") {
+                token = editor._codeMirror.getTokenAt({line: sel.start.line, ch: sel.start.ch + 1});
+            }
+            
+            if (((token.className === "variable")
+                  || (token.className === "variable-2")
+                  || (token.className === "property"))) {
+                functionName = token.string;
+            }
+            
+            if (functionName) {
+                _findInProject(functionName).done(function (functions) {
+                    if (functions && functions.length > 0) {
+                        return _openSourceDocument(functions[0].document, functions[0].lineStart);
+                    }
+                });
+            }
+            startLine = sel.start.line;
+        }
+        
+        if (doc) {
+            _openSourceDocument(doc, startLine);
         }
     }
     
@@ -1180,6 +1259,7 @@ define(function (require, exports, module) {
     
     // Global commands that affect the currently focused Editor instance, wherever it may be
     CommandManager.register(Strings.CMD_SELECT_ALL,     Commands.EDIT_SELECT_ALL, _handleSelectAll);
+    CommandManager.register(Strings.CMD_JUMP_TO_SOURCE, Commands.JUMP_TO_SOURCE, _jumpToSourceCode);
 
     // Define public API
     exports.Editor = Editor;

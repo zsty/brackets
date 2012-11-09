@@ -211,6 +211,7 @@ define({
     "CMD_QUICK_EDIT_NEXT_MATCH"           : "Next Match",
     "CMD_NEXT_DOC"                        : "Next Document",
     "CMD_PREV_DOC"                        : "Previous Document",
+    "CMD_JUMP_TO_SOURCE"                  : "Jump to Source",
     "CMD_SHOW_IN_TREE"                    : "Show in File Tree",
     
     // Debug menu commands
