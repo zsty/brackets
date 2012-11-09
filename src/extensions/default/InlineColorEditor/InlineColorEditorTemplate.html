@@ -1,0 +1,41 @@
+<div class="color_editor">
+  <section>
+    <div class="sliders">
+      <div class="color_selection_field" role="slider" aria-label="color selection field">
+        <div class="saturation_gradient gradient_overlay"></div>
+        <div class="luminosity_gradient gradient_overlay"></div>
+        <div tabindex="0" class="selector_base">
+          <div class="selector"></div>
+        </div>
+      </div>
+      <div class="hue_slider slider" role="slider" aria-label="hue slider">
+        <div tabindex="0" class="selector_base">
+          <div class="selector"></div>
+        </div>
+      </div>
+      <div class="opacity_slider slider" role="slider" aria-label="opacity slider">
+        <div class="opacity_gradient gradient_overlay"></div>
+        <div tabindex="0" class="selector_base">
+          <div class="selector"></div>
+        </div>
+      </div>
+    </div>
+    <footer>
+      <input class="color_value" readonly="readonly" aria-label="color value"/>
+      <ul class="button-bar" role="radiogroup">
+        <li class="selected" role="radio"><a href="#" tabindex="0" class="rgba">RGBa</a></li>
+        <li role="radio"><a href="#" tabindex="0" class="hex">HEX</a></li>
+        <li role="radio"><a href="#" tabindex="0" class="hsla" role="button">HSLa</a></li>
+      </ul>
+    </footer>
+  </section>
+  <aside>
+    <header>
+      <div class="large_swatches">
+        <div class="current_color large_swatch"></div>
+        <div class="last_color large_swatch"></div>
+      </div>
+    </header>
+    <ul class="swatches"></ul>
+  </aside>
+</div>
