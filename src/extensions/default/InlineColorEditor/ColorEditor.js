@@ -83,9 +83,7 @@ define(function (require, exports, module) {
         this.bindColorFormatToRadioButton("rgba");
         this.bindColorFormatToRadioButton("hex");
         this.bindColorFormatToRadioButton("hsla");
-        // TODO: This is not really updating other UI and the color value. 
-        // Commenting it out and temporarily making it read only input field.
-        //this.$colorValue.change(this.colorSetter);
+        this.bindColorInput();
         this.bindOriginalColorButton();
         this.registerDragHandler(this.$selection, this.handleSelectionFieldDrag);
         this.registerDragHandler(this.$hueSlider, this.handleHueDrag);
@@ -130,19 +128,6 @@ define(function (require, exports, module) {
             return true;
         }
         return false;
-    };
-
-    ColorEditor.prototype.colorSetter = function () {
-        var newColor, newValue;
-        newValue = $.trim(this.$colorValue.val());
-        newColor = tinycolor(newValue);
-        if (!newColor.ok) {
-            newValue = this.getColor();
-            newColor = tinycolor(newValue);
-        }
-        this.commitColor(newValue, true);
-        this.hsv = newColor.toHsv();
-        this.synchronize();
     };
 
     ColorEditor.prototype.getColor = function () {
@@ -192,6 +177,29 @@ define(function (require, exports, module) {
         var _this = this;
         this.$lastColor.click(function (event) {
             return _this.commitColor(_this.lastColor, true);
+        });
+    };
+
+    ColorEditor.prototype.bindColorInput = function () {
+        var _this = this;
+        this.$colorValue.bind("input", function (event) {
+            var newValue = $.trim($(this).val()),
+                newColor = tinycolor(newValue),
+                newColorOk = true;
+            // Don't trust tinycolor for rgb and hsl values.
+            // We need to catch those not-yet-done values with regular expression.
+            if (newValue.match(/^hsl/)) {
+                if (!newValue.match(/hsl\( ?\b([0-9]{1,2}|[12][0-9]{2}|3[0-5][0-9]|360)\b ?, ?\b([0-9]{1,2}|100)\b% ?, ?\b([0-9]{1,2}|100)\b% ?\)|hsla\( ?\b([0-9]{1,2}|[12][0-9]{2}|3[0-5][0-9]|360)\b ?, ?\b([0-9]{1,2}|100)\b% ?, ?\b([0-9]{1,2}|100)\b% ?, ?\b(1|0|0\.[0-9]{1,3}) ?\)/i)) {
+                    newColorOk = false;
+                }
+            }
+            if (!newColor.ok || !newColorOk) {
+                newValue = _this.getColor();
+                newColor = tinycolor(newValue);
+            }
+            _this.commitColor(newValue, true);
+            _this.hsv = newColor.toHsv();
+            _this.synchronize();
         });
     };
 
