@@ -763,12 +763,15 @@ a, img {
     }
 
     .find {
-        float: left;
+        display: inline-block;
     }
     
     .replace {
-        float: left;
         display: none;
+        
+        &.show {
+            display: inline-block;
+        }
     }
 }
 

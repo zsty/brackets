@@ -250,6 +250,10 @@ define(function (require, exports, module) {
             })
             .on("input", function () {
                 findFirst(cm, $findField.val());
+            })
+            .on("mousedown", function () {
+                // TODO: Why is this necessary?
+                $(this).focus();
             });
         
         $("#find-prev", modalBar.getRoot())
@@ -270,7 +274,7 @@ define(function (require, exports, module) {
             });
         
         if (showReplace) {
-            $(".replace", modalBar.getRoot()).css("display", "block");
+            $(".replace", modalBar.getRoot()).addClass("show");
             
             $(".replace input", modalBar.getRoot())
                 .on("keydown", function (e) {
@@ -279,7 +283,12 @@ define(function (require, exports, module) {
                         e.preventDefault();
                         replaceNext(cm);
                     }
+                })
+                .on("mousedown", function () {
+                    // TODO: Why is this necessary?
+                    $(this).focus();
                 });
+
             $("#replace-one", modalBar.getRoot())
                 .on("click", function () {
                     replaceNext(cm);
