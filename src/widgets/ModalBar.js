@@ -37,33 +37,23 @@ define(function (require, exports, module) {
     /**
      * @constructor
      *
-     * Creates a modal bar whose contents are the given template.
+     * Creates a modal bar whose contents are the given template. Dispatches the "close" event when it's
+     * closed.
+     *
      * @param {string} template The HTML contents of the modal bar.
-     * @param {boolean} autoClose If true, then close the dialog if the user hits RETURN or ESC 
-     *      in the first input field, or if the modal bar loses focus to an outside item. Dispatches 
-     *      jQuery events for these cases: "closeOk" on RETURN, "closeCancel" on ESC, and "closeBlur" 
-     *      on focus loss.
+     * @param {boolean} autoCloseOnBlur If true, then close the dialog if the modal bar loses focus to 
+     *      an outside item.
      */
-    function ModalBar(template, autoClose) {
-        this._handleInputKeydown = this._handleInputKeydown.bind(this);
+    function ModalBar(template, autoCloseOnBlur) {
         this._handleFocusChange = this._handleFocusChange.bind(this);
         
         this._$root = $("<div class='modal-bar'/>")
             .html(template)
             .appendTo("#main-toolbar");
-        
-        if (autoClose) {
-            this._autoClose = true;
-            var $firstInput = this._getFirstInput()
-                .on("keydown", this._handleInputKeydown);
+
+        if (autoCloseOnBlur) {
+            this._autoCloseOnBlur = true;
             window.document.body.addEventListener("focusin", this._handleFocusChange, true);
-                
-            // Set focus to the first input field, or the first button if there is no input field.
-            if ($firstInput.length > 0) {
-                $firstInput.focus();
-            } else {
-                $("button", this._$root).first().focus();
-            }
         }
         
         // Preserve scroll position across the editor refresh, adjusting for the height of the modal bar
@@ -85,24 +75,17 @@ define(function (require, exports, module) {
     ModalBar.prototype._$root = null;
     
     /**
-     * True if this ModalBar is set to autoclose.
+     * True if this ModalBar is set to automatically close on blur.
      */
-    ModalBar.prototype._autoClose = false;
+    ModalBar.prototype._autoCloseOnBlur = false;
     
     /**
-     * Returns a jQuery object for the first input field in the dialog. Will be 0-length if there is none.
-     */
-    ModalBar.prototype._getFirstInput = function () {
-        return $("input[type='text']", this._$root).first();
-    };
-    
-    /**
-     * Closes the modal bar and returns focus to the active editor.
+     * Closes the modal bar and returns focus to the active editor. Dispatches the "close" event.
      */
     ModalBar.prototype.close = function () {
         var barHeight = this._$root.outerHeight();
 
-        if (this._autoClose) {
+        if (this._autoCloseOnBlur) {
             window.document.body.removeEventListener("focusin", this._handleFocusChange, true);
         }
         
@@ -120,31 +103,18 @@ define(function (require, exports, module) {
             activeEditor._codeMirror.scrollTo(scrollPos.x, scrollPos.y - barHeight);
         }
         EditorManager.focusEditor();
+        
+        $(this).triggerHandler("close");
     };
     
     /**
-     * If autoClose is set, handles the RETURN/ESC keys in the input field.
-     */
-    ModalBar.prototype._handleInputKeydown = function (e) {
-        if (e.keyCode === 13 || e.keyCode === 27) {
-            e.stopPropagation();
-            e.preventDefault();
-            
-            var value = this._getFirstInput().val();
-            this.close();
-            $(this).triggerHandler(e.keyCode === 13 ? "closeOk" : "closeCancel", [value]);
-        }
-    };
-    
-    /**
-     * If autoClose is set, detects when something other than the modal bar is getting focus and
+
+     * If autoCloseOnBlur is set, detects when something other than the modal bar is getting focus and
      * dismisses the modal bar.
      */
     ModalBar.prototype._handleFocusChange = function (e) {
         if (!$.contains(this._$root.get(0), e.target)) {
-            var value = this._getFirstInput().val();
             this.close();
-            $(this).triggerHandler("closeBlur", [value]);
         }
     };
     
@@ -154,6 +124,6 @@ define(function (require, exports, module) {
     ModalBar.prototype.getRoot = function () {
         return this._$root;
     };
-    
+        
     exports.ModalBar = ModalBar;
 });
