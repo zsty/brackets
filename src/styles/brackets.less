@@ -757,20 +757,29 @@ a, img {
 
 .find-bar {
     overflow: hidden;
+    .hbox;
 
     input {
-        width: 20em;
+        .box;
+        .box-flex(1);
     }
 
     .find {
-        display: inline-block;
+        .hbox;
+        .box-flex(0.5);
+        .box-align(baseline);
     }
     
     .replace {
-        display: none;
+        visibility: hidden;
+        
+        .hbox;
+        .box-flex(0.5);
+        .box-align(baseline);
+        margin-left: 1em;
         
         &.show {
-            display: inline-block;
+            visibility: visible;
         }
     }
 }
