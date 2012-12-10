@@ -32,7 +32,8 @@
 define(function (require, exports, module) {
     "use strict";
     
-    var EditorManager = require("editor/EditorManager");
+    var EditorManager = require("editor/EditorManager"),
+        KeyEvent      = require("utils/KeyEvent");
 
     /**
      * @constructor
@@ -56,16 +57,16 @@ define(function (require, exports, module) {
             window.document.body.addEventListener("focusin", this._handleFocusChange, true);
         }
         
-        // Preserve scroll position across the editor refresh, adjusting for the height of the modal bar
-        // so the code doesn't appear to shift if possible.
-        var activeEditor = EditorManager.getActiveEditor(),
+        // Preserve scroll position of the current full editor across the editor refresh, adjusting for the 
+        // height of the modal bar so the code doesn't appear to shift if possible.
+        var fullEditor = EditorManager.getCurrentFullEditor(),
             scrollPos;
-        if (activeEditor) {
-            scrollPos = activeEditor.getScrollPos();
+        if (fullEditor) {
+            scrollPos = fullEditor.getScrollPos();
         }
         EditorManager.resizeEditor();
-        if (activeEditor) {
-            activeEditor._codeMirror.scrollTo(scrollPos.x, scrollPos.y + this._$root.outerHeight());
+        if (fullEditor) {
+            fullEditor._codeMirror.scrollTo(scrollPos.x, scrollPos.y + this._$root.outerHeight());
         }
     }
     
@@ -91,16 +92,16 @@ define(function (require, exports, module) {
         
         this._$root.remove();
 
-        // Preserve scroll position across the editor refresh, adjusting for the height of the modal bar
-        // so the code doesn't appear to shift if possible.
-        var activeEditor = EditorManager.getActiveEditor(),
+        // Preserve scroll position of the current full editor across the editor refresh, adjusting for the 
+        // height of the modal bar so the code doesn't appear to shift if possible.
+        var fullEditor = EditorManager.getCurrentFullEditor(),
             scrollPos;
-        if (activeEditor) {
-            scrollPos = activeEditor.getScrollPos();
+        if (fullEditor) {
+            scrollPos = fullEditor.getScrollPos();
         }
         EditorManager.resizeEditor();
-        if (activeEditor) {
-            activeEditor._codeMirror.scrollTo(scrollPos.x, scrollPos.y - barHeight);
+        if (fullEditor) {
+            fullEditor._codeMirror.scrollTo(scrollPos.x, scrollPos.y - barHeight);
         }
         EditorManager.focusEditor();
         
@@ -108,7 +109,6 @@ define(function (require, exports, module) {
     };
     
     /**
-
      * If autoCloseOnBlur is set, detects when something other than the modal bar is getting focus and
      * dismisses the modal bar.
      */
