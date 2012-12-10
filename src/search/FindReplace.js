@@ -64,12 +64,17 @@ define(function (require, exports, module) {
     }
 
     function parseQuery(query) {
-        var isRE = query.match(/^\/(.*)\/([a-z]*)$/);
-        $(".alert-message", modalBar.getRoot()).remove();
+        var isRE = query.match(/^\/(.*)\/([a-z]*)$/),
+            $modalBar = modalBar.getRoot();
+        $(".replace", $modalBar).removeClass("fully-hide");
+        $(".error", $modalBar).removeClass("show");
         try {
             return isRE ? new RegExp(isRE[1], isRE[2].indexOf("i") === -1 ? "" : "i") : query;
         } catch (e) {
-            $(modalBar.getRoot()).append("<div class='alert-message' style='margin-bottom: 0'>" + e.message + "</div>");
+            $(".replace", $modalBar).addClass("fully-hide");
+            $(".error", $modalBar)
+                .addClass("show")
+                .html("<div class='alert-message' style='margin-bottom: 0'>" + e.message + "</div>");
             return "";
         }
     }
