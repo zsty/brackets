@@ -71,7 +71,22 @@ define(function (require, exports, module) {
     function getRequireContextForExtension(name) {
         return contexts[name];
     }
-
+    
+    function _hackifyExtension(baseUrl, extensionRequire, mainModule) {
+        // old fashioned extension
+        if (!mainModule.registering) {
+            return;
+        }
+        extensionRequire(["text!" + baseUrl + "/package.json"],
+            function (metadataText) {
+                var metadata = JSON.parse(metadataText);
+                mainModule.registering(metadata);
+            },
+            function (err) {
+                console.error("[Extension] is missing package.json " + baseUrl, err);
+            });
+        
+    }
     
     /**
      * Loads the extension that lives at baseUrl into its own Require.js context
@@ -97,8 +112,9 @@ define(function (require, exports, module) {
         // console.log("[Extension] starting to load " + config.baseUrl);
         
         extensionRequire([entryPoint],
-            function () {
+            function (mainModule) {
                 // console.log("[Extension] finished loading " + config.baseUrl);
+                _hackifyExtension(config.baseUrl, extensionRequire, mainModule);
                 result.resolve();
             },
             function errback(err) {
