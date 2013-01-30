@@ -313,10 +313,15 @@ define(function (require, exports, module) {
         return promise;
     }
     
+    var extensionData;
+    
     function validateRegistration(identifier, data) {
+        return function () {
+            extensionData.availableRegistrations[identifier] = data;
+        };
     }
     
-    var extensionData = {
+    extensionData = {
         availableRegistrations: {
             "registration": {
                 description: "Used to create new kinds of registrations",
@@ -328,6 +333,7 @@ define(function (require, exports, module) {
     function register(extensionName, registrationName, identifier, data) {
         var registration = extensionData.availableRegistrations[registrationName];
         var addRegistration = registration.validate(identifier, data);
+        addRegistration();
     }
     
     exports._extensionData = extensionData;

@@ -41,9 +41,13 @@ define(function (require, exports, module) {
         describe("Registration", function () {
             it("can register registrations", function () {
                 var validatorWasCalled = false;
+                var registerFunctionWasCalled = false;
                 
                 var validateNewTestThingy = function (identifier, data) {
                     validatorWasCalled = true;
+                    return function () {
+                        registerFunctionWasCalled = true;
+                    };
                 };
                 
                 var rdata = {
@@ -54,6 +58,11 @@ define(function (require, exports, module) {
                 ExtensionLoader.register("test", "registration", "someNewRegistration", rdata);
                 
                 expect(ExtensionLoader._extensionData.availableRegistrations.someNewRegistration).toEqual(rdata);
+                
+                ExtensionLoader.register("test", "someNewRegistration", "aThing", {});
+                
+                expect(validatorWasCalled).toBe(true);
+                expect(registerFunctionWasCalled).toBe(true);
             });
         });
     });
