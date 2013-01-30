@@ -24,6 +24,7 @@
 
 /*jslint vars: true, plusplus: true, devel: true, nomen: true, indent: 4, maxerr: 50 */
 /*global define, $, CodeMirror, brackets, window */
+/* unittests: ExtensionLoader */
 
 /**
  * ExtensionLoader searches the filesystem for extensions, then creates a new context for each one and loads it
@@ -311,6 +312,26 @@ define(function (require, exports, module) {
         
         return promise;
     }
+    
+    function validateRegistration(identifier, data) {
+    }
+    
+    var extensionData = {
+        availableRegistrations: {
+            "registration": {
+                description: "Used to create new kinds of registrations",
+                validate: validateRegistration
+            }
+        }
+    };
+    
+    function register(extensionName, registrationName, identifier, data) {
+        var registration = extensionData.availableRegistrations[registrationName];
+        var addRegistration = registration.validate(identifier, data);
+    }
+    
+    exports._extensionData = extensionData;
+    exports.register = register;
     
     exports.init = init;
     exports.getUserExtensionPath = getUserExtensionPath;

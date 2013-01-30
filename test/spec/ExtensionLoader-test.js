@@ -24,6 +24,7 @@
 
 /*jslint vars: true, plusplus: true, devel: true, nomen: true, indent: 4, maxerr: 50 */
 /*global define, $, brackets, window, describe, it, expect, beforeEach, afterEach, waitsFor, runs, waitsForDone, waitsForFail */
+/*unittests: ExtensionLoader */
 
 define(function (require, exports, module) {
     "use strict";
@@ -33,4 +34,27 @@ define(function (require, exports, module) {
     // to the waiting bucket
     // when all resources are available, the waiting bucket is emptied
     // (registrations actually run) and enabling is called.
+    
+    var ExtensionLoader = require("utils/ExtensionLoader");
+    
+    describe("ExtensionLoader", function () {
+        describe("Registration", function () {
+            it("can register registrations", function () {
+                var validatorWasCalled = false;
+                
+                var validateNewTestThingy = function (identifier, data) {
+                    validatorWasCalled = true;
+                };
+                
+                var rdata = {
+                    description: "This is the registration description",
+                    validate: validateNewTestThingy
+                };
+                
+                ExtensionLoader.register("test", "registration", "someNewRegistration", rdata);
+                
+                expect(ExtensionLoader._extensionData.availableRegistrations.someNewRegistration).toEqual(rdata);
+            });
+        });
+    });
 });
