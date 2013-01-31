@@ -34,6 +34,7 @@ define(function (require, exports, module) {
     "use strict";
 
     require("utils/Global");
+    var ExtensionData = require("utils/ExtensionData");
 
     var NativeFileSystem    = require("file/NativeFileSystem").NativeFileSystem,
         FileUtils           = require("file/FileUtils"),
@@ -73,8 +74,6 @@ define(function (require, exports, module) {
         return contexts[name];
     }
     
-    var register;
-    
     function _hackifyExtension(name, baseUrl, extensionRequire, mainModule) {
         // old fashioned extension
         if (!mainModule.registering) {
@@ -84,7 +83,7 @@ define(function (require, exports, module) {
             function (metadataText) {
                 var metadata = JSON.parse(metadataText);
                 var extensionRegister = function (registrationName, identifier, data) {
-                    register(name, registrationName, identifier, data);
+                    ExtensionData.register(name, registrationName, identifier, data);
                 };
                 mainModule.registering(extensionRegister, metadata);
             },
@@ -317,52 +316,6 @@ define(function (require, exports, module) {
         
         return promise;
     }
-    
-    var extensionData;
-    
-    function validateRegistration(identifier, data) {
-        return function () {
-            extensionData.availableRegistrations[identifier] = data;
-            return function () {
-                delete extensionData.availableRegistrations[identifier];
-                // TODO this should manage the extensions that depend on this registration as well
-            };
-        };
-    }
-    
-    extensionData = {
-        availableRegistrations: {
-            "registration": {
-                description: "Used to create new kinds of registrations",
-                validate: validateRegistration
-            }
-        }
-    };
-    
-    var extensionUnregisterFunctions = {};
-    
-    register = function register(extensionName, registrationName, identifier, data) {
-        var registration = extensionData.availableRegistrations[registrationName];
-        var addRegistration = registration.validate(identifier, data);
-        var removeRegistration = addRegistration();
-        if (!extensionUnregisterFunctions[extensionName]) {
-            extensionUnregisterFunctions[extensionName] = [];
-        }
-        extensionUnregisterFunctions[extensionName].push(removeRegistration);
-    };
-    
-    function unregister(extensionName) {
-        var unregisterFunctions = extensionUnregisterFunctions[extensionName];
-        if (unregisterFunctions) {
-            unregisterFunctions.forEach(function (unregister) {
-                unregister();
-            });
-        }
-    }
-    
-    exports._extensionData = extensionData;
-    exports.register = register;
-    exports.unregister = unregister;
     
     exports.init = init;
     exports.getUserExtensionPath = getUserExtensionPath;

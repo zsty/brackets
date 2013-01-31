@@ -24,7 +24,7 @@
 
 /*jslint vars: true, plusplus: true, devel: true, nomen: true, indent: 4, maxerr: 50 */
 /*global define, $, brackets, window, describe, it, expect, beforeEach, afterEach, waitsFor, runs, waitsForDone, waitsForFail */
-/*unittests: ExtensionLoader */
+/*unittests: ExtensionData */
 
 define(function (require, exports, module) {
     "use strict";
@@ -35,9 +35,9 @@ define(function (require, exports, module) {
     // when all resources are available, the waiting bucket is emptied
     // (registrations actually run) and enabling is called.
     
-    var ExtensionLoader = require("utils/ExtensionLoader");
+    var ExtensionData = require("utils/ExtensionData");
     
-    describe("ExtensionLoader", function () {
+    describe("ExtensionData", function () {
         describe("Registration", function () {
             it("can register registrations", function () {
                 var validatorWasCalled = false;
@@ -59,19 +59,19 @@ define(function (require, exports, module) {
                     validate: validateNewTestThingy
                 };
                 
-                ExtensionLoader.register("test", "registration", "someNewRegistration", rdata);
+                ExtensionData.register("test", "registration", "someNewRegistration", rdata);
                 
-                expect(ExtensionLoader._extensionData.availableRegistrations.someNewRegistration).toEqual(rdata);
+                expect(ExtensionData._extensionData.availableRegistrations.someNewRegistration).toEqual(rdata);
                 
-                ExtensionLoader.register("test", "someNewRegistration", "aThing", {});
+                ExtensionData.register("test", "someNewRegistration", "aThing", {});
                 
                 expect(validatorWasCalled).toBe(true);
                 expect(registerFunctionWasCalled).toBe(true);
                 
-                ExtensionLoader.unregister("test");
+                ExtensionData.unregister("test");
                 expect(unregisterFunctionWasCalled).toBe(true);
                 
-                expect(ExtensionLoader._extensionData.availableRegistrations.someNewRegistration).toBeUndefined();
+                expect(ExtensionData._extensionData.availableRegistrations.someNewRegistration).toBeUndefined();
             });
         });
     });

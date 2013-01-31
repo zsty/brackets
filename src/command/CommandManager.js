@@ -247,4 +247,24 @@ define(function (require, exports, module) {
     exports.getAll          = getAll;
     exports._testReset      = _testReset;
     exports._testRestore    = _testRestore;
+    
+    // prototype code
+    var ExtensionData = require("utils/ExtensionData");
+    
+    function validateCommand(identifier, data) {
+        if (!data.name || !data.fn) {
+            throw new Error("Command data needs name and fn:" + data.name + " " + data.fn);
+        }
+        return function () {
+            register(data.name, identifier, data.fn);
+            return function () {
+                delete _commands[identifier];
+            };
+        };
+    }
+    
+    ExtensionData.register("brackets", "registration", "command", {
+        description: "Editor Commands",
+        validate: validateCommand
+    });
 });

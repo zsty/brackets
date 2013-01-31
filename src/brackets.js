@@ -59,6 +59,7 @@ define(function (require, exports, module) {
     // Load dependent modules
     var Global                  = require("utils/Global"),
         AppInit                 = require("utils/AppInit"),
+        ExtensionData           = require("utils/ExtensionData"),
         ProjectManager          = require("project/ProjectManager"),
         DocumentManager         = require("document/DocumentManager"),
         EditorManager           = require("editor/EditorManager"),
