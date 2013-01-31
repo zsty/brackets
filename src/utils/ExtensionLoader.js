@@ -73,7 +73,9 @@ define(function (require, exports, module) {
         return contexts[name];
     }
     
-    function _hackifyExtension(baseUrl, extensionRequire, mainModule) {
+    var register;
+    
+    function _hackifyExtension(name, baseUrl, extensionRequire, mainModule) {
         // old fashioned extension
         if (!mainModule.registering) {
             return;
@@ -81,7 +83,10 @@ define(function (require, exports, module) {
         extensionRequire(["text!" + baseUrl + "/package.json"],
             function (metadataText) {
                 var metadata = JSON.parse(metadataText);
-                mainModule.registering(metadata);
+                var extensionRegister = function (registrationName, identifier, data) {
+                    register(name, registrationName, identifier, data);
+                };
+                mainModule.registering(extensionRegister, metadata);
             },
             function (err) {
                 console.error("[Extension] is missing package.json " + baseUrl, err);
@@ -115,7 +120,7 @@ define(function (require, exports, module) {
         extensionRequire([entryPoint],
             function (mainModule) {
                 // console.log("[Extension] finished loading " + config.baseUrl);
-                _hackifyExtension(config.baseUrl, extensionRequire, mainModule);
+                _hackifyExtension(name, config.baseUrl, extensionRequire, mainModule);
                 result.resolve();
             },
             function errback(err) {
@@ -318,6 +323,10 @@ define(function (require, exports, module) {
     function validateRegistration(identifier, data) {
         return function () {
             extensionData.availableRegistrations[identifier] = data;
+            return function () {
+                delete extensionData.availableRegistrations[identifier];
+                // TODO this should manage the extensions that depend on this registration as well
+            };
         };
     }
     
@@ -330,14 +339,30 @@ define(function (require, exports, module) {
         }
     };
     
-    function register(extensionName, registrationName, identifier, data) {
+    var extensionUnregisterFunctions = {};
+    
+    register = function register(extensionName, registrationName, identifier, data) {
         var registration = extensionData.availableRegistrations[registrationName];
         var addRegistration = registration.validate(identifier, data);
-        addRegistration();
+        var removeRegistration = addRegistration();
+        if (!extensionUnregisterFunctions[extensionName]) {
+            extensionUnregisterFunctions[extensionName] = [];
+        }
+        extensionUnregisterFunctions[extensionName].push(removeRegistration);
+    };
+    
+    function unregister(extensionName) {
+        var unregisterFunctions = extensionUnregisterFunctions[extensionName];
+        if (unregisterFunctions) {
+            unregisterFunctions.forEach(function (unregister) {
+                unregister();
+            });
+        }
     }
     
     exports._extensionData = extensionData;
     exports.register = register;
+    exports.unregister = unregister;
     
     exports.init = init;
     exports.getUserExtensionPath = getUserExtensionPath;

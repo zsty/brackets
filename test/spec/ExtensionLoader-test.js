@@ -42,11 +42,15 @@ define(function (require, exports, module) {
             it("can register registrations", function () {
                 var validatorWasCalled = false;
                 var registerFunctionWasCalled = false;
+                var unregisterFunctionWasCalled = false;
                 
                 var validateNewTestThingy = function (identifier, data) {
                     validatorWasCalled = true;
                     return function () {
                         registerFunctionWasCalled = true;
+                        return function () {
+                            unregisterFunctionWasCalled = true;
+                        };
                     };
                 };
                 
@@ -63,6 +67,11 @@ define(function (require, exports, module) {
                 
                 expect(validatorWasCalled).toBe(true);
                 expect(registerFunctionWasCalled).toBe(true);
+                
+                ExtensionLoader.unregister("test");
+                expect(unregisterFunctionWasCalled).toBe(true);
+                
+                expect(ExtensionLoader._extensionData.availableRegistrations.someNewRegistration).toBeUndefined();
             });
         });
     });
