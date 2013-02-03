@@ -252,11 +252,11 @@ define(function (require, exports, module) {
     var ExtensionData = require("utils/ExtensionData");
     
     function validateCommand(identifier, data) {
-        if (!data.name || !data.fn) {
-            throw new Error("Command data needs name and fn:" + data.name + " " + data.fn);
+        if (!data.name || !data.exec) {
+            throw new Error("Command data needs name and fn:" + data.name + " " + data.exec);
         }
         return function () {
-            register(data.name, identifier, data.fn);
+            register(data.name, identifier, data.exec);
             return function () {
                 delete _commands[identifier];
             };

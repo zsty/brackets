@@ -83,6 +83,7 @@ define(function (require, exports, module) {
             function (metadataText) {
                 var metadata = JSON.parse(metadataText);
                 var extensionRegister = function (registrationName, identifier, data) {
+                    metadata.extensionName = name;
                     ExtensionData.register(name, registrationName, identifier, data);
                 };
                 mainModule.registering(extensionRegister, metadata);

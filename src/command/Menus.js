@@ -412,12 +412,6 @@ define(function (require, exports, module) {
         }
 
         if (typeof (command) === "string") {
-            var commandObj = CommandManager.get(command);
-            if (!commandObj) {
-                console.error("removeMenuItem(): command not found: " + command);
-                return;
-            }
-
             commandID = command;
         } else {
             commandID = command.getID();
@@ -1254,6 +1248,28 @@ define(function (require, exports, module) {
             }
         });
     });
+    
+    // prototype code
+    var ExtensionData = require("utils/ExtensionData");
+    
+    function validateMenu(identifier, data) {
+        if (!data.name || !data.menu) {
+            throw new Error("Menu needs things");
+        }
+        return function () {
+            var menu = getMenu(AppMenuBar[data.menu]);
+            menu.addMenuItem(identifier, data.keybinding, data.position, data.relativeTo);
+            return function () {
+                menu.removeMenuItem(identifier);
+            };
+        };
+    }
+    
+    ExtensionData.register("brackets", "registration", "menu.item", {
+        description: "Menu Item",
+        validate: validateMenu
+    });
+
 
     // Define public API
     exports.AppMenuBar = AppMenuBar;
