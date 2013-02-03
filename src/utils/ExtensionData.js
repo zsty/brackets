@@ -75,4 +75,14 @@ define(function (require, exports, module) {
     exports.register = register;
     exports.unregister = unregister;
     
+    // Orion experiment
+    var ServiceRegistry = require("orion/serviceregistry"),
+        PluginRegistry = require("orion/pluginregistry");
+    
+    
+    var serviceRegistry = new ServiceRegistry.ServiceRegistry();
+    var pluginRegistry = new PluginRegistry.PluginRegistry(serviceRegistry, {plugins: {}});
+    
+    exports.serviceRegistry = serviceRegistry;
+    exports.pluginregistry = pluginRegistry;
 });

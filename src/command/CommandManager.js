@@ -267,4 +267,15 @@ define(function (require, exports, module) {
         description: "Editor Commands",
         validate: validateCommand
     });
+    
+    // orion prototype code
+    
+    ExtensionData.serviceRegistry.addEventListener("registered", function (event) {
+        var reference = event.serviceReference;
+        if (reference.getProperty("service.names")[0] !== "brackets.command") {
+            return;
+        }
+        var service = ExtensionData.serviceRegistry.getService(reference);
+        register(reference.getProperty("name"), reference.getProperty("id"), service.exec);
+    });
 });

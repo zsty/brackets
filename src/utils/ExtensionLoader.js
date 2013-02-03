@@ -94,6 +94,16 @@ define(function (require, exports, module) {
         
     }
     
+    function loadOrionExtension(name, config) {
+        var result = new $.Deferred();
+        ExtensionData.pluginregistry.installPlugin("file://" + config.baseUrl + "/index.html").then(function () {
+            result.resolve();
+        }, function () {
+            result.reject();
+        });
+        return result.promise();
+    }
+    
     /**
      * Loads the extension that lives at baseUrl into its own Require.js context
      *
@@ -105,33 +115,44 @@ define(function (require, exports, module) {
      *              (Note: if extension contains a JS syntax error, promise is resolved not rejected).
      */
     function loadExtension(name, config, entryPoint) {
-        var result = new $.Deferred(),
-            extensionRequire = brackets.libRequire.config({
-                context: name,
-                baseUrl: config.baseUrl,
-                /* FIXME (issue #1087): can we pass this from the global require context instead of hardcoding twice? */
-                paths: globalConfig,
-                locale: brackets.getLocale()
-            });
-        contexts[name] = extensionRequire;
-
-        // console.log("[Extension] starting to load " + config.baseUrl);
+        var htmlPath = config.baseUrl + "/index.html";
+        var result = new $.Deferred();
         
-        extensionRequire([entryPoint],
-            function (mainModule) {
-                // console.log("[Extension] finished loading " + config.baseUrl);
-                _hackifyExtension(name, config.baseUrl, extensionRequire, mainModule);
-                result.resolve();
-            },
-            function errback(err) {
-                console.error("[Extension] failed to load " + config.baseUrl, err);
-                if (err.requireType === "define") {
-                    // This type has a useful stack (exception thrown by ext code or info on bad getModule() call)
-                    console.log(err.stack);
-                }
-                result.reject();
-            });
+        brackets.fs.stat(htmlPath, function (err, stat) {
+            if (err === brackets.fs.NO_ERROR && stat.isFile()) {
+                loadOrionExtension(name, config).done(function () {
+                    result.resolve();
+                }).fail(function () {
+                    result.reject();
+                });
+            } else {
+                var extensionRequire = brackets.libRequire.config({
+                        context: name,
+                        baseUrl: config.baseUrl,
+                        /* FIXME (issue #1087): can we pass this from the global require context instead of hardcoding twice? */
+                        paths: globalConfig,
+                        locale: brackets.getLocale()
+                    });
+                contexts[name] = extensionRequire;
         
+                // console.log("[Extension] starting to load " + config.baseUrl);
+                
+                extensionRequire([entryPoint],
+                    function (mainModule) {
+                        // console.log("[Extension] finished loading " + config.baseUrl);
+                        _hackifyExtension(name, config.baseUrl, extensionRequire, mainModule);
+                        result.resolve();
+                    },
+                    function errback(err) {
+                        console.error("[Extension] failed to load " + config.baseUrl, err);
+                        if (err.requireType === "define") {
+                            // This type has a useful stack (exception thrown by ext code or info on bad getModule() call)
+                            console.log(err.stack);
+                        }
+                        result.reject();
+                    });
+            }
+        });
         return result.promise();
     }
 
@@ -214,6 +235,7 @@ define(function (require, exports, module) {
                         }).always(function () {
                             // Always resolve the promise even if some extensions had errors
                             result.resolve();
+                            ExtensionData.pluginregistry.start();
                         });
                     },
                     function (error) {

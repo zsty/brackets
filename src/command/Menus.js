@@ -1269,6 +1269,20 @@ define(function (require, exports, module) {
         description: "Menu Item",
         validate: validateMenu
     });
+    
+    // orion prototype code
+    
+    ExtensionData.serviceRegistry.addEventListener("registered", function (event) {
+        var reference = event.serviceReference;
+        if (reference.getProperty("service.names")[0] !== "brackets.menu.item") {
+            return;
+        }
+        var service = ExtensionData.serviceRegistry.getService(reference);
+        var menu = getMenu(AppMenuBar[reference.getProperty("menu")]);
+        menu.addMenuItem(reference.getProperty("id"), reference.getProperty("keybinding"),
+                         reference.getProperty("position"), reference.getProperty("relativeTo"));
+    });
+
 
 
     // Define public API
