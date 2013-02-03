@@ -62,6 +62,28 @@ define(function (require, exports, module) {
         extensionUnregisterFunctions[extensionName].push(removeRegistration);
     };
     
+    brackets.world = {};
+    
+    function validateObject(identifier, data) {
+        return function () {
+            if (data instanceof Function) {
+                Object.defineProperty(brackets.world, identifier, {
+                    get: data
+                });
+            } else {
+                brackets.world[identifier] = data;
+            }
+            return function () {
+                delete brackets.world[identifier];
+            };
+        };
+    }
+    
+    register("brackets", "registration", "object", {
+        description: "Makes objects available globally",
+        validate: validateObject
+    });
+    
     function unregister(extensionName) {
         var unregisterFunctions = extensionUnregisterFunctions[extensionName];
         if (unregisterFunctions) {

@@ -23,7 +23,7 @@
 
 
 /*jslint vars: true, plusplus: true, devel: true, nomen: true, indent: 4, maxerr: 50 */
-/*global define, $ */
+/*global define, $, brackets */
 
  /**
   * Manages global application commands that can be called from menu items, key bindings, or subparts
@@ -277,5 +277,21 @@ define(function (require, exports, module) {
         }
         var service = ExtensionData.serviceRegistry.getService(reference);
         register(reference.getProperty("name"), reference.getProperty("id"), service.exec);
+    });
+    
+    
+    ExtensionData.serviceRegistry.addEventListener("registered", function (event) {
+        var reference = event.serviceReference;
+        if (reference.getProperty("service.names")[0] !== "brackets.command.editor") {
+            return;
+        }
+        var service = ExtensionData.serviceRegistry.getService(reference);
+        register(reference.getProperty("name"), reference.getProperty("id"), function () {
+            var editor = brackets.world.editor;
+            var selection = editor.getSelection();
+            service.exec(editor.getSelectedText()).then(function (newText) {
+                editor.document.replaceRange(newText, selection.start, selection.end);
+            });
+        });
     });
 });

@@ -788,4 +788,9 @@ define(function (require, exports, module) {
     exports.registerInlineEditProvider = registerInlineEditProvider;
     exports.getInlineEditors = getInlineEditors;
     exports.closeInlineWidget = closeInlineWidget;
+    
+    // extensions prototype
+    
+    var ExtensionData = require("utils/ExtensionData");
+    ExtensionData.register("brackets", "object", "editor", getActiveEditor);
 });
