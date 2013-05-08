@@ -345,6 +345,9 @@ define(function (require, exports, module) {
             },
             "Esc": function (instance) {
                 self.removeAllInlineWidgets();
+                
+                // Let the main keymap also handle this (for modes like vim)
+                return CodeMirror.Pass;
             },
             "Cmd-Left": "goLineStartSmart"
         };
