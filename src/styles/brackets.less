@@ -127,8 +127,8 @@ a, img {
 
 #status-bar {
     position: relative;
-    background: #fff;
-    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    background: @status-bar-background-color;
+    border-top: 1px solid @status-bar-top-border;
     box-sizing: border-box;
     color: @tc-text;
     font-family: @sansFontFamily;
@@ -139,7 +139,7 @@ a, img {
 }
     
 #status-info {
-    color: @tc-text;
+    color: @status-bar-text-color;
     left: 10px;
     position: absolute;
     white-space: nowrap;
@@ -150,19 +150,19 @@ a, img {
 }
 
 #status-file {
-    color: #999;
+    color: @status-bar-quiet-text-color;
 }
 
 #status-indicators {
-    background: #fff;
-    color: @tc-text;
+    background: @status-bar-background-color;
+    color: @status-bar-text-color;
     position: absolute;
     right: 0;
     text-align: right;
     white-space: nowrap;
         
     > div {
-        border-left: 1px solid rgba(0, 0, 0, 0.1);
+        border-left: 1px solid @status-bar-separator-color;
         float: right;
         padding: 0 10px;
     }
@@ -173,7 +173,7 @@ a, img {
     }
     
     #status-language {
-        border-right: 1px solid rgba(0, 0, 0, 0.1);
+        border-right: 1px solid @status-bar-separator-color;
     }
 }
 
