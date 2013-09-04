@@ -69,6 +69,29 @@ define(function (require, exports, module) {
         return node.parent && node.parent.tagID;
     }
     
+    function ChildIterator(children) {
+        this.index = 0;
+        this.children = children;
+        this.current = this.children[0];
+    }
+    
+    ChildIterator.prototype = {
+        hasMore: function () {
+            return this.index < this.children.length;
+        },
+        
+        advance: function () {
+            this.current = this.children[++this.index];
+        },
+        
+        previous: function () {
+            if (this.index > 0) {
+                return this.children[this.index - 1];
+            }
+            return null;
+        }
+    };
+    
     /**
      * When the main loop (see below) determines that something has changed with
      * an element's immediate children, it calls this function to create edit
@@ -77,15 +100,17 @@ define(function (require, exports, module) {
      * This adds to the edit list in place and does not return anything.
      *
      * @param {?Object} oldParent SimpleDOM node for the previous state of this element, null/undefined if the element is new
+     * @param {Object} oldNodeMap ID to node mapping for the old tree
      * @param {Object} newParent SimpleDOM node for the current state of the element
+     * @param {Object} newNodeMap ID to node mapping for the new tree
      */
     var generateChildEdits = function (oldParent, oldNodeMap, newParent, newNodeMap) {
         /*jslint continue: true */
         
-        var newIndex = 0,
-            oldIndex = 0,
-            newChildren = newParent.children,
+        var newChildren = newParent.children,
             oldChildren = oldParent ? oldParent.children : [],
+            newIterator = new ChildIterator(newChildren),
+            oldIterator = new ChildIterator(oldChildren),
             newChild,
             oldChild,
             newEdits = [],
@@ -160,7 +185,7 @@ define(function (require, exports, module) {
                 // new element means we need to move on to compare the next
                 // of the current tree with the one from the old tree that we
                 // just compared
-                newIndex++;
+                newIterator.advance();
                 return true;
             }
             return false;
@@ -187,7 +212,7 @@ define(function (require, exports, module) {
                 // deleted element means we need to move on to compare the next
                 // of the old tree with the one from the current tree that we
                 // just compared
-                oldIndex++;
+                oldIterator.advance();
                 return true;
             }
             return false;
@@ -213,19 +238,7 @@ define(function (require, exports, module) {
             newEdits.push(newEdit);
             
             // The text node is in the new tree, so we move to the next new tree item
-            newIndex++;
-        };
-        
-        /**
-         * Finds the previous child of the new tree.
-         *
-         * @return {?Object} previous child or null if there wasn't one
-         */
-        var prevNode = function () {
-            if (newIndex > 0) {
-                return newParent.children[newIndex - 1];
-            }
-            return null;
+            newIterator.advance();
         };
         
         /**
@@ -239,7 +252,7 @@ define(function (require, exports, module) {
          * the maintaining of the old content.
          */
         var addTextDelete = function () {
-            var prev = prevNode();
+            var prev = newIterator.previous();
             if (prev && !prev.children) {
                 newEdit = {
                     type: "textReplace",
@@ -260,7 +273,7 @@ define(function (require, exports, module) {
             var previousEdit = newEdits.length > 0 && newEdits[newEdits.length - 1];
             if (previousEdit && previousEdit.type === "textReplace" &&
                     previousEdit.afterID === textAfterID) {
-                oldIndex++;
+                oldIterator.advance();
                 return;
             }
             
@@ -280,7 +293,7 @@ define(function (require, exports, module) {
             
             // This text appeared in the old tree but not the new one, so we
             // increment the old children counter.
-            oldIndex++;
+            oldIterator.advance();
         };
         
         /**
@@ -311,7 +324,7 @@ define(function (require, exports, module) {
                 
                 // this element in the new tree was a move to this spot, so we can move
                 // on to the next child in the new tree.
-                newIndex++;
+                newIterator.advance();
                 return true;
             }
             return false;
@@ -343,8 +356,8 @@ define(function (require, exports, module) {
         };
         
         // Loop through the current and old children, comparing them one by one.
-        while (newIndex < newChildren.length && oldIndex < oldChildren.length) {
-            newChild = newChildren[newIndex];
+        while (newIterator.hasMore() && oldIterator.hasMore()) {
+            newChild = newIterator.current;
             
             // Check to see if the currentChild has been reparented from somewhere 
             // else in the old tree
@@ -352,12 +365,12 @@ define(function (require, exports, module) {
                 continue;
             }
             
-            oldChild = oldChildren[oldIndex];
+            oldChild = oldIterator.current;
             
             // Check to see if the oldChild has been moved to another parent.
             // If it has, we deal with it on the other side (see above)
             if (hasMoved(oldChild)) {
-                oldIndex++;
+                oldIterator.advance();
                 continue;
             }
             
@@ -387,8 +400,8 @@ define(function (require, exports, module) {
                         // as appropriate
                         if (!addElementInsert() && !addElementDelete()) {
                             console.error("HTML Instrumentation: This should not happen. Two elements have different tag IDs and there was no insert/delete. This generally means there was a reordering of elements.");
-                            newIndex++;
-                            oldIndex++;
+                            newIterator.advance();
+                            oldIterator.advance();
                         }
                     
                     // There has been no change in the tag we're looking at.
@@ -396,8 +409,8 @@ define(function (require, exports, module) {
                         // Since this element hasn't moved, it is a suitable "beforeID"
                         // for the edits we've logged.
                         finalizeNewEdits(oldChild.tagID);
-                        newIndex++;
-                        oldIndex++;
+                        newIterator.advance();
+                        oldIterator.advance();
                     }
                 }
             
@@ -424,8 +437,8 @@ define(function (require, exports, module) {
                 
                 // Either we've done a text replace or both sides matched. In either
                 // case we're ready to move forward among both the old and new children.
-                newIndex++;
-                oldIndex++;
+                newIterator.advance();
+                oldIterator.advance();
             }
         }
         
@@ -435,20 +448,20 @@ define(function (require, exports, module) {
         /**
          * Take care of any remaining children in the old tree.
          */
-        while (oldIndex < oldChildren.length) {
-            oldChild = oldChildren[oldIndex];
+        while (oldIterator.hasMore()) {
+            oldChild = oldIterator.current;
             
             // Check for an element that has moved
             if (hasMoved(oldChild)) {
                 // This element has moved, so we skip it on this side (the move
                 // is handled on the new tree side).
-                oldIndex++;
+                oldIterator.advance();
             
             // is this an element? if so, delete it
-            } else if (oldChild.children) {
+            } else if (oldChild.isElement()) {
                 if (!addElementDelete()) {
                     console.error("HTML Instrumentation: failed to add elementDelete for remaining element in the original DOM. This should not happen.", oldChild);
-                    oldIndex++;
+                    oldIterator.advance();
                 }
             
             // must be text. delete that.
@@ -460,18 +473,18 @@ define(function (require, exports, module) {
         /**
          * Take care of the remaining children in the new tree.
          */
-        while (newIndex < newChildren.length) {
-            newChild = newChildren[newIndex];
+        while (newIterator.hasMore()) {
+            newChild = newIterator.current;
             
             // Is this an element?
-            if (newChild.children) {
+            if (newChild.isElement()) {
                 
                 // Look to see if the element has moved here.
                 if (!addElementMove()) {
                     // Not a move, so we insert this element.
                     if (!addElementInsert()) {
                         console.error("HTML Instrumentation: failed to add elementInsert for remaining element in the updated DOM. This should not happen.");
-                        newIndex++;
+                        newIterator.advance();
                     }
                 }
             
