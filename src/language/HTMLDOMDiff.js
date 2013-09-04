@@ -29,6 +29,8 @@
 define(function (require, exports, module) {
     "use strict";
     
+    var _ = require("thirdparty/lodash");
+    
     function generateAttributeEdits(oldNode, newNode) {
         // shallow copy the old attributes object so that we can modify it
         var oldAttributes = $.extend({}, oldNode.attributes),
@@ -93,6 +95,43 @@ define(function (require, exports, module) {
     };
     
     /**
+     * If the old element that we're looking at does not appear in the new
+     * DOM, that means it was deleted and we'll create an elementDelete edit.
+     *
+     * If the element is in the new DOM, then this will return false and
+     * the main loop with either spot this node later on or the element
+     * has been moved.
+     *
+     * @return {boolean} true if elementDelete was generated
+     */
+    function createDeleteEdit(oldChild, newNodeMap) {
+        return {
+            type: "elementDelete",
+            tagID: oldChild.tagID
+        };
+    }
+    
+    function addEditAndIterate(editList, iterator) {
+        return function (edit) {
+            if (edit) {
+                editList.push(edit);
+                iterator.advance();
+                return true;
+            }
+            return false;
+        };
+    }
+    
+    function checkNodeMapFirst(nodeMap, iterator) {
+        return function (func) {
+            if (!nodeMap[iterator.current.tagID]) {
+                return func.apply(this, _.rest(arguments));
+            }
+            return false;
+        };
+    }
+    
+    /**
      * When the main loop (see below) determines that something has changed with
      * an element's immediate children, it calls this function to create edit
      * operations for those changes.
@@ -148,7 +187,7 @@ define(function (require, exports, module) {
                 }
             });
             edits.push.apply(edits, newEdits);
-            newEdits = [];
+            newEdits.length = 0;
             textAfterID = beforeID;
         };
         
@@ -191,32 +230,7 @@ define(function (require, exports, module) {
             return false;
         };
         
-        /**
-         * If the old element that we're looking at does not appear in the new
-         * DOM, that means it was deleted and we'll create an elementDelete edit.
-         *
-         * If the element is in the new DOM, then this will return false and
-         * the main loop with either spot this node later on or the element
-         * has been moved.
-         *
-         * @return {boolean} true if elementDelete was generated
-         */
-        var addElementDelete = function () {
-            if (!newNodeMap[oldChild.tagID]) {
-                newEdit = {
-                    type: "elementDelete",
-                    tagID: oldChild.tagID
-                };
-                newEdits.push(newEdit);
-                
-                // deleted element means we need to move on to compare the next
-                // of the old tree with the one from the current tree that we
-                // just compared
-                oldIterator.advance();
-                return true;
-            }
-            return false;
-        };
+        var addElementDelete = _.wrap(_.compose(addEditAndIterate(newEdits, oldIterator), createDeleteEdit), checkNodeMapFirst(newNodeMap, oldIterator));
         
         /**
          * Adds a textInsert edit for a newly created text node.
@@ -388,7 +402,7 @@ define(function (require, exports, module) {
                 } else if (oldChild.isElement() && newChild.isText()) {
                     // If the old child has *not* been deleted, we assume that we've
                     // inserted some text and will still encounter the old node
-                    if (!addElementDelete()) {
+                    if (!addElementDelete(oldChild, newNodeMap)) {
                         addTextInsert();
                     }
                 
@@ -398,7 +412,7 @@ define(function (require, exports, module) {
                         
                         // These are different elements, so we will add an insert and/or delete
                         // as appropriate
-                        if (!addElementInsert() && !addElementDelete()) {
+                        if (!addElementInsert() && !addElementDelete(oldChild, newNodeMap)) {
                             console.error("HTML Instrumentation: This should not happen. Two elements have different tag IDs and there was no insert/delete. This generally means there was a reordering of elements.");
                             newIterator.advance();
                             oldIterator.advance();
@@ -459,7 +473,7 @@ define(function (require, exports, module) {
             
             // is this an element? if so, delete it
             } else if (oldChild.isElement()) {
-                if (!addElementDelete()) {
+                if (!addElementDelete(oldChild, newNodeMap)) {
                     console.error("HTML Instrumentation: failed to add elementDelete for remaining element in the original DOM. This should not happen.", oldChild);
                     oldIterator.advance();
                 }
