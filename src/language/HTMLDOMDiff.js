@@ -104,21 +104,66 @@ define(function (require, exports, module) {
      *
      * @return {boolean} true if elementDelete was generated
      */
-    function createDeleteEdit(oldChild, newNodeMap) {
+    function createDeleteElementEdit(oldChild, newNodeMap) {
         return {
             type: "elementDelete",
             tagID: oldChild.tagID
         };
     }
     
-    function addEditAndIterate(editList, iterator) {
+    /**
+     * If the current element was not in the old DOM, then we will create
+     * an elementInsert edit for it.
+     *
+     * If the element was in the old DOM, this will return false and the
+     * main loop will either spot this element later in the child list
+     * or the element has been moved.
+     *
+     * @return {boolean} true if an elementInsert was created
+     */
+    function createInsertElementEdit(newChild) {
+        return {
+            type: "elementInsert",
+            tag: newChild.tag,
+            tagID: newChild.tagID,
+            parentID: newChild.parent.tagID,
+            attributes: newChild.attributes
+        };
+    }
+    
+    /**
+     * Adds a textInsert edit for a newly created text node.
+     */
+    function createTextInsertEdit(newChild, textAfterID) {
+        var newEdit = {
+            type: "textInsert",
+            content: newChild.content,
+            parentID: newChild.parent.tagID
+        };
+        
+        // text changes will generally have afterID and beforeID, but we make
+        // special note if it's the first child.
+        if (textAfterID) {
+            newEdit.afterID = textAfterID;
+        } else {
+            newEdit.firstChild = true;
+        }
+        return newEdit;
+    }
+    
+    function pushIfDefined(list, item) {
+        if (item) {
+            list.push(item);
+        }
+        return item;
+    }
+    
+    function iterateForEdit(iterator) {
         return function (edit) {
             if (edit) {
-                editList.push(edit);
                 iterator.advance();
-                return true;
             }
-            return false;
+            return edit;
         };
     }
     
@@ -127,9 +172,34 @@ define(function (require, exports, module) {
             if (!nodeMap[iterator.current.tagID]) {
                 return func.apply(this, _.rest(arguments));
             }
-            return false;
+            return null;
         };
     }
+    
+    /**
+     * If there have been elementInserts before an unchanged text, we need to
+     * let the browser side code know that these inserts should happen *before*
+     * that unchanged text.
+     */
+    var fixupElementInsert = function (newEdits) {
+        newEdits.forEach(function (edit) {
+            if (edit.type === "elementInsert") {
+                edit.beforeText = true;
+            }
+        });
+    };
+    
+    /**
+     * Looks to see if the element in the old tree has moved by checking its
+     * current and former parents.
+     *
+     * @return {boolean} true if the element has moved
+     */
+    var hasMoved = function (oldChild, newNodeMap) {
+        var oldChildInNewTree = newNodeMap[oldChild.tagID];
+        
+        return oldChild.children && oldChildInNewTree && getParentID(oldChild) !== getParentID(oldChildInNewTree);
+    };
     
     /**
      * When the main loop (see below) determines that something has changed with
@@ -153,7 +223,6 @@ define(function (require, exports, module) {
             newChild,
             oldChild,
             newEdits = [],
-            newEdit,
             textAfterID,
             edits = [],
             moves = [],
@@ -191,69 +260,41 @@ define(function (require, exports, module) {
             textAfterID = beforeID;
         };
         
-        /**
-         * If the current element was not in the old DOM, then we will create
-         * an elementInsert edit for it.
-         *
-         * If the element was in the old DOM, this will return false and the
-         * main loop will either spot this element later in the child list
-         * or the element has been moved.
-         *
-         * @return {boolean} true if an elementInsert was created
-         */
-        var addElementInsert = function () {
-            if (!oldNodeMap[newChild.tagID]) {
-                newEdit = {
-                    type: "elementInsert",
-                    tag: newChild.tag,
-                    tagID: newChild.tagID,
-                    parentID: newChild.parent.tagID,
-                    attributes: newChild.attributes
-                };
-                
-                newEdits.push(newEdit);
-                
-                // This newly inserted node needs to have edits generated for its
-                // children, so we add it to the queue.
-                newElements.push(newChild);
-                
-                // A textInsert edit that follows this elementInsert should use
-                // this element's ID.
-                textAfterID = newChild.tagID;
-                
-                // new element means we need to move on to compare the next
-                // of the current tree with the one from the old tree that we
-                // just compared
-                newIterator.advance();
-                return true;
-            }
-            return false;
-        };
+        var addEdit = _.partial(pushIfDefined, newEdits);
         
-        var addElementDelete = _.wrap(_.compose(addEditAndIterate(newEdits, oldIterator), createDeleteEdit), checkNodeMapFirst(newNodeMap, oldIterator));
+        var addElementDelete = _.wrap(
+            _.compose(
+                addEdit,
+                iterateForEdit(oldIterator),
+                createDeleteElementEdit
+            ),
+            checkNodeMapFirst(newNodeMap, oldIterator)
+        );
         
-        /**
-         * Adds a textInsert edit for a newly created text node.
-         */
-        var addTextInsert = function () {
-            newEdit = {
-                type: "textInsert",
-                content: newChild.content,
-                parentID: newChild.parent.tagID
-            };
-            
-            // text changes will generally have afterID and beforeID, but we make
-            // special note if it's the first child.
-            if (textAfterID) {
-                newEdit.afterID = textAfterID;
-            } else {
-                newEdit.firstChild = true;
+        var addElementInsert = _.wrap(
+            _.wrap(
+                _.compose(
+                    addEdit,
+                    iterateForEdit(newIterator),
+                    createInsertElementEdit
+                ),
+                checkNodeMapFirst(oldNodeMap, newIterator)
+            ),
+            function (func, newChild) {
+                if (func(newChild)) {
+                    textAfterID = newChild.tagID;
+                    newElements.push(newChild);
+                    return true;
+                }
+                return false;
             }
-            newEdits.push(newEdit);
-            
-            // The text node is in the new tree, so we move to the next new tree item
-            newIterator.advance();
-        };
+        );
+        
+        var addTextInsert = _.compose(
+            addEdit,
+            iterateForEdit(newIterator),
+            createTextInsertEdit
+        );
         
         /**
          * Adds a textDelete edit for text node that is not in the new tree.
@@ -265,50 +306,46 @@ define(function (require, exports, module) {
          * a textReplace which will result in the deletion of this node and
          * the maintaining of the old content.
          */
-        var addTextDelete = function () {
-            var prev = newIterator.previous();
-            if (prev && !prev.children) {
-                newEdit = {
-                    type: "textReplace",
-                    content: prev.content
-                };
-            } else {
-                newEdit = {
-                    type: "textDelete"
-                };
-            }
-            
-            // When elements are deleted or moved from the old set of children, you
-            // can end up with multiple text nodes in a row. A single textReplace edit
-            // will take care of those (and will contain all of the right content since
-            // the text nodes between elements in the new DOM are merged together).
-            // The check below looks to see if we're already in the process of adding
-            // a textReplace edit following the same element.
-            var previousEdit = newEdits.length > 0 && newEdits[newEdits.length - 1];
-            if (previousEdit && previousEdit.type === "textReplace" &&
-                    previousEdit.afterID === textAfterID) {
-                oldIterator.advance();
-                return;
-            }
-            
-            newEdit.parentID = oldChild.parent.tagID;
-            
-            // If there was only one child previously, we just pass along
-            // textDelete/textReplace with the parentID and the browser will
-            // clear all of the children
-            if (oldChild.parent.children.length === 1) {
-                newEdits.push(newEdit);
-            } else {
-                if (textAfterID) {
+        var addTextDelete = _.compose(
+            oldIterator.advance.bind(oldIterator),
+            addEdit,
+            function () {
+                // When elements are deleted or moved from the old set of children, you
+                // can end up with multiple text nodes in a row. A single textReplace edit
+                // will take care of those (and will contain all of the right content since
+                // the text nodes between elements in the new DOM are merged together).
+                // The check below looks to see if we're already in the process of adding
+                // a textReplace edit following the same element.
+                var previousEdit = newEdits.length > 0 && newEdits[newEdits.length - 1];
+                if (previousEdit && previousEdit.type === "textReplace" &&
+                        previousEdit.afterID === textAfterID) {
+                    return;
+                }
+                
+                var prev = newIterator.previous(),
+                    newEdit;
+                if (prev && !prev.children) {
+                    newEdit = {
+                        type: "textReplace",
+                        content: prev.content
+                    };
+                } else {
+                    newEdit = {
+                        type: "textDelete"
+                    };
+                }
+                
+                newEdit.parentID = oldChild.parent.tagID;
+                
+                // If there was only one child previously, we just pass along
+                // textDelete/textReplace with the parentID and the browser will
+                // clear all of the children
+                if (oldChild.parent.children.length > 1 && textAfterID) {
                     newEdit.afterID = textAfterID;
                 }
-                newEdits.push(newEdit);
+                return newEdit;
             }
-            
-            // This text appeared in the old tree but not the new one, so we
-            // increment the old children counter.
-            oldIterator.advance();
-        };
+        );
         
         /**
          * Adds an elementMove edit if the parent has changed between the old and new trees. 
@@ -317,57 +354,30 @@ define(function (require, exports, module) {
          *
          * @return {boolean} true if an elementMove was generated
          */
-        var addElementMove = function () {
-            
-            // This check looks a little strange, but it suits what we're trying
-            // to do: as we're walking through the children, a child node that has moved
-            // from one parent to another will be found but would look like some kind
-            // of insert. The check that we're doing here is looking up the current
-            // child's ID in the *old* map and seeing if this child used to have a 
-            // different parent.
-            var possiblyMovedElement = oldNodeMap[newChild.tagID];
-            if (possiblyMovedElement &&
-                    newParent.tagID !== getParentID(possiblyMovedElement)) {
-                newEdit = {
-                    type: "elementMove",
-                    tagID: newChild.tagID,
-                    parentID: newChild.parent.tagID
-                };
-                moves.push(newEdit.tagID);
-                newEdits.push(newEdit);
-                
-                // this element in the new tree was a move to this spot, so we can move
-                // on to the next child in the new tree.
-                newIterator.advance();
-                return true;
-            }
-            return false;
-        };
-        
-        /**
-         * If there have been elementInserts before an unchanged text, we need to
-         * let the browser side code know that these inserts should happen *before*
-         * that unchanged text.
-         */
-        var fixupElementInsert = function () {
-            newEdits.forEach(function (edit) {
-                if (edit.type === "elementInsert") {
-                    edit.beforeText = true;
+        var addElementMove = _.compose(
+            addEdit,
+            iterateForEdit(newIterator),
+            function () {
+                // This check looks a little strange, but it suits what we're trying
+                // to do: as we're walking through the children, a child node that has moved
+                // from one parent to another will be found but would look like some kind
+                // of insert. The check that we're doing here is looking up the current
+                // child's ID in the *old* map and seeing if this child used to have a 
+                // different parent.
+                var possiblyMovedElement = oldNodeMap[newChild.tagID];
+                if (possiblyMovedElement &&
+                        newParent.tagID !== getParentID(possiblyMovedElement)) {
+                    var newEdit = {
+                        type: "elementMove",
+                        tagID: newChild.tagID,
+                        parentID: newChild.parent.tagID
+                    };
+                    moves.push(newEdit.tagID);
+                    return newEdit;
                 }
-            });
-        };
-        
-        /**
-         * Looks to see if the element in the old tree has moved by checking its
-         * current and former parents.
-         *
-         * @return {boolean} true if the element has moved
-         */
-        var hasMoved = function (oldChild) {
-            var oldChildInNewTree = newNodeMap[oldChild.tagID];
-            
-            return oldChild.children && oldChildInNewTree && getParentID(oldChild) !== getParentID(oldChildInNewTree);
-        };
+                return null;
+            }
+        );
         
         // Loop through the current and old children, comparing them one by one.
         while (newIterator.hasMore() && oldIterator.hasMore()) {
@@ -383,7 +393,7 @@ define(function (require, exports, module) {
             
             // Check to see if the oldChild has been moved to another parent.
             // If it has, we deal with it on the other side (see above)
-            if (hasMoved(oldChild)) {
+            if (hasMoved(oldChild, newNodeMap)) {
                 oldIterator.advance();
                 continue;
             }
@@ -397,13 +407,13 @@ define(function (require, exports, module) {
                     // in the current tree. Otherwise, we'll compare this same
                     // current element with the next old element on the next pass
                     // through the loop.
-                    addElementInsert();
+                    addElementInsert(newChild);
                 
                 } else if (oldChild.isElement() && newChild.isText()) {
                     // If the old child has *not* been deleted, we assume that we've
                     // inserted some text and will still encounter the old node
                     if (!addElementDelete(oldChild, newNodeMap)) {
-                        addTextInsert();
+                        addTextInsert(newChild, textAfterID);
                     }
                 
                 // both children are elements
@@ -412,7 +422,7 @@ define(function (require, exports, module) {
                         
                         // These are different elements, so we will add an insert and/or delete
                         // as appropriate
-                        if (!addElementInsert() && !addElementDelete(oldChild, newNodeMap)) {
+                        if (!addElementInsert(newChild) && !addElementDelete(oldChild, newNodeMap)) {
                             console.error("HTML Instrumentation: This should not happen. Two elements have different tag IDs and there was no insert/delete. This generally means there was a reordering of elements.");
                             newIterator.advance();
                             oldIterator.advance();
@@ -431,7 +441,7 @@ define(function (require, exports, module) {
             // We know we're comparing two texts. Just match up their signatures.
             } else {
                 if (newChild.textSignature !== oldChild.textSignature) {
-                    newEdit = {
+                    var newEdit = {
                         type: "textReplace",
                         content: newChild.content,
                         parentID: newChild.parent.tagID
@@ -446,7 +456,7 @@ define(function (require, exports, module) {
                     // inserted may end up in the wrong place because it will get a
                     // beforeID of the next element when it really needs to come
                     // before this unchanged text.
-                    fixupElementInsert();
+                    fixupElementInsert(newEdits);
                 }
                 
                 // Either we've done a text replace or both sides matched. In either
@@ -466,7 +476,7 @@ define(function (require, exports, module) {
             oldChild = oldIterator.current;
             
             // Check for an element that has moved
-            if (hasMoved(oldChild)) {
+            if (hasMoved(oldChild, newNodeMap)) {
                 // This element has moved, so we skip it on this side (the move
                 // is handled on the new tree side).
                 oldIterator.advance();
@@ -496,7 +506,7 @@ define(function (require, exports, module) {
                 // Look to see if the element has moved here.
                 if (!addElementMove()) {
                     // Not a move, so we insert this element.
-                    if (!addElementInsert()) {
+                    if (!addElementInsert(newChild)) {
                         console.error("HTML Instrumentation: failed to add elementInsert for remaining element in the updated DOM. This should not happen.");
                         newIterator.advance();
                     }
@@ -504,7 +514,7 @@ define(function (require, exports, module) {
             
             // not a new element, so it must be new text.
             } else {
-                addTextInsert();
+                addTextInsert(newChild, textAfterID);
             }
         }
         
