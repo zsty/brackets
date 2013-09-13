@@ -48,10 +48,10 @@ module.exports = function (grunt) {
         }).then(function (stdout, stderr) {
             sha = /commit (.*)/.exec(stdout.toString().trim())[1];
 
-            out += "build.version=" + version.substr(0, version.lastIndexOf("-") + 1) + num + "\n";
-            out += "build.number=" + num + "\n";
-            out += "build.branch=" + branch + "\n";
-            out += "build.sha=" + sha + "\n";
+            out += "version=" + version.substr(0, version.lastIndexOf("-") + 1) + num + "\n";
+            out += "number=" + num + "\n";
+            out += "branch=" + branch + "\n";
+            out += "sha=" + sha + "\n";
 
             grunt.log.write(out);
             grunt.file.write("build.prop", out);
