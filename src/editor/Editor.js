@@ -23,7 +23,7 @@
 
 
 /*jslint vars: true, plusplus: true, devel: true, nomen: true, indent: 4, maxerr: 50 */
-/*global define, $, CodeMirror, window */
+/*global define, $, _, CodeMirror, window */
 
 /**
  * Editor is a 1-to-1 wrapper for a CodeMirror editor instance. It layers on Brackets-specific
@@ -679,15 +679,16 @@ define(function (require, exports, module) {
             $(self).triggerHandler("cursorActivity", [self]);
         });
         this._codeMirror.on("scroll", function (instance) {
+            $(self).triggerHandler("scroll", [self]);
+        });
+        this._codeMirror.on("scroll", _.debounce(function () {
             // If this editor is visible, close all dropdowns on scroll.
             // (We don't want to do this if we're just scrolling in a non-visible editor
             // in response to some document change event.)
             if (self.isFullyVisible()) {
                 Menus.closeAll();
             }
-
-            $(self).triggerHandler("scroll", [self]);
-        });
+        }), 100, { leading: true });
 
         // Convert CodeMirror onFocus events to EditorManager activeEditorChanged
         this._codeMirror.on("focus", function () {

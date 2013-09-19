@@ -22,7 +22,7 @@
  */
 
 /*jslint vars: true, plusplus: true, devel: true, nomen: true,  regexp: true, indent: 4, maxerr: 50 */
-/*global define, brackets, $, window, PathUtils, CodeMirror */
+/*global define, brackets, $, _, window, PathUtils, CodeMirror */
 
 define(function (require, exports, module) {
     "use strict";
@@ -537,7 +537,7 @@ define(function (require, exports, module) {
         }
     }
     
-    function handleMouseMove(event) {
+    var handleMouseMove = _.debounce(function (event) {
         if (!enabled) {
             return;
         }
@@ -548,7 +548,7 @@ define(function (require, exports, module) {
             return;
         }
         
-        // Figure out which editor we are over
+        // Figure out which editor we are over #f00
         var fullEditor = EditorManager.getCurrentFullEditor();
         
         if (!fullEditor) {
@@ -628,7 +628,7 @@ define(function (require, exports, module) {
             // Mouse not over any Editor - immediately hide popover
             hidePreview();
         }
-    }
+    }, 100);
     
     function onActiveEditorChange(event, current, previous) {
         // Hide preview when editor changes
