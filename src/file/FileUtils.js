@@ -76,7 +76,8 @@ define(function (require, exports, module) {
             };
 
             reader.onerror = function (event) {
-                result.reject(event.target.error);
+                result.resolve("", 0);
+                //result.reject(event.target.error);
             };
 
             reader.readAsText(file, Encodings.UTF8);
