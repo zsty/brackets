@@ -146,6 +146,12 @@ define(function (require, exports, module) {
         case "BRAMBLE_CONFIGURE_AUTO_CLOSE_TAGS":
             PreferencesManager.set("closeTags", args[0]);
             break;
+        case "BRAMBLE_OPEN_SVG_AS_XML":
+            PreferencesManager.set("openSVGasXML", true);
+            break;
+        case "BRAMBLE_OPEN_SVG_AS_IMAGE":
+            PreferencesManager.set("openSVGasXML", false);
+            break;
         case "BRAMBLE_SHOW_TUTORIAL":
             Tutorial.setOverride(true);
             break;
