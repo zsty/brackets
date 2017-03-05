@@ -15,8 +15,8 @@ define(function (require /*, exports, module*/) {
         linterSettings     = require("linterSettings"),
         linterReporter     = require("linterReporter"),
         linters            = {},
-        linterManager      = {};
-
+        linterManager      = {},
+        registeredLanguage = {};
 
     // Default delay is 1/2 a second
     preferences.definePreference("delay", "integer", 500);
@@ -84,7 +84,6 @@ define(function (require /*, exports, module*/) {
         return new LintRunner(editor);
     }
 
-    var registeredLanguage = {};
     function registerLinter(linter) {
         linters[linter.name] = linter;
 
