@@ -84,7 +84,7 @@ define(function (require /*, exports, module*/) {
         return new LintRunner(editor);
     }
 
-    var registeredLanguage = {"javascript": true};
+    var registeredLanguage = {};
     function registerLinter(linter) {
         linters[linter.name] = linter;
 
