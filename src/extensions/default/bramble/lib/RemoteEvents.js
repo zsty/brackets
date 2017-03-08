@@ -203,7 +203,7 @@ define(function (require, exports, module) {
         PreferencesManager.on("change", "openSVGasXML", function () {
             sendEvent({
                 type: "bramble:openSVGasXMLChange",
-                wordWrap: PreferencesManager.get("openSVGasXML")
+                openSVGasXML: PreferencesManager.get("openSVGasXML")
             });
         });
     }
