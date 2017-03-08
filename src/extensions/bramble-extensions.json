@@ -1,0 +1,18 @@
+[
+    "extensions/default/CSSCodeHints",
+    "extensions/default/HTMLCodeHints",
+    "extensions/default/HtmlEntityCodeHints",
+    "extensions/default/JavaScriptCodeHints",
+    "extensions/default/InlineColorEditor",
+    "extensions/default/InlineTimingFunctionEditor",
+    "extensions/default/JavaScriptQuickEdit",
+    "extensions/default/QuickView",
+    "extensions/default/WebPlatformDocs",
+    "extensions/default/CodeFolding",
+    "extensions/default/bramble",
+    "extensions/default/Autosave",
+    "extensions/default/brackets-paste-and-indent",
+    "extensions/default/BrambleUrlCodeHints",
+    "extensions/default/UploadFiles",
+    "extensions/default/bramble-move-file"
+]
