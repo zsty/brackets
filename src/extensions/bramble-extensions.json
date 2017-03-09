@@ -8,11 +8,11 @@
     "extensions/default/JavaScriptQuickEdit",
     "extensions/default/QuickView",
     "extensions/default/WebPlatformDocs",
-    "extensions/default/CodeFolding",
     "extensions/default/bramble",
     "extensions/default/Autosave",
     "extensions/default/brackets-paste-and-indent",
     "extensions/default/BrambleUrlCodeHints",
     "extensions/default/UploadFiles",
-    "extensions/default/bramble-move-file"
+    "extensions/default/bramble-move-file",
+    "extensions/default/brackets-show-whitespace"
 ]

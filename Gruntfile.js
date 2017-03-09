@@ -49,7 +49,7 @@ module.exports = function (grunt) {
     grunt.loadTasks('tasks');
 
     // Project configuration.
-    grunt.initConfig({
+    var config = {
         pkg  : grunt.file.readJSON("package.json"),
         clean: {
             dist: {
@@ -78,12 +78,7 @@ module.exports = function (grunt) {
                         'dependencies.js',
 
                         /* extensions and CodeMirror modes */
-                        '!extensions/default/*/unittests.js',
-                        'extensions/default/*/**/*.js',
-                        '!extensions/extra/*/unittests.js',
-                        'extensions/extra/*/**/*.js',
-                        '!extensions/**/node_modules/**/*.js',
-                        '!extensions/**/test/**/*.js',
+                        '!extensions/**/*',
                         '!**/unittest-files/**',
                         'thirdparty/i18n/*.js',
                         'thirdparty/text/*.js'
@@ -128,26 +123,12 @@ module.exports = function (grunt) {
                         dest: 'dist/',
                         cwd: 'src/',
                         src: [
-                            'extensions/default/**/*',
-                            'extensions/extra/**/*',
                             '!extensibility/node/spec/**',
                             '!extensibility/node/node_modules/**/{test,tst}/**/*',
                             '!extensibility/node/node_modules/**/examples/**/*',
                             '!filesystem/impls/appshell/**/*',
-                            '!extensions/default/*/unittest-files/**/*',
-                            '!extensions/default/*/unittests.js',
-                            '!extensions/default/{*/thirdparty,**/node_modules}/**/test/**/*',
-                            '!extensions/default/{*/thirdparty,**/node_modules}/**/doc/**/*',
-                            '!extensions/default/{*/thirdparty,**/node_modules}/**/examples/**/*',
-                            '!extensions/default/*/thirdparty/**/*.htm{,l}',
-                            '!extensions/extra/*/unittest-files/**/*',
-                            '!extensions/extra/*/unittests.js',
-                            '!extensions/extra/{*/thirdparty,**/node_modules}/**/test/**/*',
-                            '!extensions/extra/{*/thirdparty,**/node_modules}/**/doc/**/*',
-                            '!extensions/extra/{*/thirdparty,**/node_modules}/**/examples/**/*',
-                            '!extensions/extra/*/thirdparty/**/*.htm{,l}',
-                            '!extensions/dev/*',
-                            '!extensions/samples/**/*',
+                            // We deal with extensions dynamically below in build-extensions
+                            '!extensions/**/*',
                             'thirdparty/CodeMirror/lib/codemirror.css',
                             'thirdparty/i18n/*.js',
                             'thirdparty/text/*.js'
@@ -432,7 +413,69 @@ module.exports = function (grunt) {
                 rootDir: 'dist'
             }
         }
-    });
+    };
+
+    // Dynamically add requirejs and copy configs for all extensions
+    function configureExtensions(config) {
+        var extensions = grunt.file.readJSON("src/extensions/bramble-extensions.json");
+
+        // Write a requirejs config for each included extension
+        extensions.forEach(function(extension) {
+            config.requirejs[extension] = {
+                options: {
+                    name: '../../../thirdparty/almond',
+                    baseUrl: 'src/' + extension,
+                    paths: {
+                        'text' : '../../../thirdparty/text/text',
+                        'i18n' : '../../../thirdparty/i18n/i18n'
+                    },
+                    optimize: 'uglify2',
+                    preserveLicenseComments: false,
+                    useString: true,
+                    uglify2: {},
+                    include: ['main.js'],
+                    out: 'dist/' + extension + '/main.js'
+                }
+            };
+        });
+
+        // Also copy each extension's files across to dist/
+        var extensionGlobs = [];
+        extensions.forEach(function(extension) {
+            // Copy the extension's folder and files over to dist/
+            extensionGlobs.push(extension + "/**");
+
+            // with the following exceptions...
+
+            // No .js, .js, or .md files.  The main.js will get made by requirejs
+            extensionGlobs.push('!' + extension + '/**/{*.js,*.json,*.md}');
+            // No unittest-files/*
+            extensionGlobs.push('!' + extension + '/unittest-files/**');
+            // No node_modules/*
+            extensionGlobs.push('!' + extension + '/node_modules/**');
+            // No jquery-ui/* which is used in some tests (and is huge)
+            extensionGlobs.push('!' + extension + '/**/jquery-ui/**');
+            // No LICENSE files
+            extensionGlobs.push('!' + extension + '/**/LICENSE');
+        });
+
+        config.copy.dist.files.push({
+            expand: true,
+            dest: 'dist/',
+            cwd: 'src/',
+            src: extensionGlobs
+        });
+
+        // Add a task for building all requirejs bundles for each extension
+        var tasks = extensions.map(function(extension) {
+            return 'requirejs:' + extension;
+        });
+        grunt.registerTask('build-extensions', tasks);
+
+        return config;
+    }
+
+    grunt.initConfig(configureExtensions(config));
 
     grunt.registerMultiTask('swPrecache', function() {
         var done = this.async();
@@ -496,14 +539,15 @@ module.exports = function (grunt) {
         'build',
         'requirejs:iframe',
         'exec:localize-dist',
-        'uglify'
+        'uglify',
+        'build-extensions'
     ]);
 
     // task: build dist/ for browser, pre-compressed with gzip and SW precache
     grunt.registerTask('build-browser-compressed', [
         'build-browser',
         'compress',
-        'swPrecache'
+        //'swPrecache'
     ]);
 
     // task: undo changes to the src/nls directory
