@@ -1,8 +1,8 @@
 # Bramble Extension Loading
 
 Bramble extension loading is done by specifying extensions to be loaded in
-`src/extensions/bramble-extensions.json`.  This is an array of objects with
-the following form:
+[`src/extensions/bramble-extensions.json`](src/extensions/bramble-extensions.json).
+This is an array of objects with the following form:
 
 ```
 {

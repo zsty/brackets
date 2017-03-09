@@ -538,7 +538,7 @@ module.exports = function (grunt) {
     grunt.registerTask('build-browser-compressed', [
         'build-browser',
         'compress',
-        //'swPrecache'
+        'swPrecache'
     ]);
 
     // task: undo changes to the src/nls directory

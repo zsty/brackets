@@ -40,13 +40,6 @@
         ]
     },
     {
-        "path": "extensions/default/InlineTimingFunctionEditor",
-        "copy": [
-            "extensions/default/InlineTimingFunctionEditor/main.css",
-            "extensions/default/InlineTimingFunctionEditor/*.png"
-        ]
-    },
-    {
         "path": "extensions/default/JavaScriptQuickEdit"
     },
     {
@@ -68,7 +61,8 @@
     {
         "path": "extensions/default/bramble",
         "copy": [
-            "extensions/default/bramble/stylesheets/*.css"
+            "extensions/default/bramble/stylesheets/*.css",
+            "extensions/default/bramble/images/*"
         ]
     },
     {
@@ -101,6 +95,9 @@
         ]
     },
     {
-        "path": "extensions/default/brackets-show-whitespace"
+        "path": "extensions/default/brackets-show-whitespace",
+        "copy": [
+            "extensions/default/brackets-show-whitespace/styles/main.css"
+        ]
     }
 ]
