@@ -421,20 +421,19 @@ module.exports = function (grunt) {
 
         // Write a requirejs config for each included extension
         extensions.forEach(function(extension) {
-            config.requirejs[extension] = {
+            config.requirejs[extension.path] = {
                 options: {
-                    name: '../../../thirdparty/almond',
-                    baseUrl: 'src/' + extension,
+                    name: 'main',
+                    baseUrl: 'src/' + extension.path,
                     paths: {
                         'text' : '../../../thirdparty/text/text',
                         'i18n' : '../../../thirdparty/i18n/i18n'
                     },
                     optimize: 'uglify2',
                     preserveLicenseComments: false,
-                    useString: true,
+                    useStrict: true,
                     uglify2: {},
-                    include: ['main.js'],
-                    out: 'dist/' + extension + '/main.js'
+                    out: 'dist/' + extension.path + '/main.js'
                 }
             };
         });
@@ -442,21 +441,13 @@ module.exports = function (grunt) {
         // Also copy each extension's files across to dist/
         var extensionGlobs = [];
         extensions.forEach(function(extension) {
-            // Copy the extension's folder and files over to dist/
-            extensionGlobs.push(extension + "/**");
+            // First, copy the dir itself.  The main.js will get built below.
+            extensionGlobs.push(extension.path.replace(/\/?$/, "/"));
 
-            // with the following exceptions...
-
-            // No .js, .js, or .md files.  The main.js will get made by requirejs
-            extensionGlobs.push('!' + extension + '/**/{*.js,*.json,*.md}');
-            // No unittest-files/*
-            extensionGlobs.push('!' + extension + '/unittest-files/**');
-            // No node_modules/*
-            extensionGlobs.push('!' + extension + '/node_modules/**');
-            // No jquery-ui/* which is used in some tests (and is huge)
-            extensionGlobs.push('!' + extension + '/**/jquery-ui/**');
-            // No LICENSE files
-            extensionGlobs.push('!' + extension + '/**/LICENSE');
+            // If there are any globs defined for extra paths to copy, add those too.
+            if(extension.copy) {
+                extensionGlobs = extensionGlobs.concat(extension.copy);
+            }
         });
 
         config.copy.dist.files.push({
@@ -468,7 +459,7 @@ module.exports = function (grunt) {
 
         // Add a task for building all requirejs bundles for each extension
         var tasks = extensions.map(function(extension) {
-            return 'requirejs:' + extension;
+            return 'requirejs:' + extension.path;
         });
         grunt.registerTask('build-extensions', tasks);
 

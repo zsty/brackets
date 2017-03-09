@@ -14,10 +14,14 @@ define(function (require, exports, module) {
     var basePath  = PathUtils.directory(window.location.href);
 
     // Load the list of extensions. If you want to add/remove extensions, do it in this json file.
-    var brambleExtensions = JSON.parse(require("text!extensions/bramble-extensions.json"));
+    var extensionInfo = JSON.parse(require("text!extensions/bramble-extensions.json"));
 
     // Disable any extensions we found on the query string's ?disableExtensions= param
     function _processDefaults(disableExtensions) {
+        var brambleExtensions = extensionInfo.map(function(info) {
+            return info.path;
+        });
+
         if(disableExtensions) {
             disableExtensions.split(",").forEach(function (ext) {
                 ext = ext.trim();
