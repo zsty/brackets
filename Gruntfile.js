@@ -161,6 +161,19 @@ module.exports = function (grunt) {
                         src: ['jsTreeTheme.css', 'fonts/{,*/}*.*', 'images/*', 'brackets.min.css*', 'bramble_overrides.css']
                     }
                 ]
+            },
+            thirdparty: {
+                files: [
+                    {
+                        expand: true,
+                        flatten: true,
+                        dest: 'src/thirdparty',
+                        cwd: 'src/node_modules',
+                        src: [
+                            'less/dist/less.min.js'
+                        ]
+                    }
+                ]
             }
         },
         cleanempty: {
