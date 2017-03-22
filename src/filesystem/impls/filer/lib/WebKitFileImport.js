@@ -49,8 +49,9 @@ define(function (require, exports, module) {
         this.archiveByteLimit = options.archiveByteLimit;
     }
 
-    WebKitFileImport.prototype.import = function(dataTransfer, callback) {
-        var items = dataTransfer.items;
+    // We want event.dataTransfer.items for WebKit style browsers
+    WebKitFileImport.prototype.import = function(source, callback) {
+        var items = source instanceof DataTransfer ? source.items : source;
         var byteLimit = this.byteLimit;
         var archiveByteLimit = this.archiveByteLimit;
         var pathList = [];

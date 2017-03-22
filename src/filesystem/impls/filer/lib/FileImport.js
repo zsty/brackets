@@ -41,12 +41,18 @@ define(function (require, exports, module) {
     // 5MB size limit for imported archives (zip & tar)
     var archiveByteLimit = 5242880;
 
-    exports.import = function(dataTransfer, callback) {
-        var options = {
+    // Support passing a DataTransfer object, or a FileList
+    exports.import = function(source, callback) {
+        if(!(source instanceof FileList || source instanceof DataTransfer)) {
+            callback(new Error("[Bramble] expected DataTransfer or FileList to FileImport.import()"));
+            return;
+        }
+
+       var options = {
             byteLimit: byteLimit,
             archiveByteLimit: archiveByteLimit
         };
         var strategy = _create(options);
-        return strategy.import(dataTransfer, callback);
+        return strategy.import(source, callback);
     };
 });

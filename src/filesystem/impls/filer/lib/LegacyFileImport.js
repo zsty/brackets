@@ -49,8 +49,9 @@ define(function (require, exports, module) {
         this.archiveByteLimit = options.archiveByteLimit;
     }
 
-    LegacyFileImport.prototype.import = function(dataTransfer, callback) {
-        var files = dataTransfer.files;
+    // We want event.dataTransfer.files for legacy browsers.
+    LegacyFileImport.prototype.import = function(source, callback) {
+        var files = source instanceof DataTransfer ? source.files : source;
         var byteLimit = this.byteLimit;
         var archiveByteLimit = this.archiveByteLimit;
         var pathList = [];
