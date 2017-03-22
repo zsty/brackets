@@ -267,40 +267,20 @@ define(function (require, exports, module) {
                 if(err) {
                     console.log("[Bramble] error handling dropped files", err);
                 }
-            });
-        }
 
-        function processFiles(source, callback) {
-            FileImport.import(source, function(err, paths) {
-                if(err) {
-                    _showErrorDialog(err);
+                options.onfilesdone();
+
+                if(options.autoRemoveHandlers) {
+                    var elem = options.elem;
+                    $(elem)
+                        .off("dragover", handleDragOver)
+                        .off("dragleave", handleDragLeave)
+                        .off("drop", handleDrop);
+
+                    elem.removeEventListener("dragover", codeMirrorDragOverHandler, true);
+                    elem.removeEventListener("dragleave", codeMirrorDragLeaveHandler, true);
+                    elem.removeEventListener("drop", codeMirrorDropHandler, true);
                 }
-
-                // Don't crash in legacy browsers if we rejected all paths (e.g., folder(s)).
-                paths = paths || [];
-
-                FileSystemCache.refresh(function(err) {
-                    if(err) {
-                        console.error("[Bramble] unable to refresh filesystem cache");
-                    }
-                    options.onfilesdone();
-
-                    if(options.autoRemoveHandlers) {
-                        var elem = options.elem;
-                        $(elem)
-                            .off("dragover", handleDragOver)
-                            .off("dragleave", handleDragLeave)
-                            .off("drop", handleDrop);
-
-                        elem.removeEventListener("dragover", codeMirrorDragOverHandler, true);
-                        elem.removeEventListener("dragleave", codeMirrorDragLeaveHandler, true);
-                        elem.removeEventListener("drop", codeMirrorDropHandler, true);
-                    }
-
-                    openDroppedFiles(paths);
-
-                    callback(err);
-                });
             });
         }
 
@@ -334,12 +314,30 @@ define(function (require, exports, module) {
         options.elem.addEventListener("drop", codeMirrorDropHandler, true);
     }
 
+    /**
+     * Given a `source` of files (DataTransfer or FileList objects), get the associated files
+     * and process them, such that they end
+     */
+    function processFiles(source, callback) {
+        FileImport.import(source, function(err, paths) {
+            if(err) {
+                _showErrorDialog(err);
+                callback(err);
+                return;
+            }
+
+            // Don't crash in legacy browsers if we rejected all paths (e.g., folder(s)).
+            paths = paths || [];
+            openDroppedFiles(paths);
+
+            callback();
+        });
+    }
+
     CommandManager.register(Strings.CMD_OPEN_DROPPED_FILES, Commands.FILE_OPEN_DROPPED_FILES, openDroppedFiles);
 
     // Export public API
     exports.attachHandlers      = attachHandlers;
     exports.isValidDrop         = isValidDrop;
     exports.openDroppedFiles    = openDroppedFiles;
-    // TODO: fix this to FileImport.import()
-    //exports.processFiles        = processFiles;
 });

@@ -68,13 +68,10 @@ define(function (require, exports, module) {
         }
 
         function checkDone() {
-            console.log("checkDone", started, completed);
             if(started === completed) {
                 if(errorList.length) {
-                    console.log("done with errors", errorList);
                     callback(errorList);
                 } else {
-                    console.log("done without errors", pathList);
                     callback(null, pathList);
                 }
             }

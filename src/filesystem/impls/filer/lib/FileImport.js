@@ -6,7 +6,8 @@ define(function (require, exports, module) {
     "use strict";
 
     var LegacyFileImport = require("filesystem/impls/filer/lib/LegacyFileImport"),
-        WebKitFileImport = require("filesystem/impls/filer/lib/WebKitFileImport");
+        WebKitFileImport = require("filesystem/impls/filer/lib/WebKitFileImport"),
+        FileSystemCache = require("filesystem/impls/filer/FileSystemCache");
 
     /**
      * XXXBramble: the Drag and Drop and File APIs are a mess of incompatible
@@ -48,11 +49,13 @@ define(function (require, exports, module) {
             return;
         }
 
-       var options = {
+        var options = {
             byteLimit: byteLimit,
             archiveByteLimit: archiveByteLimit
         };
         var strategy = _create(options);
-        return strategy.import(source, callback);
+        return strategy.import(source, function(err) {
+            FileSystemCache.refresh(callback);
+        });
     };
 });
