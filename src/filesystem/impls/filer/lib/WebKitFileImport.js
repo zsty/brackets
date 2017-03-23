@@ -92,19 +92,22 @@ define(function (require, exports, module) {
 
         function handleDirectory(deferred, entry, path) {
             function readDir(folder, callback) {
-                var reading = 0
+                var reading = 0;
 
                 function read(reader) {
                     reading++;
+
                     reader.readEntries(function(entries) {
                         reading--;
-                        for(var entry of entries) {
+
+                        entries.forEach(function(entry) {
                             if(entry.isDirectory) {
                                 maybeImportDirectory(path, entry);
                             } else {
                                 maybeImportFile(path, entry);
                             }
-                        }
+                        });
+
                         if(entries.length) {
                             read(reader);
                         } else if(reading === 0) {
@@ -112,7 +115,8 @@ define(function (require, exports, module) {
                         }
                     });
                 }
-                read(folder.createReader())
+
+                read(folder.createReader());
             }
 
             FileSystem.getDirectoryForPath(path).create(function(err) {
