@@ -5,9 +5,10 @@
 define(function (require, exports, module) {
     "use strict";
 
-    var LegacyFileImport = require("filesystem/impls/filer/lib/LegacyFileImport"),
-        WebKitFileImport = require("filesystem/impls/filer/lib/WebKitFileImport"),
-        FileSystemCache = require("filesystem/impls/filer/FileSystemCache");
+    var LegacyFileImport    = require("filesystem/impls/filer/lib/LegacyFileImport"),
+        WebKitFileImport    = require("filesystem/impls/filer/lib/WebKitFileImport"),
+        FileSystemCache     = require("filesystem/impls/filer/FileSystemCache"),
+        BrambleStartupState = brackets.getModule("bramble/StartupState");
 
     /**
      * XXXBramble: the Drag and Drop and File APIs are a mess of incompatible
@@ -43,7 +44,7 @@ define(function (require, exports, module) {
     var archiveByteLimit = 5242880;
 
     // Support passing a DataTransfer object, or a FileList
-    exports.import = function(source, callback) {
+    exports.import = function(source, parentPath, callback) {
         if(!(source instanceof FileList || source instanceof DataTransfer)) {
             callback(new Error("[Bramble] expected DataTransfer or FileList to FileImport.import()"));
             return;
@@ -54,7 +55,14 @@ define(function (require, exports, module) {
             archiveByteLimit: archiveByteLimit
         };
         var strategy = _create(options);
-        return strategy.import(source, function(err) {
+
+        // If we are given a sub-dir within the project, use that.  Otherwise use project root.
+        parentPath = parentPath || BrambleStartupState.project("root");
+
+        return strategy.import(source, parentPath, function(err) {
+            if(err) {
+                return callback(err);
+            }
             FileSystemCache.refresh(callback);
         });
     };

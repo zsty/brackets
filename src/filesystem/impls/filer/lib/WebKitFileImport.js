@@ -44,13 +44,13 @@ define(function (require, exports, module) {
         ArchiveUtils    = require("filesystem/impls/filer/ArchiveUtils"),
         FilerUtils      = require("filesystem/impls/filer/FilerUtils");
 
-    function WebKitFileImport(byteLimit) {
+    function WebKitFileImport(options) {
         this.byteLimit = options.byteLimit;
         this.archiveByteLimit = options.archiveByteLimit;
     }
 
     // We want event.dataTransfer.items for WebKit style browsers
-    WebKitFileImport.prototype.import = function(source, callback) {
+    WebKitFileImport.prototype.import = function(source, parentPath, callback) {
         var items = source instanceof DataTransfer ? source.items : source;
         var byteLimit = this.byteLimit;
         var archiveByteLimit = this.archiveByteLimit;
@@ -177,25 +177,26 @@ define(function (require, exports, module) {
         }
 
         /**
-         * Determine whether we want to import this file at all.  If it's too large
+         * Determine whether we want to import this file at all.  If` it's too large
          * or not a mime type we care about, reject it.
          */
         function rejectImport(filename, size) {
-            var ext = Path.extname(item.name);
+            var ext = Path.extname(filename);
             var mime = Content.mimeFromExt(ext);
-            var sizeLimit = Content.isArchive(ext) ? archiveByteLimit : byteLimit;
+            var isArchive = Content.isArchive(ext);
+            var sizeLimit =  isArchive ? archiveByteLimit : byteLimit;
             var sizeLimitMb = (sizeLimit / (1024 * 1024)).toString();
 
-            if (item.size > sizeLimit) {
+            if (size > sizeLimit) {
                 return new Error(StringUtils.format(Strings.DND_MAX_SIZE_EXCEEDED, sizeLimitMb));
             }
 
             // If we don't know about this language type, or the OS doesn't think
             // it's text, reject it.
-            var isSupported = !!LanguageManager.getLanguageForExtension(FilerUtils.normalizeExtension(ext));
+            var isSupported = !!LanguageManager.getLanguageForExtension(FilerUtils.normalizeExtension(ext, true));
             var typeIsText = Content.isTextType(mime);
 
-            if (isSupported || typeIsText) {
+            if (isSupported || typeIsText || isArchive) {
                 return null;
             }
             return new Error(Strings.DND_UNSUPPORTED_FILE_TYPE);
@@ -274,9 +275,9 @@ define(function (require, exports, module) {
             var err;
 
             if(entry.isDirectory) {
-                maybeImportDirectory(StartupState.project("root"), entry, deferred);
+                maybeImportDirectory(parentPath, entry, deferred);
             } else if (entry.isFile) {
-                maybeImportFile(StartupState.project("root"), entry, deferred);
+                maybeImportFile(parentPath, entry, deferred);
             } else {
                 // Skip it, we don't know what this is
                 err = new Error(Strings.DND_UNSUPPORTED_FILE_TYPE);

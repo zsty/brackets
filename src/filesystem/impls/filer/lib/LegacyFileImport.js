@@ -50,7 +50,7 @@ define(function (require, exports, module) {
     }
 
     // We want event.dataTransfer.files for legacy browsers.
-    LegacyFileImport.prototype.import = function(source, callback) {
+    LegacyFileImport.prototype.import = function(source, parentPath, callback) {
         var files = source instanceof DataTransfer ? source.files : source;
         var byteLimit = this.byteLimit;
         var archiveByteLimit = this.archiveByteLimit;
@@ -130,7 +130,8 @@ define(function (require, exports, module) {
          */
         function rejectImport(item) {
             var ext = Path.extname(item.name);
-            var sizeLimit = Content.isArchive(ext) ? archiveByteLimit : byteLimit;
+            var isArchive = Content.isArchive(ext);
+            var sizeLimit =  isArchive ? archiveByteLimit : byteLimit;
             var sizeLimitMb = (sizeLimit / (1024 * 1024)).toString();
 
             if (item.size > sizeLimit) {
@@ -139,10 +140,10 @@ define(function (require, exports, module) {
 
             // If we don't know about this language type, or the OS doesn't think
             // it's text, reject it.
-            var isSupported = !!LanguageManager.getLanguageForExtension(FilerUtils.normalizeExtension(ext));
+            var isSupported = !!LanguageManager.getLanguageForExtension(FilerUtils.normalizeExtension(ext, true));
             var typeIsText = Content.isTextType(item.type);
 
-            if (isSupported || typeIsText) {
+            if (isSupported || typeIsText || isArchive) {
                 return null;
             }
             return new Error(Strings.DND_UNSUPPORTED_FILE_TYPE);
@@ -198,7 +199,7 @@ define(function (require, exports, module) {
             reader.onload = function(e) {
                 delete reader.onload;
 
-                var filename = Path.join(StartupState.project("root"), item.name);
+                var filename = Path.join(parentPath, item.name);
                 var file = FileSystem.getFileForPath(filename);
                 var ext = Path.extname(filename).toLowerCase();
 
