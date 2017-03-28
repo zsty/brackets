@@ -11,7 +11,7 @@ define(function (require, exports, module) {
 
     var panel
         , icon = null 
-        , panelHTML = require("text!html/console.html");
+        , panelHTML = require("text!htmlContent/console.html");
 
     icon = $("<a id='editor-console-icon' href='#'> </a>");
     icon.attr("title", "Console");
@@ -140,10 +140,10 @@ define(function (require, exports, module) {
 
     AppInit.htmlReady(function () {
 
-        ExtensionUtils.loadStyleSheet(module, "style/style.css");
+        ExtensionUtils.loadStyleSheet(module, "stylesheets/consoleTheme.css");
 
         panel = WorkspaceManager.createBottomPanel("console.panel", $(panelHTML));
-        //panel.show();
+        panel.show();
 
         panel.$panel.find("#btnClear").on("click", function () {
             clear();
@@ -179,7 +179,7 @@ define(function (require, exports, module) {
             icon.removeClass("on");
         });
 
-        icon.on("click", togglePanel);
+        // icon.on("click", togglePanel);
 
     });
 

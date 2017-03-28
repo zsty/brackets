@@ -133,7 +133,7 @@ define(function (require, exports, module) {
         if(fontSize && /\d+px/.test(fontSize)) {
             ViewCommandHandlers.setFontSize(fontSize);
         }
-
+		
         // I'm not 100% sure this is needed, but we're messing with the elements
         // so I suspect we want to sync code that manages them.
         WorkspaceManager.recomputeLayout(true);

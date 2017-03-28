@@ -32,7 +32,8 @@ define(function (require, exports, module) {
         XHRHandler           = require("lib/xhr/XHRHandler"),
         Theme                = require("lib/Theme"),
         RemoteCommandHandler = require("lib/RemoteCommandHandler"),
-        RemoteEvents         = require("lib/RemoteEvents");
+        RemoteEvents         = require("lib/RemoteEvents"),
+		ConsoleInterface     = require("lib/ConsoleInterfaceManager");
 
     ExtensionUtils.loadStyleSheet(module, "stylesheets/style.css");
     ExtensionUtils.loadStyleSheet(module, "stylesheets/sidebarTheme.css");
