@@ -97,6 +97,7 @@ define(function (require, exports, module) {
 
         clear();
 
+		// This creates the individual messages
         for (i = 0; i < data.length; i++) {
             $element = $("<input type='text' />");
 
@@ -118,8 +119,7 @@ define(function (require, exports, module) {
     * @param msg
     */
     function add(msg, type) {
-        var texts = msg.toString().split('\n')
-            , i = 0;
+        var texts = msg.toString().split('\n'), i = 0;
 
         for (i = 0; i < texts.length; i++) {
             logData.push({type: type, text: texts[i]});
@@ -140,7 +140,7 @@ define(function (require, exports, module) {
 
     AppInit.htmlReady(function () {
 
-        ExtensionUtils.loadStyleSheet(module, "stylesheets/consoleTheme.css");
+        ExtensionUtils.loadStyleSheet(module, "../stylesheets/consoleTheme.css");
 
         panel = WorkspaceManager.createBottomPanel("console.panel", $(panelHTML));
         panel.show();

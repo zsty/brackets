@@ -8,8 +8,9 @@
 }
 
 #editor-console .console {
-    overflow-y: scroll;
+    overflow-y: auto;
     overflow-x: hidden;
+	max-height: 200px;
 }
 
 #editor-console .console > input {
@@ -19,6 +20,7 @@
     border: 0px;
     outline: none;
     box-shadow:none;
+	display:block;
 }
 
 #editor-console .console > input:focus {
