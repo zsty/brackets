@@ -42,7 +42,7 @@ define(function (require, exports, module) {
     icon.appendTo($("#main-toolbar .buttons"));
 
     var logData = []
-        , filters = {error: false, log: true, warn: false}
+        , filters = {error: true, log: true, warn: false}
         , livePreviewOnly = false;
 
 
@@ -123,7 +123,7 @@ define(function (require, exports, module) {
 
         // This creates the individual messages
         for (i = 0; i < data.length; i++) {
-            $element = $(`<div class='${data[i].type}'><pre>${data[i].text}</pre></div>`);
+            $element = $("<div class='" + data[i].type + "'><pre>" + data[i].text +"</pre></div>");
             $console.append($element);
         }
 
