@@ -121,13 +121,9 @@ define(function (require, exports, module) {
 
         clear();
 
-		// This creates the individual messages
+        // This creates the individual messages
         for (i = 0; i < data.length; i++) {
-            $element = $("<input type='text' />");
-
-            $element.val(data[i].text);
-            $element.addClass(data[i].type);
-
+            $element = $(`<div class='${data[i].type}'><pre>${data[i].text}</pre></div>`);
             $console.append($element);
         }
 
