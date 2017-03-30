@@ -91,39 +91,19 @@ define(function (require, exports, module) {
         }
     }
 
-    function filter(data) {
-        var i = 0
-            , result = []
-            , livePreviewData;
-
-        for (i = 0; i < data.length; i++) {
-            if (filters[data[i].type]) {
-                if (livePreviewOnly) {
-                    livePreviewData = getLivePreviewData(data[i]);
-                    if (livePreviewData) {
-                        result.push(livePreviewData);
-                    }
-                } else {
-                    result.push(data[i]);
-                }
-            }
-        }
-
-        return result;
-    }
 
     function render() {
         var $console = panel.$panel.find(".console")
             , $element = ""
             , countBtns = panel.$panel.find(".label")
-            , data = filter(logData) 
+            , data = logData
             , i = 0;
 
         clear();
 
         // This creates the individual messages
         for (i = 0; i < data.length; i++) {
-            $element = $("<div class='" + data[i].type + "'><pre>" + data[i].text +"</pre></div>");
+            $element = $("<div class='" + data[i].type + "'>" + data[i].text +"</div>");
             $console.append($element);
         }
 
@@ -203,28 +183,5 @@ define(function (require, exports, module) {
 
     });
 
-    var _log = console.log
-        , _warn = console.warn
-        , _error = console.error;
-
-    console.log = function () {
-        var arg = arguments;
-
-        add(arg[0], 'log');
-        return _log.apply(console, arguments);
-    };
-
-    console.warn = function () {
-        var arg = arguments;
-
-        add(arg[0], 'warn');
-        return _warn.apply(console, arguments);
-    };
-
-    console.error = function () {
-        var arg = arguments;
-
-        add(arg[0], 'error');
-        return _error.apply(console, arguments);
-    };
+    exports.add = add;
 });
