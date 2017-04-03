@@ -471,14 +471,11 @@ module.exports = function (grunt) {
     grunt.registerMultiTask('swPrecache', function() {
         var done = this.async();
         var rootDir = this.data.rootDir;
-        var files =  (function() {
-            return (require('./sw-cache-file-list.json')).files;
-        }());
 
         var config = {
             cacheId: 'bramble',
             logger: grunt.log.writeln,
-            staticFileGlobs: files,
+            staticFileGlobs: ['dist/**/*'],
             stripPrefix: 'dist/',
             ignoreUrlParametersMatching: [/./]
         };
