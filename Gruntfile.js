@@ -134,12 +134,12 @@ module.exports = function (grunt) {
                             'thirdparty/text/*.js'
                         ]
                     },
-                    /* styles, fonts and images */
+                    /* styles, fonts and images - XXXBramble: we skip the fonts */
                     {
                         expand: true,
                         dest: 'dist/styles',
                         cwd: 'src/styles',
-                        src: ['jsTreeTheme.css', 'fonts/{,*/}*.*', 'images/*', 'brackets.min.css*', 'bramble_overrides.css']
+                        src: ['jsTreeTheme.css', 'images/*', 'brackets.min.css*', 'bramble_overrides.css']
                     }
                 ]
             },
