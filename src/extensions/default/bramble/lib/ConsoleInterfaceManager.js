@@ -41,13 +41,12 @@ define(function (require, exports, module) {
     icon.attr("title", "Console");
     icon.appendTo($("#main-toolbar .buttons"));
 
-    var logData = []
-        , filters = {error: true, log: true, warn: false}
-        , livePreviewOnly = false;
+    var logData = [],
+        filters = {error: true, log: true, warn: false},
+        livePreviewOnly = false;
 
 
     function count(data, type) {
-
         var i = 0
             , result = 0;
 
@@ -119,6 +118,10 @@ define(function (require, exports, module) {
     * @param msg
     */
     function add(msg, type) {
+        // Display the console when user code triggers console.* functions
+        if(!panel.isVisible()) {
+            panel.show();
+        }
         var texts = msg.toString().split('\n'), i = 0;
 
         for (i = 0; i < texts.length; i++) {
@@ -179,7 +182,7 @@ define(function (require, exports, module) {
             icon.removeClass("on");
         });
 
-        // icon.on("click", togglePanel);
+        icon.on("click", togglePanel);
 
     });
 

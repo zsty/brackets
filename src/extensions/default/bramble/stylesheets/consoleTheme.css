@@ -10,17 +10,17 @@
 #editor-console .console {
     overflow-y: auto;
     overflow-x: hidden;
-	max-height: 200px;
+    max-height: inherit;
 }
 
-#editor-console .console > input {
+#editor-console .console > div {
     width: 100%;
     margin: 0px -40px 0px 0px;
     background: none;
     border: 0px;
     outline: none;
     box-shadow:none;
-	display:block;
+    display:block;
 }
 
 #editor-console .console > input:focus {
@@ -38,13 +38,13 @@
 
 
 #editor-console-icon {
-    background: url("../assets/icon.png");
+    background: url("../htmlContent/console-icon.png");
     background-size: 22px;
     background-position: center;
 }
 
 #editor-console-icon.on {
-    background: url("../assets/icon-on.png");
+    background: url("../htmlContent/console-icon-on.png");
     background-size: 22px;
     background-position: center;
 }
