@@ -475,7 +475,18 @@ module.exports = function (grunt) {
         var config = {
             cacheId: 'bramble',
             logger: grunt.log.writeln,
-            staticFileGlobs: ['dist/**/*'],
+            staticFileGlobs: [
+                // Avoid caching dist/nls/**/*, but take everything else in dist/
+                'dist/{extensions,styles,thirdparty}/**/*',
+                'dist/*.*'
+            ],
+            runtimeCaching: [{
+                urlPattern: /^https:\/\/fonts\.googleapis\.com\/css/,
+                handler: 'fastest'
+            }, {
+                urlPattern: /\/dist\/nls\//,
+                handler: 'fastest'
+            }],
             stripPrefix: 'dist/',
             ignoreUrlParametersMatching: [/./]
         };
