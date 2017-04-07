@@ -399,6 +399,16 @@ module.exports = function (grunt) {
                 cwd: 'dist/',
                 src: ['**/*'],
                 dest: 'dist/'
+            },
+            // We need to compress the bramble-sw.js service worker file after compressing dist/
+            sw: {
+                options: {
+                    mode: "gzip"
+                },
+                expand: true,
+                cwd: 'dist/',
+                src: 'bramble-sw.js',
+                dest: 'dist'
             }
         },
 
@@ -538,15 +548,16 @@ module.exports = function (grunt) {
         'build',
         'requirejs:iframe',
         'exec:localize-dist',
-        'uglify',
-        'build-extensions'
+        'build-extensions',
+        'uglify'
     ]);
 
     // task: build dist/ for browser, pre-compressed with gzip and SW precache
     grunt.registerTask('build-browser-compressed', [
         'build-browser',
-        'compress',
-        'swPrecache'
+        'compress:dist',
+        'swPrecache',
+        'compress:sw'
     ]);
 
     // task: undo changes to the src/nls directory
