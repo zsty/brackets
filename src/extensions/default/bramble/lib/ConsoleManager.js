@@ -3,6 +3,7 @@ define(function (require, exports, module) {
 
     var ConsoleManagerRemote = require("text!lib/ConsoleManagerRemote.js");
     var ConsoleInterfaceManager = require("lib/ConsoleInterfaceManager");
+    var BlobUtils = brackets.getModule("filesystem/impls/filer/BlobUtils");
 
     function getRemoteScript() {
         return "<script>\n" + ConsoleManagerRemote + "</script>\n";
@@ -16,12 +17,25 @@ define(function (require, exports, module) {
         var args = data.args;
         var type = data.type || "log";
 
+        if (type === "error-handler") {
+            type = "error";
+
+            // Handle Blob URLS
+            var stackTrace = args[1].split(",");
+            for(var i = 0; i < stackTrace.length; i++) {
+                var trace = stackTrace[i].split(":");
+                trace = BlobUtils.getFilename("blob:" + trace[1] + ":" + trace[2] + ":" +  trace[3]);
+                trace = trace.split("/");
+                args[0] = args[0] + trace[trace.length - 1];
+            }
+            args = args[0];
+        }
+
         if (type === "time" || type === "timeEnd"){
             args[0] = type + ": " + args[0];
         }
 
-        // TODO: Show this in Custom Console UI, see issue #1675 in Thimble
-        console[type].apply(console, args);
+        // console[type].apply(console, args);
         ConsoleInterfaceManager.add(args, type);
     }
 

@@ -22,16 +22,21 @@
         };
     });
 
+    // Implements error handling
     window.addEventListener("error", function(messageOrEvents) {
-        var args = [
-            'Message: ' + messageOrEvents["message"],
-            'URL: ' + messageOrEvents["url"],
-            'Line: ' + messageOrEvents["lineNo"],
-            'Column: ' + messageOrEvents["colno"],
-            'Error object: ' + JSON.stringify(messageOrEvents["error"])
-        ];
+        var lineNumber = ((messageOrEvents["error"]["lineNumber"] - 2079) > 0)
+            ? messageOrEvents["error"]["lineNumber"] - 2079
+            : 0;
+        var stackTrace = messageOrEvents["error"]["stack"];
+        var args =
+            [messageOrEvents["message"] + '\n'
+                + 'Line: ' + lineNumber + '\n'
+                + 'Column: ' + messageOrEvents["colno"] + '\n'
+                + 'File: ',
+                stackTrace
+            ];
 
-        transportSend("error", args);
+        transportSend("error-handler", args);
     }, false);
 
     console.assert = function() {
