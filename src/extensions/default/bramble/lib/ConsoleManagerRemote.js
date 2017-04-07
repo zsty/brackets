@@ -1,11 +1,11 @@
 (function(transport, console) {
     "use strict";
-    
-    function transportSend(type, args) {  
+
+    function transportSend(type, args) {
         var data = {args: args, type: type};
         transport.send("bramble-console", data);
     }
-    
+
     // Implement standard console.* functions
     ["log",
      "warn",
@@ -21,7 +21,19 @@
             transportSend(type, args);
         };
     });
-    
+
+    window.addEventListener("error", function(messageOrEvents) {
+        var args = [
+            'Message: ' + messageOrEvents["message"],
+            'URL: ' + messageOrEvents["url"],
+            'Line: ' + messageOrEvents["lineNo"],
+            'Column: ' + messageOrEvents["colno"],
+            'Error object: ' + JSON.stringify(messageOrEvents["error"])
+        ];
+
+        transportSend("error", args);
+    }, false);
+
     console.assert = function() {
         var args = Array.from(arguments).slice();
         var expr = args.shift();
