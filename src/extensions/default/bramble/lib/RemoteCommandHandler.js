@@ -16,6 +16,7 @@ define(function (require, exports, module) {
     var _                  = brackets.getModule("thirdparty/lodash");
     var ArchiveUtils       = brackets.getModule("filesystem/impls/filer/ArchiveUtils");
 
+    var SVGUtils = require("lib/SVGUtils");
     var MouseManager = require("lib/MouseManager");
     var PostMessageTransport = require("lib/PostMessageTransport");
     var Tutorial = require("lib/Tutorial");
@@ -147,10 +148,12 @@ define(function (require, exports, module) {
             PreferencesManager.set("closeTags", args[0]);
             break;
         case "BRAMBLE_OPEN_SVG_AS_XML":
-            PreferencesManager.set("openSVGasXML", true);
+            skipCallback = true;
+            SVGUtils.showXML(callback);
             break;
         case "BRAMBLE_OPEN_SVG_AS_IMAGE":
-            PreferencesManager.set("openSVGasXML", false);
+            skipCallback = true;
+            SVGUtils.showImage(callback);
             break;
         case "BRAMBLE_SHOW_TUTORIAL":
             Tutorial.setOverride(true);
