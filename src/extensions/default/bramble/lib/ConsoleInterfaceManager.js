@@ -34,12 +34,12 @@ define(function (require, exports, module) {
         PreferencesManager = brackets.getModule("preferences/PreferencesManager");
 
     var panel
-        , icon = null 
+        , icon = null
         , panelHTML = require("text!htmlContent/console.html");
 
-    icon = $("<a id='editor-console-icon' href='#'> </a>");
+    icon = $("<button class=\"editor-console-icon-indicator\" title=\"Click to toggle the JavaScript Console \">Console</button>");
     icon.attr("title", "Console");
-    icon.appendTo($("#main-toolbar .buttons"));
+    icon.appendTo($("#editor-holder"));
 
     var logData = [],
         filters = {error: true, log: true, warn: false},
