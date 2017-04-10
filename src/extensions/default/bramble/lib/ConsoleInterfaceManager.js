@@ -45,6 +45,8 @@ define(function (require, exports, module) {
         filters = {error: true, log: true, warn: false},
         livePreviewOnly = false;
 
+    var wasClosedByUser = false;
+
 
     function count(data, type) {
         var i = 0
@@ -119,7 +121,7 @@ define(function (require, exports, module) {
     */
     function add(msg, type) {
         // Display the console when user code triggers console.* functions
-        if(!panel.isVisible()) {
+        if(!panel.isVisible() && !wasClosedByUser) {
             panel.show();
         }
         var texts = msg.toString().split('\n'), i = 0;
@@ -180,6 +182,7 @@ define(function (require, exports, module) {
         panel.$panel.find(".close").on("click", function () {
             panel.hide();
             icon.removeClass("on");
+            wasClosedByUser = true;
         });
 
         icon.on("click", togglePanel);
