@@ -19,13 +19,14 @@ define(function (require, exports, module) {
 
         if (type === "error-handler") {
             type = "error";
+            args["Stack"] = args["Stack"][1] + "\n" + args["Stack"][2];
         }
 
         if (type === "time" || type === "timeEnd"){
             args[0] = type + ": " + args[0];
         }
 
-        // console[type].apply(console, args);
+        console[type].apply(console, args);
         ConsoleInterfaceManager.add(args, type);
     }
 

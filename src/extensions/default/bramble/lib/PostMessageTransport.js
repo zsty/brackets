@@ -99,12 +99,12 @@ define(function (require, exports, module) {
 
                     var stackTrace = msgObj.data.args["Stack"].split("@");
 
+                    // Handle Blob URLs
                     for(var i = 1; i < stackTrace.length; i++){
                         var stackItem = stackTrace[i].match(regex);
                         stackItem = stackItem[0].replace(endingRegex, '');
-                        stackTrace[i] = resolveLinks(stackItem);
+                        stackTrace[i] = BlobUtils.getFilename(stackItem);
                     }
-
                     msgObj.data.args["Stack"] = stackTrace;
                 }
                 ConsoleManager.handleConsoleRequest(msgObj.data);
