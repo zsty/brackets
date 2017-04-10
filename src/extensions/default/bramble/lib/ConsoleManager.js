@@ -19,16 +19,6 @@ define(function (require, exports, module) {
 
         if (type === "error-handler") {
             type = "error";
-
-            // Handle Blob URLS
-            var stackTrace = args[1].split(",");
-            for(var i = 0; i < stackTrace.length; i++) {
-                var trace = stackTrace[i].split(":");
-                trace = BlobUtils.getFilename("blob:" + trace[1] + ":" + trace[2] + ":" +  trace[3]);
-                trace = trace.split("/");
-                args[0] = args[0] + trace[trace.length - 1];
-            }
-            args = args[0];
         }
 
         if (type === "time" || type === "timeEnd"){

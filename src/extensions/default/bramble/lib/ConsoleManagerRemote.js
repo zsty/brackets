@@ -24,17 +24,11 @@
 
     // Implements error handling
     window.addEventListener("error", function(messageOrEvents) {
-        var lineNumber = ((messageOrEvents["error"]["lineNumber"] - 2079) > 0)
-            ? messageOrEvents["error"]["lineNumber"] - 2079
-            : 0;
-        var stackTrace = messageOrEvents["error"]["stack"];
-        var args =
-            [messageOrEvents["message"] + '\n'
-                + 'Line: ' + lineNumber + '\n'
-                + 'Column: ' + messageOrEvents["colno"] + '\n'
-                + 'File: ',
-                stackTrace
-            ];
+        var args = {
+            "Message": messageOrEvents["message"],
+            "Line": messageOrEvents["error"]["lineNumber"],
+            "Stack": messageOrEvents["error"]["stack"]
+        };
 
         transportSend("error-handler", args);
     }, false);

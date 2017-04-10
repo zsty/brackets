@@ -93,11 +93,25 @@ define(function (require, exports, module) {
             }
 
             if(ConsoleManager.isConsoleRequest(msgObj.message)) {
+                if(msgObj.data.type === "error-handler"){
+                    var regex = new RegExp('(blob:.+):([^:]+):(.+)', 'gm');
+                    var endingRegex = new RegExp(':([0-9]+):([0-9]+)$', 'gm');
+
+                    var stackTrace = msgObj.data.args["Stack"].split("@");
+
+                    for(var i = 1; i < stackTrace.length; i++){
+                        var stackItem = stackTrace[i].match(regex);
+                        stackItem = stackItem[0].replace(endingRegex, '');
+                        stackTrace[i] = resolveLinks(stackItem);
+                    }
+
+                    msgObj.data.args["Stack"] = stackTrace;
+                }
                 ConsoleManager.handleConsoleRequest(msgObj.data);
                 return;
             }
-            
-            // Trigger message event 
+
+            // Trigger message event
             module.exports.trigger("message", [connId, msgObj.message]);
         } else if (msgObj.type === "connect") {
             Browser.setListener();
