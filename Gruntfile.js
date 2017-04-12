@@ -160,9 +160,13 @@ module.exports = function (grunt) {
         },
         less: {
             dist: {
+                paths: [
+                    "src",
+                    "src/styles"
+                ],
                 files: {
                     // XXXBramble: if you change this, change configureExtensions() below too.
-                    "src/styles/brackets.min.css": [
+                    "dist/styles/brackets.min.css": [
                         "src/thirdparty/CodeMirror/lib/codemirror.css",
                         "src/styles/brackets.less",
                         "src/styles/bramble_overrides.less"
@@ -440,14 +444,12 @@ module.exports = function (grunt) {
             };
         });
 
-        // Add any LESS/CSS files from extensions to the brackets.min.css built file
-        var bracketsCSS = config.less.dist.files["src/styles/brackets.min.css"].slice();
+        // Copy any LESS/CSS files from extensions to the less task file list.
         extensions.forEach(function(extension) {
-            if(Array.isArray(extension.css)) {
-                bracketsCSS = bracketsCSS.concat(extension.css);
+            if(extension.less) {
+                config.less.dist.files = Object.assign(config.less.dist.files, extension.less);
             }
         });
-        config.less.dist.files["src/styles/brackets.min.css"] = bracketsCSS;
 
         // Also copy each extension's files across to dist/
         var extensionGlobs = [];

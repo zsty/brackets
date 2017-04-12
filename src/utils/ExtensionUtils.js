@@ -193,10 +193,10 @@ define(function (require, exports, module) {
         var result = new $.Deferred();
         var url;
 
-        // XXXBramble: in a dist/ build, don't bother loading any stylesheets,
-        // since we bundle all extension stylesheets with brackets.min.css.
+        // XXXBramble: in a dist/ build, don't bother loading any .less files,
+        // for extensions, since we build .css files with grunt.
         if(brackets.env === "production") {
-            return result.resolve(document.getElementById("brackets.min.css")).promise();
+            path = path.replace(/\.less$/, ".css");
         }
 
         // XXXBramble: don't double-load a CSS file, just link it
