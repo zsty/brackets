@@ -7,17 +7,20 @@ This is an array of objects with the following form:
 ```
 {
         "path": "extensions/default/InlineColorEditor",
+        "css": [
+            "extensions/default/InlineColorEditor/css/main.less"
+        ],
         "copy": [
-            "extensions/default/InlineColorEditor/css/main.css",
             "extensions/default/InlineColorEditor/img/*.png"
         ]
 }
 ```
 
 Here `path` refers to the path under `src/` where the extension's dir lives.
-The optional `copy` array includes file path `globs` to be used when copying
-files from `src/` to `dist/` for this extension at build time.  Some extensions
-have no external dependencies, other than the `main.js` file.  If this is the
-case, you don't need to include `copy`.  However, most have some secondary
-resources, including things like stylesheets, images, etc.  These need to get
-included in the `copy` array.
+The optional `css` array includes LESS or CSS file path `globs` to be combined
+with the `brackets.min.css` file (e.g., to reduce network requests). The optional
+`copy` array includes file path `globs` to be used when copying files from `src/`
+to `dist/` for this extension at build time.  Some extensions have no external
+dependencies, other than the `main.js` file.  If this is the case, you don't need
+to include `copy`.  However, most have some secondary resources, including things
+images, etc.  These need to get included in the `copy` array.

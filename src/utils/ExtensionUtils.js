@@ -193,6 +193,12 @@ define(function (require, exports, module) {
         var result = new $.Deferred();
         var url;
 
+        // XXXBramble: in a dist/ build, don't bother loading any stylesheets,
+        // since we bundle all extension stylesheets with brackets.min.css.
+        if(brackets.env === "production") {
+            return result.resolve(document.getElementById("brackets.min.css")).promise();
+        }
+
         // XXXBramble: don't double-load a CSS file, just link it
         if(Path.extname(path) === ".css") {
             url = PathUtils.isAbsoluteUrl(path) ? path : getModuleUrl(module, path);
