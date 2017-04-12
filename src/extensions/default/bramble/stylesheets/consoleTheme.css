@@ -1,4 +1,3 @@
-
 #editor-console .margin-left {
     margin-left: 15px;
 }
@@ -8,34 +7,38 @@
 }
 
 #editor-console .console {
-    overflow-y: auto;
+    overflow-y: visible;
     overflow-x: hidden;
     max-height: inherit;
 }
 
 #editor-console .console > div {
     width: 100%;
-    margin: 0px -40px 0px 0px;
+    margin: 5px 10px;
     background: none;
     border: 0px;
     outline: none;
     box-shadow:none;
     display:block;
+	font-size: inherit;
+	font-family: monospace;
 }
 
-#editor-console .console > input:focus {
-    outline: none;
-    box-shadow:none;
-}
-
-#editor-console .console > input.error {
+#editor-console .console .error {
     color: red;
 }
 
-#editor-console .console > input.warn {
+#editor-console .console .warn {
     color: rgb(112, 112, 0);
 }
 
+#editor-console .console .time {
+    color: green;
+}
+
+#editor-console .console .timeEnd {
+    color: lightgreen;
+}
 
 .editor-console-icon {
     background: url("../htmlContent/console-icon.png");
@@ -51,11 +54,19 @@
     background-position: center;
 }
 
-#editor-console .label {
+#editor-console .badge {
     text-shadow: none;
     margin-left: 4px;
     margin-bottom: -1px;
     margin-right: -6px;
+}
+
+#editor-console #filterBtns .btn {
+    border-radius: 0;
+	background: #222;
+	border: none;
+	box-shadow: none;
+	padding: 10px 15px;
 }
 
 button.editor-console-icon-indicator {
@@ -64,7 +75,7 @@ button.editor-console-icon-indicator {
     background: #eee;
 	bottom: 2px;
 	right: 20px;
-	color: #111;
+	color: #222;
 	padding: 10px;
 	border: 0px;
 }

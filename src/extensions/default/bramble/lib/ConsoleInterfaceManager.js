@@ -53,7 +53,7 @@ define(function (require, exports, module) {
             , result = 0;
 
         for (i = 0; i < data.length; i++) {
-            if (data[i].type === type && (!livePreviewOnly || getLivePreviewData(data[i]))) {
+            if (data[i].type === type && (!livePreviewOnly)) {
                 result++;
             }
         }
@@ -67,7 +67,7 @@ define(function (require, exports, module) {
     }
 
     function flush() {
-        var countBtns = panel.$panel.find(".label");
+        var countBtns = panel.$panel.find(".badge");
 
         logData = [];
 
@@ -75,28 +75,11 @@ define(function (require, exports, module) {
         $(countBtns[1]).html(count(logData, 'warn'));
         $(countBtns[2]).html(count(logData, 'log'));
     }
-
-    function getLivePreviewData(data) {
-        var matchString = "ConsoleAgent: "
-            , re = new RegExp("^" + matchString);
-        if (data.isLivePreviewData) {
-            return data;
-        }
-
-        if (data.text.match(re)) {
-            data.isLivePreviewData = true;
-            data.text = data.text.slice(matchString.length);
-            return data;
-        } else {
-            return null;
-        }
-    }
-
-
-    function render() {
+    
+	function render() {
         var $console = panel.$panel.find(".console")
             , $element = ""
-            , countBtns = panel.$panel.find(".label")
+            , countBtns = panel.$panel.find(".badge")
             , data = logData
             , i = 0;
 
@@ -153,30 +136,6 @@ define(function (require, exports, module) {
         panel.$panel.find("#btnClear").on("click", function () {
             clear();
             flush();
-        });
-
-        panel.$panel.find("#btnLivePreviewOnly").on("click", function () {
-            livePreviewOnly = !livePreviewOnly;
-            $(this).toggleClass('disabled');
-
-            clear();
-            render();
-        });
-
-        panel.$panel.find("#filterBtns > button").on("click", function () {
-
-            var filter = $(this).attr('data-filter');
-
-            filters[filter] = !filters[filter];
-
-            clear();
-            render();
-
-            if (!filters[filter]) {
-                $(this).addClass('disabled');
-            } else {
-                $(this).removeClass('disabled');
-            }
         });
 
         panel.$panel.find(".close").on("click", function () {
