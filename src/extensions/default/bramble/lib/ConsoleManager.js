@@ -19,7 +19,7 @@ define(function (require, exports, module) {
 
         if (type === "error-handler") {
             type = "error";
-            args["Stack"] = args["Stack"][1] + "\n" + args["Stack"][2];
+			args[0] = args["Stack"];
         }
 
         if (type === "time" || type === "timeEnd"){

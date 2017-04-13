@@ -75,7 +75,7 @@ define(function (require, exports, module) {
         $(countBtns[1]).html(count(logData, 'warn'));
         $(countBtns[2]).html(count(logData, 'log'));
     }
-    
+
 	function render() {
         var $console = panel.$panel.find(".console")
             , $element = ""

@@ -98,14 +98,14 @@ define(function (require, exports, module) {
                     var endingRegex = new RegExp(':([0-9]+):([0-9]+)$', 'gm');
 
                     var stackTrace = msgObj.data.args["Stack"].split("@");
+                    msgObj.data.args = [];
 
                     // Handle Blob URLs
                     for(var i = 1; i < stackTrace.length; i++){
                         var stackItem = stackTrace[i].match(regex);
-                        stackItem = stackItem[0].replace(endingRegex, '');
-                        stackTrace[i] = BlobUtils.getFilename(stackItem);
+                        stackItem = (BlobUtils.getFilename(stackItem[0].replace(endingRegex, ''))).split('/');
+                        msgObj.data.args.push('Function Line:' + stackItem[1] + ' File:' + stackItem[stackItem.length -1 ]);
                     }
-                    msgObj.data.args["Stack"] = stackTrace;
                 }
                 ConsoleManager.handleConsoleRequest(msgObj.data);
                 return;

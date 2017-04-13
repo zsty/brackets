@@ -24,34 +24,28 @@
 	font-family: monospace;
 }
 
+#editor-console .console .log {
+    color: #FFFFFF;
+}
+
 #editor-console .console .error {
-    color: red;
+    color: #ED488B;
 }
 
 #editor-console .console .warn {
-    color: rgb(112, 112, 0);
+    color: #707000;
 }
 
 #editor-console .console .time {
-    color: green;
+    color: #5BA87E;
 }
-
 #editor-console .console .timeEnd {
-    color: lightgreen;
+    color: #A0779F;
 }
 
-.editor-console-icon {
-    background: url("../htmlContent/console-icon.png");
-    background-size: 22px;
-    background-position: center;
-    height:30px;
-    width:30px;
-}
-
-.editor-console-icon.on {
-    background: url("../htmlContent/console-icon-on.png");
-    background-size: 22px;
-    background-position: center;
+#editor-console .title {
+    padding: 2px;
+    font-weight: bold;
 }
 
 #editor-console .badge {
