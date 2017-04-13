@@ -30,18 +30,17 @@
  * to JSON.
  */
 
-define(function (require, exports, module) {
-    "use strict";
+define(function(require, exports, module) {
+  "use strict";
+  var SpecRunnerUtils = require("spec/SpecRunnerUtils"),
+    BuildInfoUtils = require("utils/BuildInfoUtils");
 
-    var SpecRunnerUtils = require("spec/SpecRunnerUtils"),
-        BuildInfoUtils = require("utils/BuildInfoUtils");
+  // make sure the global brackets variable is loaded
+  require("utils/Global");
 
-    // make sure the global brackets variable is loaded
-    require("utils/Global");
+  var activeReporter;
 
-    var activeReporter;
-
-    /**
+  /**
      * @constructor
      * Creates a UnitTestReporter object. This has a number public properties:
      *
@@ -78,151 +77,150 @@ define(function (require, exports, module) {
      * @param {Function} filter The filter being used to determine whether a given spec is run or not.
      * @param {string} activeSuite The suite currently selected in the URL params, or null if all are being run.
      */
-    function UnitTestReporter(env, filter, activeSuite) {
-        var self = this;
+  function UnitTestReporter(env, filter, activeSuite) {
+    var self = this;
 
-        this.activeSuite = activeSuite;
+    this.activeSuite = activeSuite;
 
-        this.runInfo = {
-            app: brackets.metadata.name,
-            version: brackets.metadata.version,
-            platform: brackets.platform
-        };
-        BuildInfoUtils.getBracketsSHA().done(function (branch, sha) {
-            self.runInfo.branch = branch;
-            self.runInfo.sha = sha;
-        });
+    this.runInfo = {
+      app: brackets.metadata.name,
+      version: brackets.metadata.version,
+      platform: brackets.platform
+    };
+    BuildInfoUtils.getBracketsSHA().done(function(branch, sha) {
+      self.runInfo.branch = branch;
+      self.runInfo.sha = sha;
+    });
 
-        // _topLevelFilter is applied first - selects Performance vs. Unit test suites
-        this._topLevelFilter = filter;
+    // _topLevelFilter is applied first - selects Performance vs. Unit test suites
+    this._topLevelFilter = filter;
 
-        // Jasmine's runner uses the specFilter to choose which tests to run.
-        // If you selected an option other than "All" this will be a subset of all tests loaded.
-        env.specFilter = this._createSpecFilter(this.activeSuite);
+    // Jasmine's runner uses the specFilter to choose which tests to run.
+    // If you selected an option other than "All" this will be a subset of all tests loaded.
+    env.specFilter = this._createSpecFilter(this.activeSuite);
 
-        this.suites = {};
-        this.passed = false;
+    this.suites = {};
+    this.passed = false;
 
-        this.totalSpecCount = 0;
-        this.totalPassedCount = 0;
-        this.totalFailedCount = 0;
-        env.currentRunner().topLevelSuites().forEach(function (suite) {
-            var specCount = self._countSpecs(suite, filter);
-            self.suites[suite.getFullName()] = {
-                id: suite.id,
-                name: suite.getFullName(),
-                specCount: specCount,
-                passedCount: 0,
-                failedCount: 0,
-                specs: []
-            };
-            self.totalSpecCount += specCount;
-        });
+    this.totalSpecCount = 0;
+    this.totalPassedCount = 0;
+    this.totalFailedCount = 0;
+    env.currentRunner().topLevelSuites().forEach(function(suite) {
+      var specCount = self._countSpecs(suite, filter);
+      self.suites[suite.getFullName()] = {
+        id: suite.id,
+        name: suite.getFullName(),
+        specCount: specCount,
+        passedCount: 0,
+        failedCount: 0,
+        specs: []
+      };
+      self.totalSpecCount += specCount;
+    });
 
-        this.sortedNames = Object.keys(this.suites).sort(function (a, b) {
-            a = a.toLowerCase();
-            b = b.toLowerCase();
-            if (a < b) {
-                return -1;
-            } else if (a > b) {
-                return 1;
-            }
-            return 0;
-        });
+    this.sortedNames = Object.keys(this.suites).sort(function(a, b) {
+      a = a.toLowerCase();
+      b = b.toLowerCase();
+      if (a < b) {
+        return -1;
+      } else if (a > b) {
+        return 1;
+      }
+      return 0;
+    });
 
-        this.activeSpecCount = 0;
-        this.activeSpecCompleteCount = 0;
+    this.activeSpecCount = 0;
+    this.activeSpecCompleteCount = 0;
 
-        env.currentRunner().specs().forEach(function (spec, index) {
-            if (env.specFilter(spec)) {
-                self.activeSpecCount++;
-            }
-        });
-    }
+    env.currentRunner().specs().forEach(function(spec, index) {
+      if (env.specFilter(spec)) {
+        self.activeSpecCount++;
+      }
+    });
+  }
 
-    /**
+  /**
      * @private
      * Filters specs by full name. Applies _topLevelFilter first before checking
      * for a matching starting substring.
      */
-    UnitTestReporter.prototype._createSpecFilter = function (filterString) {
-        var self = this,
-            filter = filterString ? filterString.toLowerCase() : undefined;
+  UnitTestReporter.prototype._createSpecFilter = function(filterString) {
+    var self = this,
+      filter = filterString ? filterString.toLowerCase() : undefined;
 
-        return function (spec) {
-            // filterString is undefined when no top-level suite is active (e.g. "All", "HTMLUtils", etc.)
-            // When undefined, all specs fail this filter and no tests are ran. This is by design.
-            // This setup allows the SpecRunner to load initially without automatically running all tests.
-            if (filter === undefined) {
-                return false;
-            }
+    return function(spec) {
+      // filterString is undefined when no top-level suite is active (e.g. "All", "HTMLUtils", etc.)
+      // When undefined, all specs fail this filter and no tests are ran. This is by design.
+      // This setup allows the SpecRunner to load initially without automatically running all tests.
+      if (filter === undefined) {
+        return false;
+      }
 
-            if (!self._topLevelFilter(spec)) {
-                return false;
-            }
+      if (!self._topLevelFilter(spec)) {
+        return false;
+      }
 
-            if (filter === "all") {
-                return true;
-            }
+      if (filter === "all") {
+        return true;
+      }
 
-            if (filter === spec.getFullName().toLowerCase()) {
-                return true;
-            }
+      if (filter === spec.getFullName().toLowerCase()) {
+        return true;
+      }
 
-            // spec.getFullName() concatenates the names of all containing describe()s. We want to filter
-            // on just the outermost suite's name (i.e., the item that was selected in the spec list UI)
-            // to avoid ambiguity when suite names share the same prefix.
-            var topLevelSuite = spec.suite;
-            while (topLevelSuite.parentSuite) {
-                topLevelSuite = topLevelSuite.parentSuite;
-            }
+      // spec.getFullName() concatenates the names of all containing describe()s. We want to filter
+      // on just the outermost suite's name (i.e., the item that was selected in the spec list UI)
+      // to avoid ambiguity when suite names share the same prefix.
+      var topLevelSuite = spec.suite;
+      while (topLevelSuite.parentSuite) {
+        topLevelSuite = topLevelSuite.parentSuite;
+      }
 
-            return filter === topLevelSuite.description.toLowerCase();
-        };
+      return filter === topLevelSuite.description.toLowerCase();
     };
+  };
 
-    /**
+  /**
      * @private
      *
      * @param {!jasmine.Suite} suite
      * @param {Function} filter
      * @return {Number} count The number of specs in the given suite (and its descendants) that match the filter.
      */
-    UnitTestReporter.prototype._countSpecs = function (suite, filter) {
-        var count = 0,
-            self = this;
+  UnitTestReporter.prototype._countSpecs = function(suite, filter) {
+    var count = 0, self = this;
 
-        // count specs attached directly to this suite
-        suite.specs().forEach(function (spec) {
-            if (!filter || filter(spec)) {
-                count++;
-            }
-        });
+    // count specs attached directly to this suite
+    suite.specs().forEach(function(spec) {
+      if (!filter || filter(spec)) {
+        count++;
+      }
+    });
 
-        // recursively count child suites
-        suite.suites().forEach(function (child) {
-            count += self._countSpecs(child, filter);
-        });
+    // recursively count child suites
+    suite.suites().forEach(function(child) {
+      count += self._countSpecs(child, filter);
+    });
 
-        return count;
-    };
+    return count;
+  };
 
-    /**
+  /**
      * Returns the name of the top-level suite containing the given spec.
      * @param {!jasmine.Spec} spec
      * @return {string} the top level suite name
      */
-    UnitTestReporter.prototype.getTopLevelSuiteName = function (spec) {
-        var topLevelSuite = spec.suite;
+  UnitTestReporter.prototype.getTopLevelSuiteName = function(spec) {
+    var topLevelSuite = spec.suite;
 
-        while (topLevelSuite.parentSuite) {
-            topLevelSuite = topLevelSuite.parentSuite;
-        }
+    while (topLevelSuite.parentSuite) {
+      topLevelSuite = topLevelSuite.parentSuite;
+    }
 
-        return topLevelSuite.getFullName();
-    };
+    return topLevelSuite.getFullName();
+  };
 
-    /**
+  /**
      * @private
      * Adds the passed/failed counts and failure messages for the given spec to the data for its top level suite,
      * and updates the total counts on the All record.
@@ -231,200 +229,221 @@ define(function (require, exports, module) {
      * @return {Object} the spec data for the given spec, listing whether it passed and any
      * messages/perf data
      */
-    UnitTestReporter.prototype._addSpecResults = function (spec, results, perfRecord) {
-        var suiteData = this.suites[this.getTopLevelSuiteName(spec)],
-            specData = {
-                name: spec.getFullName(),
-                description: spec.description,
-                passed: results.passed()
-            };
+  UnitTestReporter.prototype._addSpecResults = function(
+    spec,
+    results,
+    perfRecord
+  ) {
+    var suiteData = this.suites[this.getTopLevelSuiteName(spec)],
+      specData = {
+        name: spec.getFullName(),
+        description: spec.description,
+        passed: results.passed()
+      };
 
-        this.activeSpecCompleteCount++;
+    this.activeSpecCompleteCount++;
 
-        if (specData.passed) {
-            suiteData.passedCount++;
-            this.totalPassedCount++;
-        } else {
-            suiteData.failedCount++;
-            this.totalFailedCount++;
-        }
+    if (specData.passed) {
+      suiteData.passedCount++;
+      this.totalPassedCount++;
+    } else {
+      suiteData.failedCount++;
+      this.totalFailedCount++;
+    }
 
-        results.getItems().forEach(function (item) {
-            var message = SpecRunnerUtils.getResultMessage(item);
-            if (message) {
-                specData.messages = specData.messages || [];
-                specData.messages.push(message);
-            }
-        });
+    results.getItems().forEach(function(item) {
+      var message = SpecRunnerUtils.getResultMessage(item);
+      if (message) {
+        specData.messages = specData.messages || [];
+        specData.messages.push(message);
+      }
+    });
 
-        if (perfRecord && perfRecord.length) {
-            specData.perf = perfRecord;
-        }
+    if (perfRecord && perfRecord.length) {
+      specData.perf = perfRecord;
+    }
 
-        suiteData.specs.push(specData);
-        return specData;
-    };
+    suiteData.specs.push(specData);
+    return specData;
+  };
 
-    /**
+  /**
      * Returns a JSON string containing all our public data. See the constructor
      * docs for a list.
      * @return {string} the JSON string
      */
-    UnitTestReporter.prototype.toJSON = function () {
-        var data = {}, prop;
-        for (prop in this) {
-            if (this.hasOwnProperty(prop) && prop.charAt(0) !== "_") {
-                data[prop] = this[prop];
-            }
-        }
-        return JSON.stringify(data, null, "    ");
-    };
+  UnitTestReporter.prototype.toJSON = function() {
+    var data = {}, prop;
+    for (prop in this) {
+      if (this.hasOwnProperty(prop) && prop.charAt(0) !== "_") {
+        data[prop] = this[prop];
+      }
+    }
+    return JSON.stringify(data, null, "    ");
+  };
 
-    // Handlers for Jasmine callback functions
+  // Handlers for Jasmine callback functions
 
-    UnitTestReporter.prototype.reportRunnerStarting = function (runner) {
-        activeReporter = this;
-        this.runInfo.startTime = new Date().toString();
-        $(this).triggerHandler("runnerStart", [this]);
-    };
+  UnitTestReporter.prototype.reportRunnerStarting = function(runner) {
+    activeReporter = this;
+    this.runInfo.startTime = new Date().toString();
+    $(this).triggerHandler("runnerStart", [this]);
+  };
 
-    UnitTestReporter.prototype.reportRunnerResults = function (runner) {
-        this.passed = runner.results().passed();
-        this.runInfo.endTime = new Date().toString();
-        $(this).triggerHandler("runnerEnd", [this]);
-        activeReporter = null;
-    };
+  UnitTestReporter.prototype.reportRunnerResults = function(runner) {
+    this.passed = runner.results().passed();
+    this.runInfo.endTime = new Date().toString();
+    $(this).triggerHandler("runnerEnd", [this]);
+    activeReporter = null;
+  };
 
-    UnitTestReporter.prototype.reportSuiteResults = function (suite) {
-        if (suite.parentSuite === null) {
-            $(this).triggerHandler("suiteEnd", [this, this.suites[suite.getFullName()]]);
-        }
-    };
+  UnitTestReporter.prototype.reportSuiteResults = function(suite) {
+    if (suite.parentSuite === null) {
+      $(this).triggerHandler("suiteEnd", [
+        this,
+        this.suites[suite.getFullName()]
+      ]);
+    }
+  };
 
-    /**
+  /**
      * @private
      * @param {!Object} spec the Jasmine spec to find the category for
      * @return {string} the category for the given spec, or null if it has no category
      */
-    UnitTestReporter.prototype._getCategory = function (spec) {
-        if (spec.category) {
-            return spec.category;
-        } else {
-            var suite = spec.suite;
-            while (suite) {
-                if (suite.category) {
-                    return suite.category;
-                }
-                suite = suite.parentSuite;
-            }
+  UnitTestReporter.prototype._getCategory = function(spec) {
+    if (spec.category) {
+      return spec.category;
+    } else {
+      var suite = spec.suite;
+      while (suite) {
+        if (suite.category) {
+          return suite.category;
         }
-        return null;
-    };
+        suite = suite.parentSuite;
+      }
+    }
+    return null;
+  };
 
-    UnitTestReporter.prototype.reportSpecStarting = function (spec) {
-        if (this._getCategory(spec) === "performance") {
-            this._currentPerfRecord = [];
-        }
-        $(this).triggerHandler("specStart", [this, spec.getFullName()]);
-    };
+  UnitTestReporter.prototype.reportSpecStarting = function(spec) {
+    if (this._getCategory(spec) === "performance") {
+      this._currentPerfRecord = [];
+    }
+    $(this).triggerHandler("specStart", [this, spec.getFullName()]);
+  };
 
-    UnitTestReporter.prototype.reportSpecResults = function (spec) {
-        if (!spec.results().skipped) {
-            var specData = this._addSpecResults(spec, spec.results(), this._currentPerfRecord);
-            $(this).triggerHandler("specEnd", [this, specData, this.suites[this.getTopLevelSuiteName(spec)]]);
-        }
-        this._currentPerfRecord = null;
-    };
+  UnitTestReporter.prototype.reportSpecResults = function(spec) {
+    if (!spec.results().skipped) {
+      var specData = this._addSpecResults(
+        spec,
+        spec.results(),
+        this._currentPerfRecord
+      );
+      $(this).triggerHandler("specEnd", [
+        this,
+        specData,
+        this.suites[this.getTopLevelSuiteName(spec)]
+      ]);
+    }
+    this._currentPerfRecord = null;
+  };
 
-    // Performance tracking
+  // Performance tracking
 
-    UnitTestReporter.prototype._getTestWindowPerf = function () {
-        return SpecRunnerUtils.getTestWindow().brackets.test.PerfUtils;
-    };
+  UnitTestReporter.prototype._getTestWindowPerf = function() {
+    return SpecRunnerUtils.getTestWindow().brackets.test.PerfUtils;
+  };
 
-    UnitTestReporter.prototype._logTestWindowMeasurement = function (measureInfo) {
-        var value,
-            printName = measureInfo.measure.name || measureInfo.name,
-            record = {},
-            self = this;
+  UnitTestReporter.prototype._logTestWindowMeasurement = function(measureInfo) {
+    var value,
+      printName = measureInfo.measure.name || measureInfo.name,
+      record = {},
+      self = this;
 
-        if (measureInfo.measure instanceof RegExp) {
-            value = this._currentPerfUtils.searchData(measureInfo.measure);
-        } else {
-            value = this._currentPerfUtils.getData(measureInfo.measure.id);
-        }
+    if (measureInfo.measure instanceof RegExp) {
+      value = this._currentPerfUtils.searchData(measureInfo.measure);
+    } else {
+      value = this._currentPerfUtils.getData(measureInfo.measure.id);
+    }
 
-        if (value === undefined) {
-            value = "(None)";
-        }
+    if (value === undefined) {
+      value = "(None)";
+    }
 
-        if (measureInfo.measure.name && measureInfo.name) {
-            printName = measureInfo.measure.name + " - " + measureInfo.name;
-        }
+    if (measureInfo.measure.name && measureInfo.name) {
+      printName = measureInfo.measure.name + " - " + measureInfo.name;
+    }
 
-        if (measureInfo.operation === "sum") {
-            if (Array.isArray(value)) {
-                value = value.reduce(function (a, b) { return a + b; });
-            }
+    if (measureInfo.operation === "sum") {
+      if (Array.isArray(value)) {
+        value = value.reduce(function(a, b) {
+          return a + b;
+        });
+      }
 
-            printName = "Sum of all " + printName;
-        }
+      printName = "Sum of all " + printName;
+    }
 
-        record.name = printName;
-        record.value = value;
+    record.name = printName;
+    record.value = value;
 
-        if (measureInfo.children) {
-            record.children = [];
-            measureInfo.children.forEach(function (child) {
-                record.children.push(self._logTestWindowMeasurement(child));
-            });
-        }
+    if (measureInfo.children) {
+      record.children = [];
+      measureInfo.children.forEach(function(child) {
+        record.children.push(self._logTestWindowMeasurement(child));
+      });
+    }
 
-        return record;
-    };
+    return record;
+  };
 
-    /**
+  /**
      * Records a performance measurement from the test window for the current running spec.
      * @param {!(PerfMeasurement|string)} measure A PerfMeasurement or string key to query PerfUtils for metrics.
      * @param {string} name An optional name or description to print with the measurement name
      * @param {string} operation An optional operation to perform on the measurement data. Currently supports sum.
      */
-    UnitTestReporter.prototype.logTestWindow = function (measures, name, operation) {
-        var self = this;
+  UnitTestReporter.prototype.logTestWindow = function(
+    measures,
+    name,
+    operation
+  ) {
+    var self = this;
 
-        if (!this._currentPerfRecord) {
-            return;
-        }
-
-        this._currentPerfUtils = this._getTestWindowPerf();
-
-        if (!Array.isArray(measures)) {
-            measures = [{measure: measures, name: name, operation: operation}];
-        }
-
-        measures.forEach(function (measure) {
-            self._currentPerfRecord.push(self._logTestWindowMeasurement(measure));
-        });
-
-        this._currentPerfUtils = null;
-    };
-
-    /**
-     * Clears the current set of performance measurements.
-     */
-    UnitTestReporter.prototype.clearTestWindow = function () {
-        this._getTestWindowPerf().clear();
-    };
-
-    /**
-     * @return The active unit test reporter, or null if no unit test is running.
-     */
-    function getActiveReporter() {
-        return activeReporter;
+    if (!this._currentPerfRecord) {
+      return;
     }
 
-    // Exports
+    this._currentPerfUtils = this._getTestWindowPerf();
 
-    exports.UnitTestReporter = UnitTestReporter;
-    exports.getActiveReporter = getActiveReporter;
+    if (!Array.isArray(measures)) {
+      measures = [{ measure: measures, name: name, operation: operation }];
+    }
+
+    measures.forEach(function(measure) {
+      self._currentPerfRecord.push(self._logTestWindowMeasurement(measure));
+    });
+
+    this._currentPerfUtils = null;
+  };
+
+  /**
+     * Clears the current set of performance measurements.
+     */
+  UnitTestReporter.prototype.clearTestWindow = function() {
+    this._getTestWindowPerf().clear();
+  };
+
+  /**
+     * @return The active unit test reporter, or null if no unit test is running.
+     */
+  function getActiveReporter() {
+    return activeReporter;
+  }
+
+  // Exports
+
+  exports.UnitTestReporter = UnitTestReporter;
+  exports.getActiveReporter = getActiveReporter;
 });

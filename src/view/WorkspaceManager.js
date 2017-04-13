@@ -32,192 +32,200 @@
  *              The 2nd arg is the available workspace height.
  *              The 3rd arg is a refreshHint flag for internal use (passed in to recomputeLayout)
  */
-define(function (require, exports, module) {
-    "use strict";
+define(function(require, exports, module) {
+  "use strict";
+  var AppInit = require("utils/AppInit"),
+    EventDispatcher = require("utils/EventDispatcher"),
+    Resizer = require("utils/Resizer");
 
-    var AppInit                 = require("utils/AppInit"),
-        EventDispatcher         = require("utils/EventDispatcher"),
-        Resizer                 = require("utils/Resizer");
+  // XXXBramble: broadcast layout changes on the sidebar
+  var BrambleEvents = require("bramble/BrambleEvents");
 
-    // XXXBramble: broadcast layout changes on the sidebar
-    var BrambleEvents           = require("bramble/BrambleEvents");
+  //constants
+  var EVENT_WORKSPACE_UPDATE_LAYOUT = "workspaceUpdateLayout",
+    EVENT_WORKSPACE_PANEL_SHOWN = "workspacePanelShown",
+    EVENT_WORKSPACE_PANEL_HIDDEN = "workspacePanelHidden";
 
-    //constants
-    var EVENT_WORKSPACE_UPDATE_LAYOUT  = "workspaceUpdateLayout",
-        EVENT_WORKSPACE_PANEL_SHOWN    = "workspacePanelShown",
-        EVENT_WORKSPACE_PANEL_HIDDEN   = "workspacePanelHidden";
-
-    /**
+  /**
      * The ".content" vertical stack (editor + all header/footer panels)
      * @type {jQueryObject}
      */
-    var $windowContent;
+  var $windowContent;
 
-    /**
+  /**
      * The "#editor-holder": has only one visible child, the current CodeMirror instance (or the no-editor placeholder)
      * @type {jQueryObject}
      */
-    var $editorHolder;
+  var $editorHolder;
 
-    /**
+  /**
      * A map from panel ID's to all reated panels
      */
-    var panelIDMap = {};
+  var panelIDMap = {};
 
-    /**
+  /**
      * Have we already started listening for the end of the ongoing window resize?
      * @type {boolean}
      */
-    var windowResizing = false;
+  var windowResizing = false;
 
-
-    /**
+  /**
      * Calculates the available height for the full-size Editor (or the no-editor placeholder),
      * accounting for the current size of all visible panels, toolbar, & status bar.
      * @return {number}
      */
-    function calcAvailableHeight() {
-        var availableHt = $windowContent.height();
+  function calcAvailableHeight() {
+    var availableHt = $windowContent.height();
 
-        $editorHolder.siblings().each(function (i, elem) {
-            var $elem = $(elem);
-            if ($elem.css("display") !== "none" && $elem.css("position") !== "absolute") {
-                availableHt -= $elem.outerHeight();
-            }
-        });
+    $editorHolder.siblings().each(function(i, elem) {
+      var $elem = $(elem);
+      if (
+        $elem.css("display") !== "none" && $elem.css("position") !== "absolute"
+      ) {
+        availableHt -= $elem.outerHeight();
+      }
+    });
 
-        // Clip value to 0 (it could be negative if a panel wants more space than we have)
-        return Math.max(availableHt, 0);
-    }
+    // Clip value to 0 (it could be negative if a panel wants more space than we have)
+    return Math.max(availableHt, 0);
+  }
 
-    /** Updates panel resize limits to disallow making panels big enough to shrink editor area below 0 */
-    function updateResizeLimits() {
-        var editorAreaHeight = $editorHolder.height();
+  /** Updates panel resize limits to disallow making panels big enough to shrink editor area below 0 */
+  function updateResizeLimits() {
+    var editorAreaHeight = $editorHolder.height();
 
-        $editorHolder.siblings().each(function (i, elem) {
-            var $elem = $(elem);
-            if ($elem.css("display") === "none") {
-                $elem.data("maxsize", editorAreaHeight);
-            } else {
-                $elem.data("maxsize", editorAreaHeight + $elem.outerHeight());
-            }
-        });
-    }
+    $editorHolder.siblings().each(function(i, elem) {
+      var $elem = $(elem);
+      if ($elem.css("display") === "none") {
+        $elem.data("maxsize", editorAreaHeight);
+      } else {
+        $elem.data("maxsize", editorAreaHeight + $elem.outerHeight());
+      }
+    });
+  }
 
-
-    /**
+  /**
      * Calculates a new size for editor-holder and resizes it accordingly, then and dispatches the "workspaceUpdateLayout"
      * event. (The editors within are resized by EditorManager, in response to that event).
      *
      * @param {boolean=} refreshHint  true to force a complete refresh
      */
-    function triggerUpdateLayout(refreshHint) {
-        // Find how much space is left for the editor
-        var editorAreaHeight = calcAvailableHeight();
+  function triggerUpdateLayout(refreshHint) {
+    // Find how much space is left for the editor
+    var editorAreaHeight = calcAvailableHeight();
 
-        $editorHolder.height(editorAreaHeight);  // affects size of "not-editor" placeholder as well
+    $editorHolder.height(editorAreaHeight); // affects size of "not-editor" placeholder as well
 
-        // Resize editor to fill the space
-        exports.trigger(EVENT_WORKSPACE_UPDATE_LAYOUT, editorAreaHeight, refreshHint);
+    // Resize editor to fill the space
+    exports.trigger(
+      EVENT_WORKSPACE_UPDATE_LAYOUT,
+      editorAreaHeight,
+      refreshHint
+    );
+  }
+
+  /** Trigger editor area resize whenever the window is resized */
+  function handleWindowResize() {
+    // These are not initialized in Jasmine Spec Runner window until a test
+    // is run that creates a mock document.
+    if (!$windowContent || !$editorHolder) {
+      return;
     }
 
+    // FIXME (issue #4564) Workaround https://github.com/codemirror/CodeMirror/issues/1787
+    triggerUpdateLayout();
 
-    /** Trigger editor area resize whenever the window is resized */
-    function handleWindowResize() {
-        // These are not initialized in Jasmine Spec Runner window until a test
-        // is run that creates a mock document.
-        if (!$windowContent || !$editorHolder) {
-            return;
-        }
+    if (!windowResizing) {
+      windowResizing = true;
 
-        // FIXME (issue #4564) Workaround https://github.com/codemirror/CodeMirror/issues/1787
-        triggerUpdateLayout();
-
-        if (!windowResizing) {
-            windowResizing = true;
-
-            // We don't need any fancy debouncing here - we just need to react before the user can start
-            // resizing any panels at the new window size. So just listen for first mousemove once the
-            // window resize releases mouse capture.
-            $(window.document).one("mousemove", function () {
-                windowResizing = false;
-                updateResizeLimits();
-            });
-        }
+      // We don't need any fancy debouncing here - we just need to react before the user can start
+      // resizing any panels at the new window size. So just listen for first mousemove once the
+      // window resize releases mouse capture.
+      $(window.document).one("mousemove", function() {
+        windowResizing = false;
+        updateResizeLimits();
+      });
     }
+  }
 
-    /** Trigger editor area resize whenever the given panel is shown/hidden/resized
+  /** Trigger editor area resize whenever the given panel is shown/hidden/resized
      *  @param {!jQueryObject} $panel the jquery object in which to attach event handlers
      */
-    function listenToResize($panel) {
-        // Update editor height when shown/hidden, & continuously as panel is resized
-        $panel.on("panelCollapsed panelExpanded panelResizeUpdate", function (e) {
-            triggerUpdateLayout();
-        });
-        // Update max size of sibling panels when shown/hidden, & at *end* of resize gesture
-        $panel.on("panelCollapsed panelExpanded panelResizeEnd", function (e) {
-            updateResizeLimits();
-        });
-    }
+  function listenToResize($panel) {
+    // Update editor height when shown/hidden, & continuously as panel is resized
+    $panel.on("panelCollapsed panelExpanded panelResizeUpdate", function(e) {
+      triggerUpdateLayout();
+    });
+    // Update max size of sibling panels when shown/hidden, & at *end* of resize gesture
+    $panel.on("panelCollapsed panelExpanded panelResizeEnd", function(e) {
+      updateResizeLimits();
+    });
+  }
 
-
-    /**
+  /**
      * Represents a panel below the editor area (a child of ".content").
      * @constructor
      * @param {!jQueryObject} $panel  The entire panel, including any chrome, already in the DOM.
      * @param {number=} minSize  Minimum height of panel in px.
      */
-    function Panel($panel, minSize) {
-        this.$panel = $panel;
+  function Panel($panel, minSize) {
+    this.$panel = $panel;
 
-        Resizer.makeResizable($panel[0], Resizer.DIRECTION_VERTICAL, Resizer.POSITION_TOP, minSize, false, undefined, true);
-        listenToResize($panel);
-    }
+    Resizer.makeResizable(
+      $panel[0],
+      Resizer.DIRECTION_VERTICAL,
+      Resizer.POSITION_TOP,
+      minSize,
+      false,
+      undefined,
+      true
+    );
+    listenToResize($panel);
+  }
 
-    /**
+  /**
      * Dom node holding the rendered panel
      * @type {jQueryObject}
      */
-    Panel.prototype.$panel = null;
+  Panel.prototype.$panel = null;
 
-    /**
+  /**
      * Determines if the panel is visible
      * @return {boolean} true if visible, false if not
      */
-    Panel.prototype.isVisible = function () {
-        return this.$panel.is(":visible");
-    };
+  Panel.prototype.isVisible = function() {
+    return this.$panel.is(":visible");
+  };
 
-    /**
+  /**
      * Shows the panel
      */
-    Panel.prototype.show = function () {
-        Resizer.show(this.$panel[0]);
-        exports.trigger(EVENT_WORKSPACE_PANEL_SHOWN, this.panelID);
-    };
+  Panel.prototype.show = function() {
+    Resizer.show(this.$panel[0]);
+    exports.trigger(EVENT_WORKSPACE_PANEL_SHOWN, this.panelID);
+  };
 
-    /**
+  /**
      * Hides the panel
      */
-    Panel.prototype.hide = function () {
-        Resizer.hide(this.$panel[0]);
-        exports.trigger(EVENT_WORKSPACE_PANEL_HIDDEN, this.panelID);
-    };
+  Panel.prototype.hide = function() {
+    Resizer.hide(this.$panel[0]);
+    exports.trigger(EVENT_WORKSPACE_PANEL_HIDDEN, this.panelID);
+  };
 
-    /**
+  /**
      * Sets the panel's visibility state
      * @param {boolean} visible true to show, false to hide
      */
-    Panel.prototype.setVisible = function (visible) {
-        if (visible) {
-            this.show();
-        } else {
-            this.hide();
-        }
-    };
+  Panel.prototype.setVisible = function(visible) {
+    if (visible) {
+      this.show();
+    } else {
+      this.hide();
+    }
+  };
 
-
-    /**
+  /**
      * Creates a new resizable panel beneath the editor area and above the status bar footer. Panel is initially invisible.
      * The panel's size & visibility are automatically saved & restored as a view-state preference.
      *
@@ -227,97 +235,95 @@ define(function (require, exports, module) {
      * @param {number=} minSize  Minimum height of panel in px.
      * @return {!Panel}
      */
-    function createBottomPanel(id, $panel, minSize) {
-        $panel.insertBefore("#status-bar");
-        $panel.hide();
-        updateResizeLimits();  // initialize panel's max size
+  function createBottomPanel(id, $panel, minSize) {
+    $panel.insertBefore("#status-bar");
+    $panel.hide();
+    updateResizeLimits(); // initialize panel's max size
 
-        panelIDMap[id] = new Panel($panel, minSize);
-        panelIDMap[id].panelID = id;
+    panelIDMap[id] = new Panel($panel, minSize);
+    panelIDMap[id].panelID = id;
 
-        return panelIDMap[id];
-    }
+    return panelIDMap[id];
+  }
 
-    /**
+  /**
      * Returns an array of all panel ID's
      * @returns {Array} List of ID's of all bottom panels
      */
-    function getAllPanelIDs() {
-        var property, panelIDs = [];
-        for (property in panelIDMap) {
-            if (panelIDMap.hasOwnProperty(property)) {
-                panelIDs.push(property);
-            }
-        }
-        return panelIDs;
+  function getAllPanelIDs() {
+    var property, panelIDs = [];
+    for (property in panelIDMap) {
+      if (panelIDMap.hasOwnProperty(property)) {
+        panelIDs.push(property);
+      }
     }
+    return panelIDs;
+  }
 
-    /**
+  /**
      * Gets the Panel interface for the given ID. Can return undefined if no panel with the ID is found.
      * @param   {string} panelID
      * @returns {Object} Panel object for the ID or undefined
      */
-    function getPanelForID(panelID) {
-        return panelIDMap[panelID];
-    }
+  function getPanelForID(panelID) {
+    return panelIDMap[panelID];
+  }
 
-    /**
+  /**
      * Called when an external widget has appeared and needs some of the space occupied
      *  by the mainview manager
      * @param {boolean} refreshHint true to refresh the editor, false if not
      */
-    function recomputeLayout(refreshHint) {
-        triggerUpdateLayout(refreshHint);
-        updateResizeLimits();
-    }
+  function recomputeLayout(refreshHint) {
+    triggerUpdateLayout(refreshHint);
+    updateResizeLimits();
+  }
 
+  /* Attach to key parts of the overall UI, once created */
+  AppInit.htmlReady(function() {
+    $windowContent = $(".content");
+    $editorHolder = $("#editor-holder");
 
-    /* Attach to key parts of the overall UI, once created */
-    AppInit.htmlReady(function () {
-        $windowContent = $(".content");
-        $editorHolder = $("#editor-holder");
+    // Sidebar is a special case: it isn't a Panel, and is not created dynamically. Need to explicitly
+    // listen for resize here.
+    var $sidebar = $("#sidebar");
+    listenToResize($sidebar);
 
-        // Sidebar is a special case: it isn't a Panel, and is not created dynamically. Need to explicitly
-        // listen for resize here.
-        var $sidebar = $("#sidebar");
-        listenToResize($sidebar);
-
-        // XXXBramble: we need more details about events on the sidebar
-        $sidebar.on("panelCollapsed", function() {
-            BrambleEvents.triggerSidebarCollapsed();
-        });
-        $sidebar.on("panelExpanded", function() {
-            BrambleEvents.triggerSidebarExpanded();
-        });
-        $sidebar.on("panelCollapsed panelExpanded panelResizeUpdate", function (e) {
-            BrambleEvents.triggerUpdateLayoutStart();
-        });
-        $sidebar.on("panelCollapsed panelExpanded panelResizeEnd", function (e) {
-            BrambleEvents.triggerUpdateLayoutEnd();
-        });
+    // XXXBramble: we need more details about events on the sidebar
+    $sidebar.on("panelCollapsed", function() {
+      BrambleEvents.triggerSidebarCollapsed();
     });
+    $sidebar.on("panelExpanded", function() {
+      BrambleEvents.triggerSidebarExpanded();
+    });
+    $sidebar.on("panelCollapsed panelExpanded panelResizeUpdate", function(e) {
+      BrambleEvents.triggerUpdateLayoutStart();
+    });
+    $sidebar.on("panelCollapsed panelExpanded panelResizeEnd", function(e) {
+      BrambleEvents.triggerUpdateLayoutEnd();
+    });
+  });
 
-    /* Unit test only: allow passing in mock DOM notes, e.g. for use with SpecRunnerUtils.createMockEditor() */
-    function _setMockDOM($mockWindowContent, $mockEditorHolder) {
-        $windowContent = $mockWindowContent;
-        $editorHolder = $mockEditorHolder;
-    }
+  /* Unit test only: allow passing in mock DOM notes, e.g. for use with SpecRunnerUtils.createMockEditor() */
+  function _setMockDOM($mockWindowContent, $mockEditorHolder) {
+    $windowContent = $mockWindowContent;
+    $editorHolder = $mockEditorHolder;
+  }
 
-    /* Add this as a capture handler so we're guaranteed to run it before the editor does its own
+  /* Add this as a capture handler so we're guaranteed to run it before the editor does its own
      * refresh on resize.
      */
-    window.addEventListener("resize", handleWindowResize, true);
+  window.addEventListener("resize", handleWindowResize, true);
 
+  EventDispatcher.makeEventDispatcher(exports);
 
-    EventDispatcher.makeEventDispatcher(exports);
-
-    // Define public API
-    exports.createBottomPanel               = createBottomPanel;
-    exports.recomputeLayout                 = recomputeLayout;
-    exports.getAllPanelIDs                  = getAllPanelIDs;
-    exports.getPanelForID                   = getPanelForID;
-    exports._setMockDOM                     = _setMockDOM;
-    exports.EVENT_WORKSPACE_UPDATE_LAYOUT   = EVENT_WORKSPACE_UPDATE_LAYOUT;
-    exports.EVENT_WORKSPACE_PANEL_SHOWN     = EVENT_WORKSPACE_PANEL_SHOWN;
-    exports.EVENT_WORKSPACE_PANEL_HIDDEN    = EVENT_WORKSPACE_PANEL_HIDDEN;
+  // Define public API
+  exports.createBottomPanel = createBottomPanel;
+  exports.recomputeLayout = recomputeLayout;
+  exports.getAllPanelIDs = getAllPanelIDs;
+  exports.getPanelForID = getPanelForID;
+  exports._setMockDOM = _setMockDOM;
+  exports.EVENT_WORKSPACE_UPDATE_LAYOUT = EVENT_WORKSPACE_UPDATE_LAYOUT;
+  exports.EVENT_WORKSPACE_PANEL_SHOWN = EVENT_WORKSPACE_PANEL_SHOWN;
+  exports.EVENT_WORKSPACE_PANEL_HIDDEN = EVENT_WORKSPACE_PANEL_HIDDEN;
 });

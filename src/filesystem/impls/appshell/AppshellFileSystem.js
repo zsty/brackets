@@ -23,81 +23,84 @@
 
 /*global appshell */
 
-define(function (require, exports, module) {
-    "use strict";
+define(function(require, exports, module) {
+  "use strict";
+  var FileUtils = require("file/FileUtils"),
+    FileSystemStats = require("filesystem/FileSystemStats"),
+    FileSystemError = require("filesystem/FileSystemError"),
+    NodeDomain = require("utils/NodeDomain");
 
-    var FileUtils           = require("file/FileUtils"),
-        FileSystemStats     = require("filesystem/FileSystemStats"),
-        FileSystemError     = require("filesystem/FileSystemError"),
-        NodeDomain          = require("utils/NodeDomain");
-
-    /**
+  /**
      * @const
      */
-    var FILE_WATCHER_BATCH_TIMEOUT = 200;   // 200ms - granularity of file watcher changes
+  var FILE_WATCHER_BATCH_TIMEOUT = 200; // 200ms - granularity of file watcher changes
 
-    /**
+  /**
      * Callback to notify FileSystem of watcher changes
      * @type {?function(string, FileSystemStats=)}
      */
-    var _changeCallback;
+  var _changeCallback;
 
-    /**
+  /**
      * Callback to notify FileSystem if watchers stop working entirely
      * @type {?function()}
      */
-    var _offlineCallback;
+  var _offlineCallback;
 
-    /** Timeout used to batch up file watcher changes (setTimeout() return value) */
-    var _changeTimeout;
+  /** Timeout used to batch up file watcher changes (setTimeout() return value) */
+  var _changeTimeout;
 
-    /**
+  /**
      * Pending file watcher changes - map from fullPath to flag indicating whether we need to pass stats
      * to _changeCallback() for this path.
      * @type {!Object.<string, boolean>}
      */
-    var _pendingChanges = {};
+  var _pendingChanges = {};
 
-    var _bracketsPath   = FileUtils.getNativeBracketsDirectoryPath(),
-        _modulePath     = FileUtils.getNativeModuleDirectoryPath(module),
-        _nodePath       = "node/FileWatcherDomain",
-        _domainPath     = [_bracketsPath, _modulePath, _nodePath].join("/"),
-        _nodeDomain     = new NodeDomain("fileWatcher", _domainPath);
+  var _bracketsPath = FileUtils.getNativeBracketsDirectoryPath(),
+    _modulePath = FileUtils.getNativeModuleDirectoryPath(module),
+    _nodePath = "node/FileWatcherDomain",
+    _domainPath = [_bracketsPath, _modulePath, _nodePath].join("/"),
+    _nodeDomain = new NodeDomain("fileWatcher", _domainPath);
 
-    var _isRunningOnWindowsXP = window.navigator.userAgent.indexOf("Windows NT 5.") >= 0;
+  var _isRunningOnWindowsXP = window.navigator.userAgent.indexOf(
+    "Windows NT 5."
+  ) >= 0;
 
+  // If the connection closes, notify the FileSystem that watchers have gone offline.
+  _nodeDomain.connection.on("close", function(event, promise) {
+    if (_offlineCallback) {
+      _offlineCallback();
+    }
+  });
 
-    // If the connection closes, notify the FileSystem that watchers have gone offline.
-    _nodeDomain.connection.on("close", function (event, promise) {
-        if (_offlineCallback) {
-            _offlineCallback();
-        }
-    });
-
-    /**
+  /**
      * Enqueue a file change event for eventual reporting back to the FileSystem.
      *
      * @param {string} changedPath The path that was changed
      * @param {object} stats Stats coming from the underlying watcher, if available
      * @private
      */
-    function _enqueueChange(changedPath, stats) {
-        _pendingChanges[changedPath] = stats;
-        if (!_changeTimeout) {
-            _changeTimeout = window.setTimeout(function () {
-                if (_changeCallback) {
-                    Object.keys(_pendingChanges).forEach(function (path) {
-                        _changeCallback(path, _pendingChanges[path]);
-                    });
-                }
+  function _enqueueChange(changedPath, stats) {
+    _pendingChanges[changedPath] = stats;
+    if (!_changeTimeout) {
+      _changeTimeout = window.setTimeout(
+        function() {
+          if (_changeCallback) {
+            Object.keys(_pendingChanges).forEach(function(path) {
+              _changeCallback(path, _pendingChanges[path]);
+            });
+          }
 
-                _changeTimeout = null;
-                _pendingChanges = {};
-            }, FILE_WATCHER_BATCH_TIMEOUT);
-        }
+          _changeTimeout = null;
+          _pendingChanges = {};
+        },
+        FILE_WATCHER_BATCH_TIMEOUT
+      );
     }
+  }
 
-    /**
+  /**
      * Event handler for the Node fileWatcher domain's change event.
      *
      * @param {jQuery.Event} The underlying change event
@@ -107,64 +110,66 @@ define(function (require, exports, module) {
      * @param {object} statsObj Object that can be used to construct FileSystemStats
      * @private
      */
-    function _fileWatcherChange(evt, event, parentDirPath, entryName, statsObj) {
-        var change;
-        switch (event) {
-        case "changed":
-            // an existing file/directory was modified; stats are passed if available
-            var fsStats;
-            if (statsObj) {
-                fsStats = new FileSystemStats(statsObj);
-            } else {
-                console.warn("FileWatcherDomain was expected to deliver stats for changed event!");
-            }
-            _enqueueChange(parentDirPath + entryName, fsStats);
-            break;
-        case "created":
-        case "deleted":
-            // file/directory was created/deleted; fire change on parent to reload contents
-            _enqueueChange(parentDirPath, null);
-            break;
-        default:
-            console.error("Unexpected 'change' event:", event);
+  function _fileWatcherChange(evt, event, parentDirPath, entryName, statsObj) {
+    var change;
+    switch (event) {
+      case "changed":
+        // an existing file/directory was modified; stats are passed if available
+        var fsStats;
+        if (statsObj) {
+          fsStats = new FileSystemStats(statsObj);
+        } else {
+          console.warn(
+            "FileWatcherDomain was expected to deliver stats for changed event!"
+          );
         }
+        _enqueueChange(parentDirPath + entryName, fsStats);
+        break;
+      case "created":
+      case "deleted":
+        // file/directory was created/deleted; fire change on parent to reload contents
+        _enqueueChange(parentDirPath, null);
+        break;
+      default:
+        console.error("Unexpected 'change' event:", event);
     }
+  }
 
-    // Setup the change handler. This only needs to happen once.
-    _nodeDomain.on("change", _fileWatcherChange);
+  // Setup the change handler. This only needs to happen once.
+  _nodeDomain.on("change", _fileWatcherChange);
 
-    /**
+  /**
      * Convert appshell error codes to FileSystemError values.
      *
      * @param {?number} err An appshell error code
      * @return {?string} A FileSystemError string, or null if there was no error code.
      * @private
      */
-    function _mapError(err) {
-        if (!err) {
-            return null;
-        }
-
-        switch (err) {
-        case appshell.fs.ERR_INVALID_PARAMS:
-            return FileSystemError.INVALID_PARAMS;
-        case appshell.fs.ERR_NOT_FOUND:
-            return FileSystemError.NOT_FOUND;
-        case appshell.fs.ERR_CANT_READ:
-            return FileSystemError.NOT_READABLE;
-        case appshell.fs.ERR_CANT_WRITE:
-            return FileSystemError.NOT_WRITABLE;
-        case appshell.fs.ERR_UNSUPPORTED_ENCODING:
-            return FileSystemError.UNSUPPORTED_ENCODING;
-        case appshell.fs.ERR_OUT_OF_SPACE:
-            return FileSystemError.OUT_OF_SPACE;
-        case appshell.fs.ERR_FILE_EXISTS:
-            return FileSystemError.ALREADY_EXISTS;
-        }
-        return FileSystemError.UNKNOWN;
+  function _mapError(err) {
+    if (!err) {
+      return null;
     }
 
-    /**
+    switch (err) {
+      case appshell.fs.ERR_INVALID_PARAMS:
+        return FileSystemError.INVALID_PARAMS;
+      case appshell.fs.ERR_NOT_FOUND:
+        return FileSystemError.NOT_FOUND;
+      case appshell.fs.ERR_CANT_READ:
+        return FileSystemError.NOT_READABLE;
+      case appshell.fs.ERR_CANT_WRITE:
+        return FileSystemError.NOT_WRITABLE;
+      case appshell.fs.ERR_UNSUPPORTED_ENCODING:
+        return FileSystemError.UNSUPPORTED_ENCODING;
+      case appshell.fs.ERR_OUT_OF_SPACE:
+        return FileSystemError.OUT_OF_SPACE;
+      case appshell.fs.ERR_FILE_EXISTS:
+        return FileSystemError.ALREADY_EXISTS;
+    }
+    return FileSystemError.UNKNOWN;
+  }
+
+  /**
      * Convert a callback to one that transforms its first parameter from an
      * appshell error code to a FileSystemError string.
      *
@@ -172,15 +177,15 @@ define(function (require, exports, module) {
      * @return {function(?string)} A callback that expects a FileSystemError string
      * @private
      */
-    function _wrap(cb) {
-        return function (err) {
-            var args = Array.prototype.slice.call(arguments);
-            args[0] = _mapError(args[0]);
-            cb.apply(null, args);
-        };
-    }
+  function _wrap(cb) {
+    return function(err) {
+      var args = Array.prototype.slice.call(arguments);
+      args[0] = _mapError(args[0]);
+      cb.apply(null, args);
+    };
+  }
 
-    /**
+  /**
      * Display an open-files dialog to the user and call back asynchronously with
      * either a FileSystmError string or an array of path strings, which indicate
      * the entry or entries selected.
@@ -192,11 +197,25 @@ define(function (require, exports, module) {
      * @param {Array.<string>=} fileTypes
      * @param {function(?string, Array.<string>=)} callback
      */
-    function showOpenDialog(allowMultipleSelection, chooseDirectories, title, initialPath, fileTypes, callback) {
-        appshell.fs.showOpenDialog(allowMultipleSelection, chooseDirectories, title, initialPath, fileTypes, _wrap(callback));
-    }
+  function showOpenDialog(
+    allowMultipleSelection,
+    chooseDirectories,
+    title,
+    initialPath,
+    fileTypes,
+    callback
+  ) {
+    appshell.fs.showOpenDialog(
+      allowMultipleSelection,
+      chooseDirectories,
+      title,
+      initialPath,
+      fileTypes,
+      _wrap(callback)
+    );
+  }
 
-    /**
+  /**
      * Display a save-file dialog and call back asynchronously with either a
      * FileSystemError string or the path to which the user has chosen to save
      * the file. If the dialog is cancelled, the path string will be empty.
@@ -206,11 +225,16 @@ define(function (require, exports, module) {
      * @param {string} proposedNewFilename
      * @param {function(?string, string=)} callback
      */
-    function showSaveDialog(title, initialPath, proposedNewFilename, callback) {
-        appshell.fs.showSaveDialog(title, initialPath, proposedNewFilename, _wrap(callback));
-    }
+  function showSaveDialog(title, initialPath, proposedNewFilename, callback) {
+    appshell.fs.showSaveDialog(
+      title,
+      initialPath,
+      proposedNewFilename,
+      _wrap(callback)
+    );
+  }
 
-    /**
+  /**
      * Stat the file or directory at the given path, calling back
      * asynchronously with either a FileSystemError string or the entry's
      * associated FileSystemStats object.
@@ -218,27 +242,27 @@ define(function (require, exports, module) {
      * @param {string} path
      * @param {function(?string, FileSystemStats=)} callback
      */
-    function stat(path, callback) {
-        appshell.fs.stat(path, function (err, stats) {
-            if (err) {
-                callback(_mapError(err));
-            } else {
-                var options = {
-                    isFile: stats.isFile(),
-                    mtime: stats.mtime,
-                    size: stats.size,
-                    realPath: stats.realPath,
-                    hash: stats.mtime.getTime()
-                };
+  function stat(path, callback) {
+    appshell.fs.stat(path, function(err, stats) {
+      if (err) {
+        callback(_mapError(err));
+      } else {
+        var options = {
+          isFile: stats.isFile(),
+          mtime: stats.mtime,
+          size: stats.size,
+          realPath: stats.realPath,
+          hash: stats.mtime.getTime()
+        };
 
-                var fsStats = new FileSystemStats(options);
+        var fsStats = new FileSystemStats(options);
 
-                callback(null, fsStats);
-            }
-        });
-    }
+        callback(null, fsStats);
+      }
+    });
+  }
 
-    /**
+  /**
      * Determine whether a file or directory exists at the given path by calling
      * back asynchronously with either a FileSystemError string or a boolean,
      * which is true if the file exists and false otherwise. The error will never
@@ -248,22 +272,22 @@ define(function (require, exports, module) {
      * @param {string} path
      * @param {function(?string, boolean)} callback
      */
-    function exists(path, callback) {
-        stat(path, function (err) {
-            if (err) {
-                if (err === FileSystemError.NOT_FOUND) {
-                    callback(null, false);
-                } else {
-                    callback(err);
-                }
-                return;
-            }
+  function exists(path, callback) {
+    stat(path, function(err) {
+      if (err) {
+        if (err === FileSystemError.NOT_FOUND) {
+          callback(null, false);
+        } else {
+          callback(err);
+        }
+        return;
+      }
 
-            callback(null, true);
-        });
-    }
+      callback(null, true);
+    });
+  }
 
-    /**
+  /**
      * Read the contents of the directory at the given path, calling back
      * asynchronously either with a FileSystemError string or an array of
      * FileSystemEntry objects along with another consistent array, each index
@@ -274,33 +298,33 @@ define(function (require, exports, module) {
      * @param {string} path
      * @param {function(?string, Array.<FileSystemEntry>=, Array.<string|FileSystemStats>=)} callback
      */
-    function readdir(path, callback) {
-        appshell.fs.readdir(path, function (err, contents) {
-            if (err) {
-                callback(_mapError(err));
-                return;
-            }
+  function readdir(path, callback) {
+    appshell.fs.readdir(path, function(err, contents) {
+      if (err) {
+        callback(_mapError(err));
+        return;
+      }
 
-            var count = contents.length;
-            if (!count) {
-                callback(null, [], []);
-                return;
-            }
+      var count = contents.length;
+      if (!count) {
+        callback(null, [], []);
+        return;
+      }
 
-            var stats = [];
-            contents.forEach(function (val, idx) {
-                stat(path + "/" + val, function (err, stat) {
-                    stats[idx] = err || stat;
-                    count--;
-                    if (count <= 0) {
-                        callback(null, contents, stats);
-                    }
-                });
-            });
+      var stats = [];
+      contents.forEach(function(val, idx) {
+        stat(path + "/" + val, function(err, stat) {
+          stats[idx] = err || stat;
+          count--;
+          if (count <= 0) {
+            callback(null, contents, stats);
+          }
         });
-    }
+      });
+    });
+  }
 
-    /**
+  /**
      * Create a directory at the given path, and call back asynchronously with
      * either a FileSystemError string or a stats object for the newly created
      * directory. The octal mode parameter is optional; if unspecified, the mode
@@ -310,23 +334,23 @@ define(function (require, exports, module) {
      * @param {number=} mode The base-eight mode of the newly created directory.
      * @param {function(?string, FileSystemStats=)=} callback
      */
-    function mkdir(path, mode, callback) {
-        if (typeof mode === "function") {
-            callback = mode;
-            mode = parseInt("0755", 8);
-        }
-        appshell.fs.makedir(path, mode, function (err) {
-            if (err) {
-                callback(_mapError(err));
-            } else {
-                stat(path, function (err, stat) {
-                    callback(err, stat);
-                });
-            }
-        });
+  function mkdir(path, mode, callback) {
+    if (typeof mode === "function") {
+      callback = mode;
+      mode = parseInt("0755", 8);
     }
+    appshell.fs.makedir(path, mode, function(err) {
+      if (err) {
+        callback(_mapError(err));
+      } else {
+        stat(path, function(err, stat) {
+          callback(err, stat);
+        });
+      }
+    });
+  }
 
-    /**
+  /**
      * Rename the file or directory at oldPath to newPath, and call back
      * asynchronously with a possibly null FileSystemError string.
      *
@@ -334,11 +358,11 @@ define(function (require, exports, module) {
      * @param {string} newPath
      * @param {function(?string)=} callback
      */
-    function rename(oldPath, newPath, callback) {
-        appshell.fs.rename(oldPath, newPath, _wrap(callback));
-    }
+  function rename(oldPath, newPath, callback) {
+    appshell.fs.rename(oldPath, newPath, _wrap(callback));
+  }
 
-    /**
+  /**
      * Read the contents of the file at the given path, calling back
      * asynchronously with either a FileSystemError string, or with the data and
      * the FileSystemStats object associated with the read file. The options
@@ -354,38 +378,38 @@ define(function (require, exports, module) {
      * @param {{encoding: string=, stat: FileSystemStats=}} options
      * @param {function(?string, string=, FileSystemStats=)} callback
      */
-    function readFile(path, options, callback) {
-        var encoding = options.encoding || "utf8";
+  function readFile(path, options, callback) {
+    var encoding = options.encoding || "utf8";
 
-        // callback to be executed when the call to stat completes
-        //  or immediately if a stat object was passed as an argument
-        function doReadFile(stat) {
-            if (stat.size > (FileUtils.MAX_FILE_SIZE)) {
-                callback(FileSystemError.EXCEEDS_MAX_FILE_SIZE);
-            } else {
-                appshell.fs.readFile(path, encoding, function (_err, _data) {
-                    if (_err) {
-                        callback(_mapError(_err));
-                    } else {
-                        callback(null, _data, stat);
-                    }
-                });
-            }
-        }
-
-        if (options.stat) {
-            doReadFile(options.stat);
-        } else {
-            exports.stat(path, function (_err, _stat) {
-                if (_err) {
-                    callback(_err);
-                } else {
-                    doReadFile(_stat);
-                }
-            });
-        }
+    // callback to be executed when the call to stat completes
+    //  or immediately if a stat object was passed as an argument
+    function doReadFile(stat) {
+      if (stat.size > FileUtils.MAX_FILE_SIZE) {
+        callback(FileSystemError.EXCEEDS_MAX_FILE_SIZE);
+      } else {
+        appshell.fs.readFile(path, encoding, function(_err, _data) {
+          if (_err) {
+            callback(_mapError(_err));
+          } else {
+            callback(null, _data, stat);
+          }
+        });
+      }
     }
-    /**
+
+    if (options.stat) {
+      doReadFile(options.stat);
+    } else {
+      exports.stat(path, function(_err, _stat) {
+        if (_err) {
+          callback(_err);
+        } else {
+          doReadFile(_stat);
+        }
+      });
+    }
+  }
+  /**
      * Write data to the file at the given path, calling back asynchronously with
      * either a FileSystemError string or the FileSystemStats object associated
      * with the written file and a boolean that indicates whether the file was
@@ -402,57 +426,65 @@ define(function (require, exports, module) {
      * @param {{encoding : string=, mode : number=, expectedHash : object=, expectedContents : string=}} options
      * @param {function(?string, FileSystemStats=, boolean)} callback
      */
-    function writeFile(path, data, options, callback) {
-        var encoding = options.encoding || "utf8";
+  function writeFile(path, data, options, callback) {
+    var encoding = options.encoding || "utf8";
 
-        function _finishWrite(created) {
-            appshell.fs.writeFile(path, data, encoding, function (err) {
-                if (err) {
-                    callback(_mapError(err));
-                } else {
-                    stat(path, function (err, stat) {
-                        callback(err, stat, created);
-                    });
-                }
-            });
+    function _finishWrite(created) {
+      appshell.fs.writeFile(path, data, encoding, function(err) {
+        if (err) {
+          callback(_mapError(err));
+        } else {
+          stat(path, function(err, stat) {
+            callback(err, stat, created);
+          });
         }
+      });
+    }
 
-        stat(path, function (err, stats) {
-            if (err) {
-                switch (err) {
-                case FileSystemError.NOT_FOUND:
-                    _finishWrite(true);
-                    break;
-                default:
-                    callback(err);
-                }
-                return;
-            }
+    stat(path, function(err, stats) {
+      if (err) {
+        switch (err) {
+          case FileSystemError.NOT_FOUND:
+            _finishWrite(true);
+            break;
+          default:
+            callback(err);
+        }
+        return;
+      }
 
-            if (options.hasOwnProperty("expectedHash") && options.expectedHash !== stats._hash) {
-                console.error("Blind write attempted: ", path, stats._hash, options.expectedHash);
+      if (
+        options.hasOwnProperty("expectedHash") &&
+        options.expectedHash !== stats._hash
+      ) {
+        console.error(
+          "Blind write attempted: ",
+          path,
+          stats._hash,
+          options.expectedHash
+        );
 
-                if (options.hasOwnProperty("expectedContents")) {
-                    appshell.fs.readFile(path, encoding, function (_err, _data) {
-                        if (_err || _data !== options.expectedContents) {
-                            callback(FileSystemError.CONTENTS_MODIFIED);
-                            return;
-                        }
-
-                        _finishWrite(false);
-                    });
-                    return;
-                } else {
-                    callback(FileSystemError.CONTENTS_MODIFIED);
-                    return;
-                }
+        if (options.hasOwnProperty("expectedContents")) {
+          appshell.fs.readFile(path, encoding, function(_err, _data) {
+            if (_err || _data !== options.expectedContents) {
+              callback(FileSystemError.CONTENTS_MODIFIED);
+              return;
             }
 
             _finishWrite(false);
-        });
-    }
+          });
+          return;
+        } else {
+          callback(FileSystemError.CONTENTS_MODIFIED);
+          return;
+        }
+      }
 
-    /**
+      _finishWrite(false);
+    });
+  }
+
+  /**
      * Unlink (i.e., permanently delete) the file or directory at the given path,
      * calling back asynchronously with a possibly null FileSystemError string.
      * Directories will be unlinked even when non-empty.
@@ -460,13 +492,13 @@ define(function (require, exports, module) {
      * @param {string} path
      * @param {function(string)=} callback
      */
-    function unlink(path, callback) {
-        appshell.fs.unlink(path, function (err) {
-            callback(_mapError(err));
-        });
-    }
+  function unlink(path, callback) {
+    appshell.fs.unlink(path, function(err) {
+      callback(_mapError(err));
+    });
+  }
 
-    /**
+  /**
      * Move the file or directory at the given path to a system dependent trash
      * location, calling back asynchronously with a possibly null FileSystemError
      * string. Directories will be moved even when non-empty.
@@ -474,13 +506,13 @@ define(function (require, exports, module) {
      * @param {string} path
      * @param {function(string)=} callback
      */
-    function moveToTrash(path, callback) {
-        appshell.fs.moveToTrash(path, function (err) {
-            callback(_mapError(err));
-        });
-    }
+  function moveToTrash(path, callback) {
+    appshell.fs.moveToTrash(path, function(err) {
+      callback(_mapError(err));
+    });
+  }
 
-    /**
+  /**
      * Initialize file watching for this filesystem, using the supplied
      * changeCallback to provide change notifications. The first parameter of
      * changeCallback specifies the changed path (either a file or a directory);
@@ -496,16 +528,16 @@ define(function (require, exports, module) {
      * @param {function(?string, FileSystemStats=)} changeCallback
      * @param {function()=} offlineCallback
      */
-    function initWatchers(changeCallback, offlineCallback) {
-        _changeCallback = changeCallback;
-        _offlineCallback = offlineCallback;
+  function initWatchers(changeCallback, offlineCallback) {
+    _changeCallback = changeCallback;
+    _offlineCallback = offlineCallback;
 
-        if (_isRunningOnWindowsXP && _offlineCallback) {
-            _offlineCallback();
-        }
+    if (_isRunningOnWindowsXP && _offlineCallback) {
+      _offlineCallback();
     }
+  }
 
-    /**
+  /**
      * Start providing change notifications for the file or directory at the
      * given path, calling back asynchronously with a possibly null FileSystemError
      * string when the initialization is complete. Notifications are provided
@@ -517,25 +549,24 @@ define(function (require, exports, module) {
      * @param {Array<string>} ignored
      * @param {function(?string)=} callback
      */
-    function watchPath(path, ignored, callback) {
-        if (_isRunningOnWindowsXP) {
-            callback(FileSystemError.NOT_SUPPORTED);
-            return;
-        }
-        appshell.fs.isNetworkDrive(path, function (err, isNetworkDrive) {
-            if (err || isNetworkDrive) {
-                if (isNetworkDrive) {
-                    callback(FileSystemError.NETWORK_DRIVE_NOT_SUPPORTED);
-                } else {
-                    callback(FileSystemError.UNKNOWN);
-                }
-                return;
-            }
-            _nodeDomain.exec("watchPath", path, ignored)
-                .then(callback, callback);
-        });
+  function watchPath(path, ignored, callback) {
+    if (_isRunningOnWindowsXP) {
+      callback(FileSystemError.NOT_SUPPORTED);
+      return;
     }
-    /**
+    appshell.fs.isNetworkDrive(path, function(err, isNetworkDrive) {
+      if (err || isNetworkDrive) {
+        if (isNetworkDrive) {
+          callback(FileSystemError.NETWORK_DRIVE_NOT_SUPPORTED);
+        } else {
+          callback(FileSystemError.UNKNOWN);
+        }
+        return;
+      }
+      _nodeDomain.exec("watchPath", path, ignored).then(callback, callback);
+    });
+  }
+  /**
      * Stop providing change notifications for the file or directory at the
      * given path, calling back asynchronously with a possibly null FileSystemError
      * string when the operation is complete.
@@ -546,50 +577,47 @@ define(function (require, exports, module) {
      * @param {Array<string>} ignored
      * @param {function(?string)=} callback
      */
-    function unwatchPath(path, ignored, callback) {
-        _nodeDomain.exec("unwatchPath", path)
-            .then(callback, callback);
-    }
+  function unwatchPath(path, ignored, callback) {
+    _nodeDomain.exec("unwatchPath", path).then(callback, callback);
+  }
 
-    /**
+  /**
      * Stop providing change notifications for all previously watched files and
      * directories, optionally calling back asynchronously with a possibly null
      * FileSystemError string when the operation is complete.
      *
      * @param {function(?string)=} callback
      */
-    function unwatchAll(callback) {
-        _nodeDomain.exec("unwatchAll")
-            .then(callback, callback);
-    }
+  function unwatchAll(callback) {
+    _nodeDomain.exec("unwatchAll").then(callback, callback);
+  }
 
+  // Export public API
+  exports.showOpenDialog = showOpenDialog;
+  exports.showSaveDialog = showSaveDialog;
+  exports.exists = exists;
+  exports.readdir = readdir;
+  exports.mkdir = mkdir;
+  exports.rename = rename;
+  exports.stat = stat;
+  exports.readFile = readFile;
+  exports.writeFile = writeFile;
+  exports.unlink = unlink;
+  exports.moveToTrash = moveToTrash;
+  exports.initWatchers = initWatchers;
+  exports.watchPath = watchPath;
+  exports.unwatchPath = unwatchPath;
+  exports.unwatchAll = unwatchAll;
 
-    // Export public API
-    exports.showOpenDialog  = showOpenDialog;
-    exports.showSaveDialog  = showSaveDialog;
-    exports.exists          = exists;
-    exports.readdir         = readdir;
-    exports.mkdir           = mkdir;
-    exports.rename          = rename;
-    exports.stat            = stat;
-    exports.readFile        = readFile;
-    exports.writeFile       = writeFile;
-    exports.unlink          = unlink;
-    exports.moveToTrash     = moveToTrash;
-    exports.initWatchers    = initWatchers;
-    exports.watchPath       = watchPath;
-    exports.unwatchPath     = unwatchPath;
-    exports.unwatchAll      = unwatchAll;
-
-    /**
+  /**
      * Indicates whether or not recursive watching notifications are supported
      * by the watchPath call.
      *
      * @type {boolean}
      */
-    exports.recursiveWatch = true;
+  exports.recursiveWatch = true;
 
-    /**
+  /**
      * Indicates whether or not the filesystem should expect and normalize UNC
      * paths. If set, then //server/directory/ is a normalized path; otherwise the
      * filesystem will normalize it to /server/directory. Currently, UNC path
@@ -597,5 +625,5 @@ define(function (require, exports, module) {
      *
      * @type {boolean}
      */
-    exports.normalizeUNCPaths = appshell.platform === "win";
+  exports.normalizeUNCPaths = appshell.platform === "win";
 });

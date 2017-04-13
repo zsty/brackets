@@ -21,90 +21,113 @@
  *
  */
 
-define(function (require, exports, module) {
-    "use strict";
+define(function(require, exports, module) {
+  "use strict";
+  var AppInit = require("utils/AppInit"),
+    Editor = require("editor/Editor").Editor,
+    Commands = require("command/Commands"),
+    CommandManager = require("command/CommandManager"),
+    PreferencesManager = require("preferences/PreferencesManager"),
+    Strings = require("strings"),
+    _ = require("thirdparty/lodash");
 
-    var AppInit             = require("utils/AppInit"),
-        Editor              = require("editor/Editor").Editor,
-        Commands            = require("command/Commands"),
-        CommandManager      = require("command/CommandManager"),
-        PreferencesManager  = require("preferences/PreferencesManager"),
-        Strings             = require("strings"),
-        _                   = require("thirdparty/lodash");
+  // Constants for the preferences referred to in this file
+  var SHOW_LINE_NUMBERS = "showLineNumbers",
+    STYLE_ACTIVE_LINE = "styleActiveLine",
+    WORD_WRAP = "wordWrap",
+    ALLOW_JAVASCRIPT = "allowJavaScript",
+    CLOSE_BRACKETS = "closeBrackets",
+    AUTO_UPDATE = "autoUpdate";
 
-    // Constants for the preferences referred to in this file
-    var SHOW_LINE_NUMBERS = "showLineNumbers",
-        STYLE_ACTIVE_LINE = "styleActiveLine",
-        WORD_WRAP         = "wordWrap",
-        ALLOW_JAVASCRIPT  = "allowJavaScript",
-        CLOSE_BRACKETS    = "closeBrackets",
-        AUTO_UPDATE       = "autoUpdate";
-
-    /**
+  /**
      * @private
      *
      * Maps from preference names to the command names needed to update the checked status.
      */
-    var _optionMapping = {};
-    _optionMapping[SHOW_LINE_NUMBERS] = Commands.TOGGLE_LINE_NUMBERS;
-    _optionMapping[STYLE_ACTIVE_LINE] = Commands.TOGGLE_ACTIVE_LINE;
-    _optionMapping[WORD_WRAP] = Commands.TOGGLE_WORD_WRAP;
-    _optionMapping[ALLOW_JAVASCRIPT] = Commands.TOGGLE_ALLOW_JAVASCRIPT;
-    _optionMapping[CLOSE_BRACKETS] = Commands.TOGGLE_CLOSE_BRACKETS;
-    _optionMapping[AUTO_UPDATE] = Commands.TOGGLE_AUTO_UPDATE;
+  var _optionMapping = {};
+  _optionMapping[SHOW_LINE_NUMBERS] = Commands.TOGGLE_LINE_NUMBERS;
+  _optionMapping[STYLE_ACTIVE_LINE] = Commands.TOGGLE_ACTIVE_LINE;
+  _optionMapping[WORD_WRAP] = Commands.TOGGLE_WORD_WRAP;
+  _optionMapping[ALLOW_JAVASCRIPT] = Commands.TOGGLE_ALLOW_JAVASCRIPT;
+  _optionMapping[CLOSE_BRACKETS] = Commands.TOGGLE_CLOSE_BRACKETS;
+  _optionMapping[AUTO_UPDATE] = Commands.TOGGLE_AUTO_UPDATE;
 
-    /**
+  /**
      * @private
      *
      * Updates the command checked status based on the preference name given.
      *
      * @param {string} name Name of preference that has changed
      */
-    function _updateCheckedState(name) {
-        var mapping = _optionMapping[name];
-        if (!mapping) {
-            return;
-        }
-        CommandManager.get(mapping).setChecked(PreferencesManager.get(name));
+  function _updateCheckedState(name) {
+    var mapping = _optionMapping[name];
+    if (!mapping) {
+      return;
     }
+    CommandManager.get(mapping).setChecked(PreferencesManager.get(name));
+  }
 
-    // Listen to preference changes for the preferences we care about
-    Object.keys(_optionMapping).forEach(function (preference) {
-        PreferencesManager.on("change", preference, function () {
-            _updateCheckedState(preference);
-        });
+  // Listen to preference changes for the preferences we care about
+  Object.keys(_optionMapping).forEach(function(preference) {
+    PreferencesManager.on("change", preference, function() {
+      _updateCheckedState(preference);
     });
+  });
 
-    /**
+  /**
      * @private
      * Creates a function that will toggle the named preference.
      *
      * @param {string} prefName Name of preference that should be toggled by the function
      */
-    function _getToggler(prefName) {
-        return function () {
-            PreferencesManager.set(prefName, !PreferencesManager.get(prefName));
-        };
+  function _getToggler(prefName) {
+    return function() {
+      PreferencesManager.set(prefName, !PreferencesManager.get(prefName));
+    };
+  }
+
+  function _init() {
+    _.each(_optionMapping, function(commandName, prefName) {
+      CommandManager.get(commandName).setChecked(
+        PreferencesManager.get(prefName)
+      );
+    });
+
+    if (!Editor.getShowLineNumbers()) {
+      Editor._toggleLinePadding(true);
     }
+  }
 
-    function _init() {
-        _.each(_optionMapping, function (commandName, prefName) {
-            CommandManager.get(commandName).setChecked(PreferencesManager.get(prefName));
-        });
+  CommandManager.register(
+    Strings.CMD_TOGGLE_LINE_NUMBERS,
+    Commands.TOGGLE_LINE_NUMBERS,
+    _getToggler(SHOW_LINE_NUMBERS)
+  );
+  CommandManager.register(
+    Strings.CMD_TOGGLE_ACTIVE_LINE,
+    Commands.TOGGLE_ACTIVE_LINE,
+    _getToggler(STYLE_ACTIVE_LINE)
+  );
+  CommandManager.register(
+    Strings.CMD_TOGGLE_WORD_WRAP,
+    Commands.TOGGLE_WORD_WRAP,
+    _getToggler(WORD_WRAP)
+  );
+  CommandManager.register(
+    Strings.CMD_TOGGLE_CLOSE_BRACKETS,
+    Commands.TOGGLE_CLOSE_BRACKETS,
+    _getToggler(CLOSE_BRACKETS)
+  );
 
-        if (!Editor.getShowLineNumbers()) {
-            Editor._toggleLinePadding(true);
-        }
-    }
+  // XXXBramble
+  CommandManager.registerInternal(
+    Commands.TOGGLE_ALLOW_JAVASCRIPT,
+    _getToggler(ALLOW_JAVASCRIPT)
+  );
+  CommandManager.registerInternal(
+    Commands.TOGGLE_AUTO_UPDATE,
+    _getToggler(AUTO_UPDATE)
+  );
 
-    CommandManager.register(Strings.CMD_TOGGLE_LINE_NUMBERS, Commands.TOGGLE_LINE_NUMBERS, _getToggler(SHOW_LINE_NUMBERS));
-    CommandManager.register(Strings.CMD_TOGGLE_ACTIVE_LINE, Commands.TOGGLE_ACTIVE_LINE, _getToggler(STYLE_ACTIVE_LINE));
-    CommandManager.register(Strings.CMD_TOGGLE_WORD_WRAP, Commands.TOGGLE_WORD_WRAP, _getToggler(WORD_WRAP));
-    CommandManager.register(Strings.CMD_TOGGLE_CLOSE_BRACKETS, Commands.TOGGLE_CLOSE_BRACKETS, _getToggler(CLOSE_BRACKETS));
-
-    // XXXBramble
-    CommandManager.registerInternal(Commands.TOGGLE_ALLOW_JAVASCRIPT, _getToggler(ALLOW_JAVASCRIPT));
-    CommandManager.registerInternal(Commands.TOGGLE_AUTO_UPDATE, _getToggler(AUTO_UPDATE));
-
-    AppInit.htmlReady(_init);
+  AppInit.htmlReady(_init);
 });

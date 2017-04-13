@@ -26,108 +26,112 @@
  * document.
  */
 define(function EditAgent(require, exports, module) {
-    "use strict";
+  "use strict";
+  var Inspector = require("LiveDevelopment/Inspector/Inspector");
+  var DOMAgent = require("LiveDevelopment/Agents/DOMAgent");
+  var RemoteAgent = require("LiveDevelopment/Agents/RemoteAgent");
+  var GotoAgent = require("LiveDevelopment/Agents/GotoAgent");
 
-    var Inspector = require("LiveDevelopment/Inspector/Inspector");
-    var DOMAgent = require("LiveDevelopment/Agents/DOMAgent");
-    var RemoteAgent = require("LiveDevelopment/Agents/RemoteAgent");
-    var GotoAgent = require("LiveDevelopment/Agents/GotoAgent");
+  var EditorManager = require("editor/EditorManager");
 
-    var EditorManager = require("editor/EditorManager");
+  var _editedNode;
 
-    var _editedNode;
-
-    /** Find changed characters
+  /** Find changed characters
      * @param {string} old value
      * @param {string} changed value
      * @return {from, to, text}
      */
-    function _findChangedCharacters(oldValue, value) {
-        if (oldValue === value) {
-            return undefined;
-        }
-        var length = oldValue.length;
-        var index = 0;
+  function _findChangedCharacters(oldValue, value) {
+    if (oldValue === value) {
+      return undefined;
+    }
+    var length = oldValue.length;
+    var index = 0;
 
-        // find the first character that changed
-        var i;
-        for (i = 0; i < length; i++) {
-            if (value[i] !== oldValue[i]) {
-                break;
-            }
-        }
-        index += i;
-        value = value.substr(i);
-        length -= i;
+    // find the first character that changed
+    var i;
+    for (i = 0; i < length; i++) {
+      if (value[i] !== oldValue[i]) {
+        break;
+      }
+    }
+    index += i;
+    value = value.substr(i);
+    length -= i;
 
-        // find the last character that changed
-        for (i = 0; i < length; i++) {
-            if (value[value.length - 1 - i] !== oldValue[oldValue.length - 1 - i]) {
-                break;
-            }
-        }
-        length -= i;
-        value = value.substr(0, value.length - i);
+    // find the last character that changed
+    for (i = 0; i < length; i++) {
+      if (value[value.length - 1 - i] !== oldValue[oldValue.length - 1 - i]) {
+        break;
+      }
+    }
+    length -= i;
+    value = value.substr(0, value.length - i);
 
-        return { from: index, to: index + length, text: value };
+    return { from: index, to: index + length, text: value };
+  }
+
+  // WebInspector Event: DOM.characterDataModified
+  function _onCharacterDataModified(event, res) {
+    // res = {nodeId, characterData}
+    if (_editedNode.nodeId !== res.nodeId) {
+      return;
     }
 
-    // WebInspector Event: DOM.characterDataModified
-    function _onCharacterDataModified(event, res) {
-        // res = {nodeId, characterData}
-        if (_editedNode.nodeId !== res.nodeId) {
-            return;
-        }
+    GotoAgent.open(DOMAgent.url);
+    var editor = EditorManager.getCurrentFullEditor();
+    var codeMirror = editor._codeMirror;
+    var change = _findChangedCharacters(_editedNode.value, res.characterData);
+    if (change) {
+      var from = codeMirror.posFromIndex(_editedNode.location + change.from);
+      var to = codeMirror.posFromIndex(_editedNode.location + change.to);
+      exports.isEditing = true;
+      editor.document.replaceRange(change.text, from, to);
+      exports.isEditing = false;
 
-        GotoAgent.open(DOMAgent.url);
-        var editor = EditorManager.getCurrentFullEditor();
-        var codeMirror = editor._codeMirror;
-        var change = _findChangedCharacters(_editedNode.value, res.characterData);
-        if (change) {
-            var from = codeMirror.posFromIndex(_editedNode.location + change.from);
-            var to = codeMirror.posFromIndex(_editedNode.location + change.to);
-            exports.isEditing = true;
-            editor.document.replaceRange(change.text, from, to);
-            exports.isEditing = false;
+      var newPos = codeMirror.posFromIndex(
+        _editedNode.location + change.from + change.text.length
+      );
+      editor.setCursorPos(newPos.line, newPos.ch);
+    }
+  }
 
-            var newPos = codeMirror.posFromIndex(_editedNode.location + change.from + change.text.length);
-            editor.setCursorPos(newPos.line, newPos.ch);
-        }
+  // Remote Event: Go to the given source node
+  function _onRemoteEdit(event, res) {
+    // res = {nodeId, name, value}
+
+    // detach from DOM change events
+    if (res.value === "0") {
+      Inspector.DOM.off(".EditAgent");
+      return;
     }
 
-    // Remote Event: Go to the given source node
-    function _onRemoteEdit(event, res) {
-        // res = {nodeId, name, value}
-
-        // detach from DOM change events
-        if (res.value === "0") {
-            Inspector.DOM.off(".EditAgent");
-            return;
-        }
-
-        // find and store the edited node
-        var node = DOMAgent.nodeWithId(res.nodeId);
-        node = node.children[0];
-        if (!node.location) {
-            return;
-        }
-        _editedNode = node;
-
-        // attach to character data modified events
-        Inspector.DOM.on("characterDataModified.EditAgent", _onCharacterDataModified);
+    // find and store the edited node
+    var node = DOMAgent.nodeWithId(res.nodeId);
+    node = node.children[0];
+    if (!node.location) {
+      return;
     }
+    _editedNode = node;
 
-    /** Initialize the agent */
-    function load() {
-        RemoteAgent.on("edit.EditAgent", _onRemoteEdit);
-    }
+    // attach to character data modified events
+    Inspector.DOM.on(
+      "characterDataModified.EditAgent",
+      _onCharacterDataModified
+    );
+  }
 
-    /** Initialize the agent */
-    function unload() {
-        RemoteAgent.off(".EditAgent");
-    }
+  /** Initialize the agent */
+  function load() {
+    RemoteAgent.on("edit.EditAgent", _onRemoteEdit);
+  }
 
-    // Export public functions
-    exports.load = load;
-    exports.unload = unload;
+  /** Initialize the agent */
+  function unload() {
+    RemoteAgent.off(".EditAgent");
+  }
+
+  // Export public functions
+  exports.load = load;
+  exports.unload = unload;
 });

@@ -23,45 +23,45 @@
 
 /*global describe, it, xit, expect, beforeEach, afterEach, waitsFor, runs, waitsForDone */
 
-define(function (require, exports, module) {
-    "use strict";
+define(function(require, exports, module) {
+  "use strict";
+  var CommandManager, // loaded from brackets.test
+    EditorManager, // loaded from brackets.test
+    PerfUtils, // loaded from brackets.test
+    JSUtils, // loaded from brackets.test
+    FileUtils = brackets.getModule("file/FileUtils"),
+    SpecRunnerUtils = brackets.getModule("spec/SpecRunnerUtils"),
+    Strings = brackets.getModule("strings"),
+    UnitTestReporter = brackets.getModule("test/UnitTestReporter");
 
-    var CommandManager,         // loaded from brackets.test
-        EditorManager,          // loaded from brackets.test
-        PerfUtils,              // loaded from brackets.test
-        JSUtils,                // loaded from brackets.test
+  var extensionPath = FileUtils.getNativeModuleDirectoryPath(module),
+    testPath = extensionPath + "/unittest-files/syntax",
+    tempPath = SpecRunnerUtils.getTempDirectory(),
+    testWindow,
+    initInlineTest;
 
-        FileUtils           = brackets.getModule("file/FileUtils"),
-        SpecRunnerUtils     = brackets.getModule("spec/SpecRunnerUtils"),
-        Strings             = brackets.getModule("strings"),
-        UnitTestReporter    = brackets.getModule("test/UnitTestReporter");
+  function rewriteProject(spec) {
+    var result = new $.Deferred(),
+      infos = {},
+      options = {
+        parseOffsets: true,
+        infos: infos,
+        removePrefix: true
+      };
 
-    var extensionPath = FileUtils.getNativeModuleDirectoryPath(module),
-        testPath = extensionPath + "/unittest-files/syntax",
-        tempPath = SpecRunnerUtils.getTempDirectory(),
-        testWindow,
-        initInlineTest;
+    SpecRunnerUtils.copyPath(testPath, tempPath, options)
+      .done(function() {
+        spec.infos = infos;
+        result.resolve();
+      })
+      .fail(function() {
+        result.reject();
+      });
 
-    function rewriteProject(spec) {
-        var result = new $.Deferred(),
-            infos = {},
-            options = {
-                parseOffsets    : true,
-                infos           : infos,
-                removePrefix    : true
-            };
+    return result.promise();
+  }
 
-        SpecRunnerUtils.copyPath(testPath, tempPath, options).done(function () {
-            spec.infos = infos;
-            result.resolve();
-        }).fail(function () {
-            result.reject();
-        });
-
-        return result.promise();
-    }
-
-    /**
+  /**
      * Performs setup for an inline editor test. Parses offsets (saved to Spec.offsets) for all files in
      * the test project (testPath) and saves files back to disk without offset markup.
      * When finished, open an editor for the specified project relative file path
@@ -72,204 +72,243 @@ define(function (require, exports, module) {
      * @param {!number} openOffset The offset index location within openFile to open an inline editor.
      * @param {?boolean} expectInline Use false to verify that an inline editor should not be opened. Omit otherwise.
      */
-    var _initInlineTest = function (openFile, openOffset, expectInline, filesToOpen) {
-        var spec = this;
+  var _initInlineTest = function(
+    openFile,
+    openOffset,
+    expectInline,
+    filesToOpen
+  ) {
+    var spec = this;
 
-        filesToOpen = filesToOpen || [];
-        expectInline = (expectInline !== undefined) ? expectInline : true;
+    filesToOpen = filesToOpen || [];
+    expectInline = expectInline !== undefined ? expectInline : true;
 
-        runs(function () {
-            waitsForDone(rewriteProject(spec), "rewriteProject");
-        });
+    runs(function() {
+      waitsForDone(rewriteProject(spec), "rewriteProject");
+    });
 
-        SpecRunnerUtils.loadProjectInTestWindow(tempPath);
+    SpecRunnerUtils.loadProjectInTestWindow(tempPath);
 
-        runs(function () {
-            filesToOpen.push(openFile);
-            waitsForDone(SpecRunnerUtils.openProjectFiles(filesToOpen), "openProjectFiles");
-        });
+    runs(function() {
+      filesToOpen.push(openFile);
+      waitsForDone(
+        SpecRunnerUtils.openProjectFiles(filesToOpen),
+        "openProjectFiles"
+      );
+    });
 
-        if (openOffset !== undefined) {
-            runs(function () {
-                // open inline editor at specified offset index
-                waitsForDone(SpecRunnerUtils.toggleQuickEditAtOffset(
-                    EditorManager.getCurrentFullEditor(),
-                    spec.infos[openFile].offsets[openOffset]
-                ), "toggleQuickEditAtOffset");
-            });
-        }
-    };
+    if (openOffset !== undefined) {
+      runs(function() {
+        // open inline editor at specified offset index
+        waitsForDone(
+          SpecRunnerUtils.toggleQuickEditAtOffset(
+            EditorManager.getCurrentFullEditor(),
+            spec.infos[openFile].offsets[openOffset]
+          ),
+          "toggleQuickEditAtOffset"
+        );
+      });
+    }
+  };
 
-    describe("JSQuickEdit", function () {
-
-        /*
+  describe("JSQuickEdit", function() {
+    /*
          *
          */
-        describe("javaScriptFunctionProvider", function () {
+    describe("javaScriptFunctionProvider", function() {
+      beforeEach(function() {
+        initInlineTest = _initInlineTest.bind(this);
+        SpecRunnerUtils.createTestWindowAndRun(this, function(w) {
+          testWindow = w;
+          EditorManager = testWindow.brackets.test.EditorManager;
+          CommandManager = testWindow.brackets.test.CommandManager;
+          JSUtils = testWindow.brackets.test.JSUtils;
+        });
 
-            beforeEach(function () {
-                initInlineTest = _initInlineTest.bind(this);
-                SpecRunnerUtils.createTestWindowAndRun(this, function (w) {
-                    testWindow          = w;
-                    EditorManager       = testWindow.brackets.test.EditorManager;
-                    CommandManager      = testWindow.brackets.test.CommandManager;
-                    JSUtils             = testWindow.brackets.test.JSUtils;
-                });
+        this.addMatchers({
+          toHaveInlineEditorRange: function(range) {
+            var i = 0,
+              editor = this.actual,
+              hidden,
+              lineCount = editor.lineCount(),
+              shouldHide = [],
+              shouldShow = [],
+              startLine = range.startLine,
+              endLine = range.endLine,
+              visibleRangeCheck;
 
-                this.addMatchers({
+            for (i = 0; i < lineCount; i++) {
+              hidden = editor._codeMirror.getLineHandle(i).hidden || false;
 
-                    toHaveInlineEditorRange: function (range) {
-                        var i = 0,
-                            editor = this.actual,
-                            hidden,
-                            lineCount = editor.lineCount(),
-                            shouldHide = [],
-                            shouldShow = [],
-                            startLine = range.startLine,
-                            endLine = range.endLine,
-                            visibleRangeCheck;
+              if (i < startLine) {
+                if (!hidden) {
+                  shouldHide.push(i); // lines above start line should be hidden
+                }
+              } else if (i >= startLine && i <= endLine) {
+                if (hidden) {
+                  shouldShow.push(i); // lines in the range should be visible
+                }
+              } else if (i > endLine) {
+                if (!hidden) {
+                  shouldHide.push(i); // lines below end line should be hidden
+                }
+              }
+            }
 
-                        for (i = 0; i < lineCount; i++) {
-                            hidden = editor._codeMirror.getLineHandle(i).hidden || false;
+            visibleRangeCheck = editor._visibleRange.startLine === startLine &&
+              editor._visibleRange.endLine === endLine;
 
-                            if (i < startLine) {
-                                if (!hidden) {
-                                    shouldHide.push(i); // lines above start line should be hidden
-                                }
-                            } else if ((i >= startLine) && (i <= endLine)) {
-                                if (hidden) {
-                                    shouldShow.push(i); // lines in the range should be visible
-                                }
-                            } else if (i > endLine) {
-                                if (!hidden) {
-                                    shouldHide.push(i); // lines below end line should be hidden
-                                }
-                            }
-                        }
+            this.message = function() {
+              var msg = "";
 
-                        visibleRangeCheck = (editor._visibleRange.startLine === startLine) &&
-                            (editor._visibleRange.endLine === endLine);
+              if (shouldHide.length > 0) {
+                msg += "Expected inline editor to hide [" +
+                  shouldHide.toString() +
+                  "].\n";
+              }
 
-                        this.message = function () {
-                            var msg = "";
+              if (shouldShow.length > 0) {
+                msg += "Expected inline editor to show [" +
+                  shouldShow.toString() +
+                  "].\n";
+              }
 
-                            if (shouldHide.length > 0) {
-                                msg += "Expected inline editor to hide [" + shouldHide.toString() + "].\n";
-                            }
+              if (!visibleRangeCheck) {
+                msg += "Editor._visibleRange [" +
+                  editor._visibleRange.startLine +
+                  "," +
+                  editor._visibleRange.endLine +
+                  "] should be [" +
+                  startLine +
+                  "," +
+                  endLine +
+                  "].";
+              }
 
-                            if (shouldShow.length > 0) {
-                                msg += "Expected inline editor to show [" + shouldShow.toString() + "].\n";
-                            }
+              return msg;
+            };
 
-                            if (!visibleRangeCheck) {
-                                msg += "Editor._visibleRange [" +
-                                    editor._visibleRange.startLine + "," +
-                                    editor._visibleRange.endLine + "] should be [" +
-                                    startLine + "," + endLine + "].";
-                            }
+            return shouldHide.length === 0 &&
+              shouldShow.length === 0 &&
+              visibleRangeCheck;
+          }
+        });
+      });
 
-                            return msg;
-                        };
+      afterEach(function() {
+        //debug visual confirmation of inline editor
+        //waits(1000);
 
-                        return (shouldHide.length === 0) &&
-                            (shouldShow.length === 0) &&
-                            visibleRangeCheck;
-                    }
-                });
-            });
+        // revert files to original content with offset markup
+        initInlineTest = null;
+        testWindow = null;
+        EditorManager = null;
+        CommandManager = null;
+        JSUtils = null;
+        SpecRunnerUtils.closeTestWindow();
+      });
 
-            afterEach(function () {
-                //debug visual confirmation of inline editor
-                //waits(1000);
+      it("should ignore tokens that are not function calls or references", function() {
+        var editor,
+          extensionRequire,
+          jsQuickEditMain,
+          tokensFile = "tokens.js",
+          promise,
+          offsets;
 
-                // revert files to original content with offset markup
-                initInlineTest      = null;
-                testWindow          = null;
-                EditorManager       = null;
-                CommandManager      = null;
-                JSUtils             = null;
-                SpecRunnerUtils.closeTestWindow();
-            });
+        initInlineTest(tokensFile);
 
-            it("should ignore tokens that are not function calls or references", function () {
-                var editor,
-                    extensionRequire,
-                    jsQuickEditMain,
-                    tokensFile = "tokens.js",
-                    promise,
-                    offsets;
+        runs(function() {
+          extensionRequire = testWindow.brackets
+            .getModule("utils/ExtensionLoader")
+            .getRequireContextForExtension("JavaScriptQuickEdit");
+          jsQuickEditMain = extensionRequire("main");
+          editor = EditorManager.getCurrentFullEditor();
+          offsets = this.infos[tokensFile];
 
-                initInlineTest(tokensFile);
+          // regexp token
+          promise = jsQuickEditMain.javaScriptFunctionProvider(
+            editor,
+            offsets[0]
+          );
+          expect(promise).toBe(Strings.ERROR_JSQUICKEDIT_FUNCTIONNOTFOUND);
 
-                runs(function () {
-                    extensionRequire = testWindow.brackets.getModule("utils/ExtensionLoader").getRequireContextForExtension("JavaScriptQuickEdit");
-                    jsQuickEditMain = extensionRequire("main");
-                    editor = EditorManager.getCurrentFullEditor();
-                    offsets = this.infos[tokensFile];
+          // multi-line comment
+          promise = jsQuickEditMain.javaScriptFunctionProvider(
+            editor,
+            offsets[1]
+          );
+          expect(promise).toBe(Strings.ERROR_JSQUICKEDIT_FUNCTIONNOTFOUND);
 
-                    // regexp token
-                    promise = jsQuickEditMain.javaScriptFunctionProvider(editor, offsets[0]);
-                    expect(promise).toBe(Strings.ERROR_JSQUICKEDIT_FUNCTIONNOTFOUND);
+          // single-line comment
+          promise = jsQuickEditMain.javaScriptFunctionProvider(
+            editor,
+            offsets[2]
+          );
+          expect(promise).toBe(Strings.ERROR_JSQUICKEDIT_FUNCTIONNOTFOUND);
 
-                    // multi-line comment
-                    promise = jsQuickEditMain.javaScriptFunctionProvider(editor, offsets[1]);
-                    expect(promise).toBe(Strings.ERROR_JSQUICKEDIT_FUNCTIONNOTFOUND);
+          // string, double quotes
+          promise = jsQuickEditMain.javaScriptFunctionProvider(
+            editor,
+            offsets[3]
+          );
+          expect(promise).toBe(Strings.ERROR_JSQUICKEDIT_FUNCTIONNOTFOUND);
 
-                    // single-line comment
-                    promise = jsQuickEditMain.javaScriptFunctionProvider(editor, offsets[2]);
-                    expect(promise).toBe(Strings.ERROR_JSQUICKEDIT_FUNCTIONNOTFOUND);
+          // string, single quotes
+          promise = jsQuickEditMain.javaScriptFunctionProvider(
+            editor,
+            offsets[4]
+          );
+          expect(promise).toBe(Strings.ERROR_JSQUICKEDIT_FUNCTIONNOTFOUND);
+        });
+      });
 
-                    // string, double quotes
-                    promise = jsQuickEditMain.javaScriptFunctionProvider(editor, offsets[3]);
-                    expect(promise).toBe(Strings.ERROR_JSQUICKEDIT_FUNCTIONNOTFOUND);
+      it("should open a function with  form: function functionName()", function() {
+        initInlineTest("test1main.js", 0);
 
-                    // string, single quotes
-                    promise = jsQuickEditMain.javaScriptFunctionProvider(editor, offsets[4]);
-                    expect(promise).toBe(Strings.ERROR_JSQUICKEDIT_FUNCTIONNOTFOUND);
-                });
-            });
+        runs(function() {
+          var inlineWidget = EditorManager.getCurrentFullEditor().getInlineWidgets()[
+            0
+          ];
+          var inlinePos = inlineWidget.editor.getCursorPos();
 
-            it("should open a function with  form: function functionName()", function () {
-                initInlineTest("test1main.js", 0);
+          // verify cursor position in inline editor
+          expect(inlinePos).toEqual(this.infos["test1inline.js"].offsets[0]);
+        });
+      });
 
-                runs(function () {
-                    var inlineWidget = EditorManager.getCurrentFullEditor().getInlineWidgets()[0];
-                    var inlinePos = inlineWidget.editor.getCursorPos();
+      it("should open a function with  form: functionName = function()", function() {
+        initInlineTest("test1main.js", 1);
 
-                    // verify cursor position in inline editor
-                    expect(inlinePos).toEqual(this.infos["test1inline.js"].offsets[0]);
-                });
-            });
+        runs(function() {
+          var inlineWidget = EditorManager.getCurrentFullEditor().getInlineWidgets()[
+            0
+          ];
+          var inlinePos = inlineWidget.editor.getCursorPos();
 
-            it("should open a function with  form: functionName = function()", function () {
-                initInlineTest("test1main.js", 1);
+          // verify cursor position in inline editor
+          expect(inlinePos).toEqual(this.infos["test1inline.js"].offsets[1]);
+        });
+      });
 
-                runs(function () {
-                    var inlineWidget = EditorManager.getCurrentFullEditor().getInlineWidgets()[0];
-                    var inlinePos = inlineWidget.editor.getCursorPos();
+      it("should open a function with  form: functionName: function()", function() {
+        initInlineTest("test1main.js", 2);
 
-                    // verify cursor position in inline editor
-                    expect(inlinePos).toEqual(this.infos["test1inline.js"].offsets[1]);
-                });
-            });
+        runs(function() {
+          var inlineWidget = EditorManager.getCurrentFullEditor().getInlineWidgets()[
+            0
+          ];
+          var inlinePos = inlineWidget.editor.getCursorPos();
 
-            it("should open a function with  form: functionName: function()", function () {
-                initInlineTest("test1main.js", 2);
+          // verify cursor position in inline editor
+          expect(inlinePos).toEqual(this.infos["test1inline.js"].offsets[2]);
+        });
+      });
 
-                runs(function () {
-                    var inlineWidget = EditorManager.getCurrentFullEditor().getInlineWidgets()[0];
-                    var inlinePos = inlineWidget.editor.getCursorPos();
+      describe("Code hints tests within quick edit window ", function() {
+        var JSCodeHints, ParameterHintManager;
 
-                    // verify cursor position in inline editor
-                    expect(inlinePos).toEqual(this.infos["test1inline.js"].offsets[2]);
-                });
-            });
-
-            describe("Code hints tests within quick edit window ", function () {
-                var JSCodeHints,
-                    ParameterHintManager;
-
-                /*
+        /*
                  * Ask provider for hints at current cursor position; expect it to
                  * return some
                  *
@@ -279,16 +318,18 @@ define(function (require, exports, module) {
                  * @return {boolean} - whether the provider has hints in the context of
                  *      the test editor
                  */
-                function expectHints(provider, key) {
-                    if (key === undefined) {
-                        key = null;
-                    }
+        function expectHints(provider, key) {
+          if (key === undefined) {
+            key = null;
+          }
 
-                    expect(provider.hasHints(EditorManager.getActiveEditor(), key)).toBe(true);
-                    return provider.getHints(null);
-                }
+          expect(provider.hasHints(EditorManager.getActiveEditor(), key)).toBe(
+            true
+          );
+          return provider.getHints(null);
+        }
 
-                /*
+        /*
                  * Wait for a hint response object to resolve, then apply a callback
                  * to the result
                  *
@@ -297,28 +338,33 @@ define(function (require, exports, module) {
                  * @param {Function} callback - the callback to apply to the resolved
                  *      hint response object
                  */
-                function _waitForHints(hintObj, callback) {
-                    var complete = false,
-                        hintList = null;
+        function _waitForHints(hintObj, callback) {
+          var complete = false, hintList = null;
 
-                    if (hintObj.hasOwnProperty("hints")) {
-                        complete = true;
-                        hintList = hintObj.hints;
-                    } else {
-                        hintObj.done(function (obj) {
-                            complete = true;
-                            hintList = obj.hints;
-                        });
-                    }
+          if (hintObj.hasOwnProperty("hints")) {
+            complete = true;
+            hintList = hintObj.hints;
+          } else {
+            hintObj.done(function(obj) {
+              complete = true;
+              hintList = obj.hints;
+            });
+          }
 
-                    waitsFor(function () {
-                        return complete;
-                    }, "Expected hints did not resolve", 3000);
+          waitsFor(
+            function() {
+              return complete;
+            },
+            "Expected hints did not resolve",
+            3000
+          );
 
-                    runs(function () { callback(hintList); });
-                }
+          runs(function() {
+            callback(hintList);
+          });
+        }
 
-                /*
+        /*
                  * Expect a given list of hints to be present in a given hint
                  * response object, and no more.
                  *
@@ -327,17 +373,17 @@ define(function (require, exports, module) {
                  * @param {Array.<string>} expectedHints - a list of hints that should be
                  *      present in the hint response, and no more.
                  */
-                function hintsPresentExact(hintObj, expectedHints) {
-                    _waitForHints(hintObj, function (hintList) {
-                        expect(hintList).toBeTruthy();
-                        expect(hintList.length).toBe(expectedHints.length);
-                        expectedHints.forEach(function (expectedHint, index) {
-                            expect(hintList[index].data("token").value).toBe(expectedHint);
-                        });
-                    });
-                }
+        function hintsPresentExact(hintObj, expectedHints) {
+          _waitForHints(hintObj, function(hintList) {
+            expect(hintList).toBeTruthy();
+            expect(hintList.length).toBe(expectedHints.length);
+            expectedHints.forEach(function(expectedHint, index) {
+              expect(hintList[index].data("token").value).toBe(expectedHint);
+            });
+          });
+        }
 
-                /*
+        /*
                  * Wait for a hint response object to resolve, then apply a callback
                  * to the result
                  *
@@ -346,23 +392,28 @@ define(function (require, exports, module) {
                  * @param {Function} callback - the callback to apply to the resolved
                  *      hint response object
                  */
-                function _waitForParameterHint(hintObj, callback) {
-                    var complete = false,
-                        hint = null;
+        function _waitForParameterHint(hintObj, callback) {
+          var complete = false, hint = null;
 
-                    hintObj.done(function () {
-                        hint = JSCodeHints.getSession().getParameterHint();
-                        complete = true;
-                    });
+          hintObj.done(function() {
+            hint = JSCodeHints.getSession().getParameterHint();
+            complete = true;
+          });
 
-                    waitsFor(function () {
-                        return complete;
-                    }, "Expected parameter hint did not resolve", 3000);
+          waitsFor(
+            function() {
+              return complete;
+            },
+            "Expected parameter hint did not resolve",
+            3000
+          );
 
-                    runs(function () { callback(hint); });
-                }
+          runs(function() {
+            callback(hint);
+          });
+        }
 
-                /**
+        /**
                  * Show a function hint based on the code at the cursor. Verify the
                  * hint matches the passed in value.
                  *
@@ -371,62 +422,64 @@ define(function (require, exports, module) {
                  * describes a function parameter. If null, then no hint is expected.
                  * @param {number} expectedParameter - the parameter at cursor.
                  */
-                function expectParameterHint(expectedParams, expectedParameter) {
-                    var request = ParameterHintManager.popUpHint();
-                    if (expectedParams === null) {
-                        expect(request).toBe(null);
-                        return;
-                    }
+        function expectParameterHint(expectedParams, expectedParameter) {
+          var request = ParameterHintManager.popUpHint();
+          if (expectedParams === null) {
+            expect(request).toBe(null);
+            return;
+          }
 
-                    function expectHint(hint) {
-                        var params = hint.parameters,
-                            n = params.length,
-                            i;
+          function expectHint(hint) {
+            var params = hint.parameters, n = params.length, i;
 
-                        // compare params to expected params
-                        expect(params.length).toBe(expectedParams.length);
-                        expect(hint.currentIndex).toBe(expectedParameter);
+            // compare params to expected params
+            expect(params.length).toBe(expectedParams.length);
+            expect(hint.currentIndex).toBe(expectedParameter);
 
-                        for (i = 0; i < n; i++) {
+            for (i = 0; i < n; i++) {
+              expect(params[i].name).toBe(expectedParams[i].name);
+              expect(params[i].type).toBe(expectedParams[i].type);
+              if (params[i].isOptional) {
+                expect(expectedParams[i].isOptional).toBeTruthy();
+              } else {
+                expect(expectedParams[i].isOptional).toBeFalsy();
+              }
+            }
+          }
 
-                            expect(params[i].name).toBe(expectedParams[i].name);
-                            expect(params[i].type).toBe(expectedParams[i].type);
-                            if (params[i].isOptional) {
-                                expect(expectedParams[i].isOptional).toBeTruthy();
-                            } else {
-                                expect(expectedParams[i].isOptional).toBeFalsy();
-                            }
-                        }
+          if (request) {
+            _waitForParameterHint(request, expectHint);
+          } else {
+            expectHint(JSCodeHints.getSession().getParameterHint());
+          }
+        }
 
-                    }
-
-                    if (request) {
-                        _waitForParameterHint(request, expectHint);
-                    } else {
-                        expectHint(JSCodeHints.getSession().getParameterHint());
-                    }
-                }
-
-                /**
+        /**
                  * Wait for the editor to change positions, such as after a jump to
                  * definition has been triggered.  Will timeout after 3 seconds
                  *
                  * @param {{line:number, ch:number}} oldLocation - the original line/col
                  * @param {Function} callback - the callback to apply once the editor has changed position
                  */
-                function _waitForJump(oldLocation, callback) {
-                    var cursor = null;
-                    waitsFor(function () {
-                        var activeEditor = EditorManager.getActiveEditor();
-                        cursor = activeEditor.getCursorPos();
-                        return (cursor.line !== oldLocation.line) ||
-                            (cursor.ch !== oldLocation.ch);
-                    }, "Expected jump did not occur", 3000);
+        function _waitForJump(oldLocation, callback) {
+          var cursor = null;
+          waitsFor(
+            function() {
+              var activeEditor = EditorManager.getActiveEditor();
+              cursor = activeEditor.getCursorPos();
+              return cursor.line !== oldLocation.line ||
+                cursor.ch !== oldLocation.ch;
+            },
+            "Expected jump did not occur",
+            3000
+          );
 
-                    runs(function () { callback(cursor); });
-                }
+          runs(function() {
+            callback(cursor);
+          });
+        }
 
-                /**
+        /**
                  * Trigger a jump to definition, and verify that the editor jumped to
                  * the expected location.
                  *
@@ -434,199 +487,212 @@ define(function (require, exports, module) {
                  *  line, column, and optionally the new file the editor should jump to.  If the
                  *  editor is expected to stay in the same file, then file may be omitted.
                  */
-                function editorJumped(jsCodeHints, testEditor, expectedLocation) {
-                    var oldLocation = testEditor.getCursorPos();
+        function editorJumped(jsCodeHints, testEditor, expectedLocation) {
+          var oldLocation = testEditor.getCursorPos();
 
-                    jsCodeHints.handleJumpToDefinition();
+          jsCodeHints.handleJumpToDefinition();
 
+          _waitForJump(oldLocation, function(newCursor) {
+            expect(newCursor.line).toBe(expectedLocation.line);
+            expect(newCursor.ch).toBe(expectedLocation.ch);
+            if (expectedLocation.file) {
+              var activeEditor = EditorManager.getActiveEditor();
+              expect(activeEditor.document.file.name).toBe(
+                expectedLocation.file
+              );
+            }
+          });
+        }
 
-                    _waitForJump(oldLocation, function (newCursor) {
-                        expect(newCursor.line).toBe(expectedLocation.line);
-                        expect(newCursor.ch).toBe(expectedLocation.ch);
-                        if (expectedLocation.file) {
-                            var activeEditor = EditorManager.getActiveEditor();
-                            expect(activeEditor.document.file.name).toBe(expectedLocation.file);
-                        }
-                    });
-                }
+        function initJSCodeHints() {
+          var extensionRequire = testWindow.brackets
+            .getModule("utils/ExtensionLoader")
+            .getRequireContextForExtension("JavaScriptCodeHints");
+          JSCodeHints = extensionRequire("main");
+          ParameterHintManager = extensionRequire("ParameterHintManager");
+        }
 
-                function initJSCodeHints() {
-                    var extensionRequire = testWindow.brackets.getModule("utils/ExtensionLoader").
-                                getRequireContextForExtension("JavaScriptCodeHints");
-                    JSCodeHints = extensionRequire("main");
-                    ParameterHintManager = extensionRequire("ParameterHintManager");
-                }
-
-                beforeEach(function () {
-                    initInlineTest("test.html");
-                    initJSCodeHints();
-                });
-
-                afterEach(function () {
-                    JSCodeHints = null;
-                    ParameterHintManager = null;
-                });
-
-                it("should see code hint lists in quick editor", function () {
-                    var start        = {line: 13, ch: 11 },
-                        testPos      = {line: 5, ch: 29},
-                        testEditor;
-
-                    runs(function () {
-                        var openQuickEditor = SpecRunnerUtils.toggleQuickEditAtOffset(EditorManager.getCurrentFullEditor(), start);
-                        waitsForDone(openQuickEditor, "Open quick editor");
-                    });
-
-                    runs(function () {
-                        testEditor = EditorManager.getActiveEditor();
-                        testEditor.setCursorPos(testPos);
-                        expectParameterHint([{name: "mo", type: "Number"}], 0);
-                    });
-                });
-
-                it("should see jump to definition on variable working in quick editor", function () {
-                    var start        = {line: 13, ch: 10 },
-                        testPos      = {line: 6, ch: 7},
-                        testJumpPos  = {line: 6, ch: 5},
-                        jumpPos      = {line: 3, ch: 6},
-                        testEditor;
-
-                    runs(function () {
-                        var openQuickEditor = SpecRunnerUtils.toggleQuickEditAtOffset(EditorManager.getCurrentFullEditor(), start);
-                        waitsForDone(openQuickEditor, "Open quick editor");
-                    });
-
-                    runs(function () {
-                        testEditor = EditorManager.getActiveEditor();
-                        testEditor.setCursorPos(testPos);
-                        var hintObj = expectHints(JSCodeHints.jsHintProvider);
-                        hintsPresentExact(hintObj, ["propA"]);
-                    });
-
-                    runs(function () {
-                        testEditor = EditorManager.getActiveEditor();
-                        testEditor.setCursorPos(testJumpPos);
-                        editorJumped(JSCodeHints, testEditor, jumpPos);
-                    });
-                });
-
-                // FIXME (issue #3951): jump to method inside quick editor doesn't jump
-                xit("should see jump to definition on method working in quick editor", function () {
-                    var start        = {line: 13, ch: 13 },
-                        testPos      = {line: 5,  ch: 25},
-                        jumpPos      = {line: 9, ch: 21},
-                        testEditor;
-
-                    runs(function () {
-                        var openQuickEditor = SpecRunnerUtils.toggleQuickEditAtOffset(EditorManager.getCurrentFullEditor(), start);
-                        waitsForDone(openQuickEditor, "Open quick editor");
-                    });
-
-                    runs(function () {
-                        testEditor = EditorManager.getActiveEditor();
-                        testEditor.setCursorPos(testPos);
-                        editorJumped(jumpPos);
-                    });
-
-                });
-
-            });
+        beforeEach(function() {
+          initInlineTest("test.html");
+          initJSCodeHints();
         });
 
-        describe("Performance suite", function () {
-
-            this.category = "performance";
-
-            var testPath = extensionPath + "/unittest-files/jquery-ui";
-
-            beforeEach(function () {
-                SpecRunnerUtils.createTestWindowAndRun(this, function (w) {
-                    testWindow = w;
-                    CommandManager      = testWindow.brackets.test.CommandManager;
-                    EditorManager       = testWindow.brackets.test.EditorManager;
-                    PerfUtils           = testWindow.brackets.test.PerfUtils;
-                });
-            });
-
-            afterEach(function () {
-                testWindow      = null;
-                CommandManager  = null;
-                EditorManager   = null;
-                PerfUtils       = null;
-                SpecRunnerUtils.closeTestWindow();
-            });
-
-            it("should open inline editors", function () {
-                SpecRunnerUtils.loadProjectInTestWindow(testPath);
-
-                var extensionRequire,
-                    JavaScriptQuickEdit,
-                    i,
-                    perfMeasurements;
-
-                runs(function () {
-                    perfMeasurements = [
-                        {
-                            measure: PerfUtils.JAVASCRIPT_INLINE_CREATE,
-                            children: [
-                                {
-                                    measure: PerfUtils.JAVASCRIPT_FIND_FUNCTION,
-                                    children: [
-                                        {
-                                            measure: PerfUtils.JSUTILS_GET_ALL_FUNCTIONS,
-                                            children: [
-                                                {
-                                                    measure: PerfUtils.DOCUMENT_MANAGER_GET_DOCUMENT_FOR_PATH,
-                                                    name: "Document creation during this search",
-                                                    operation: "sum"
-                                                },
-                                                {
-                                                    measure: PerfUtils.JSUTILS_REGEXP,
-                                                    operation: "sum"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            measure: PerfUtils.JSUTILS_END_OFFSET,
-                                            operation: "sum"
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    ];
-                });
-
-                runs(function () {
-                    extensionRequire = testWindow.brackets.getModule("utils/ExtensionLoader").getRequireContextForExtension("JavaScriptQuickEdit");
-                    JavaScriptQuickEdit = extensionRequire("main");
-
-                    waitsForDone(SpecRunnerUtils.openProjectFiles(["ui/jquery.effects.core.js"]), "openProjectFiles");
-                });
-
-                var runCreateInlineEditor = function () {
-                    var editor = EditorManager.getCurrentFullEditor();
-                    // Set the cursor in the middle of a call to "extend" so the JS helper function works correctly.
-                    editor.setCursorPos(271, 20);
-                    waitsForDone(
-                        JavaScriptQuickEdit._createInlineEditor(editor, "extend"),
-                        "createInlineEditor",
-                        5000
-                    );
-                };
-
-                function logPerf() {
-                    var reporter = UnitTestReporter.getActiveReporter();
-                    reporter.logTestWindow(perfMeasurements);
-                    reporter.clearTestWindow();
-                }
-
-                // repeat 5 times
-                for (i = 0; i < 5; i++) {
-                    runs(runCreateInlineEditor);
-                    runs(logPerf);
-                }
-            });
+        afterEach(function() {
+          JSCodeHints = null;
+          ParameterHintManager = null;
         });
+
+        it("should see code hint lists in quick editor", function() {
+          var start = { line: 13, ch: 11 },
+            testPos = { line: 5, ch: 29 },
+            testEditor;
+
+          runs(function() {
+            var openQuickEditor = SpecRunnerUtils.toggleQuickEditAtOffset(
+              EditorManager.getCurrentFullEditor(),
+              start
+            );
+            waitsForDone(openQuickEditor, "Open quick editor");
+          });
+
+          runs(function() {
+            testEditor = EditorManager.getActiveEditor();
+            testEditor.setCursorPos(testPos);
+            expectParameterHint([{ name: "mo", type: "Number" }], 0);
+          });
+        });
+
+        it("should see jump to definition on variable working in quick editor", function() {
+          var start = { line: 13, ch: 10 },
+            testPos = { line: 6, ch: 7 },
+            testJumpPos = { line: 6, ch: 5 },
+            jumpPos = { line: 3, ch: 6 },
+            testEditor;
+
+          runs(function() {
+            var openQuickEditor = SpecRunnerUtils.toggleQuickEditAtOffset(
+              EditorManager.getCurrentFullEditor(),
+              start
+            );
+            waitsForDone(openQuickEditor, "Open quick editor");
+          });
+
+          runs(function() {
+            testEditor = EditorManager.getActiveEditor();
+            testEditor.setCursorPos(testPos);
+            var hintObj = expectHints(JSCodeHints.jsHintProvider);
+            hintsPresentExact(hintObj, ["propA"]);
+          });
+
+          runs(function() {
+            testEditor = EditorManager.getActiveEditor();
+            testEditor.setCursorPos(testJumpPos);
+            editorJumped(JSCodeHints, testEditor, jumpPos);
+          });
+        });
+
+        // FIXME (issue #3951): jump to method inside quick editor doesn't jump
+        xit(
+          "should see jump to definition on method working in quick editor",
+          function() {
+            var start = { line: 13, ch: 13 },
+              testPos = { line: 5, ch: 25 },
+              jumpPos = { line: 9, ch: 21 },
+              testEditor;
+
+            runs(function() {
+              var openQuickEditor = SpecRunnerUtils.toggleQuickEditAtOffset(
+                EditorManager.getCurrentFullEditor(),
+                start
+              );
+              waitsForDone(openQuickEditor, "Open quick editor");
+            });
+
+            runs(function() {
+              testEditor = EditorManager.getActiveEditor();
+              testEditor.setCursorPos(testPos);
+              editorJumped(jumpPos);
+            });
+          }
+        );
+      });
     });
+
+    describe("Performance suite", function() {
+      this.category = "performance";
+
+      var testPath = extensionPath + "/unittest-files/jquery-ui";
+
+      beforeEach(function() {
+        SpecRunnerUtils.createTestWindowAndRun(this, function(w) {
+          testWindow = w;
+          CommandManager = testWindow.brackets.test.CommandManager;
+          EditorManager = testWindow.brackets.test.EditorManager;
+          PerfUtils = testWindow.brackets.test.PerfUtils;
+        });
+      });
+
+      afterEach(function() {
+        testWindow = null;
+        CommandManager = null;
+        EditorManager = null;
+        PerfUtils = null;
+        SpecRunnerUtils.closeTestWindow();
+      });
+
+      it("should open inline editors", function() {
+        SpecRunnerUtils.loadProjectInTestWindow(testPath);
+
+        var extensionRequire, JavaScriptQuickEdit, i, perfMeasurements;
+
+        runs(function() {
+          perfMeasurements = [
+            {
+              measure: PerfUtils.JAVASCRIPT_INLINE_CREATE,
+              children: [
+                {
+                  measure: PerfUtils.JAVASCRIPT_FIND_FUNCTION,
+                  children: [
+                    {
+                      measure: PerfUtils.JSUTILS_GET_ALL_FUNCTIONS,
+                      children: [
+                        {
+                          measure: PerfUtils.DOCUMENT_MANAGER_GET_DOCUMENT_FOR_PATH,
+                          name: "Document creation during this search",
+                          operation: "sum"
+                        },
+                        {
+                          measure: PerfUtils.JSUTILS_REGEXP,
+                          operation: "sum"
+                        }
+                      ]
+                    },
+                    {
+                      measure: PerfUtils.JSUTILS_END_OFFSET,
+                      operation: "sum"
+                    }
+                  ]
+                }
+              ]
+            }
+          ];
+        });
+
+        runs(function() {
+          extensionRequire = testWindow.brackets
+            .getModule("utils/ExtensionLoader")
+            .getRequireContextForExtension("JavaScriptQuickEdit");
+          JavaScriptQuickEdit = extensionRequire("main");
+
+          waitsForDone(
+            SpecRunnerUtils.openProjectFiles(["ui/jquery.effects.core.js"]),
+            "openProjectFiles"
+          );
+        });
+
+        var runCreateInlineEditor = function() {
+          var editor = EditorManager.getCurrentFullEditor();
+          // Set the cursor in the middle of a call to "extend" so the JS helper function works correctly.
+          editor.setCursorPos(271, 20);
+          waitsForDone(
+            JavaScriptQuickEdit._createInlineEditor(editor, "extend"),
+            "createInlineEditor",
+            5000
+          );
+        };
+
+        function logPerf() {
+          var reporter = UnitTestReporter.getActiveReporter();
+          reporter.logTestWindow(perfMeasurements);
+          reporter.clearTestWindow();
+        }
+
+        // repeat 5 times
+        for (i = 0; i < 5; i++) {
+          runs(runCreateInlineEditor);
+          runs(logPerf);
+        }
+      });
+    });
+  });
 });

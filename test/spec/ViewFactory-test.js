@@ -23,46 +23,44 @@
 
 /*global describe, it, expect, runs, spyOn */
 
-define(function (require, exports, module) {
-    'use strict';
+define(function(require, exports, module) {
+  "use strict";
+  var MainViewFactory = require("view/MainViewFactory");
 
-    var MainViewFactory = require("view/MainViewFactory");
-
-    describe("ViewFactory", function () {
-        function createMockFactory() {
-            return {
-                canOpenFile: function (fullPath) {
-                    return (fullPath === "blah");
-                }
-            };
+  describe("ViewFactory", function() {
+    function createMockFactory() {
+      return {
+        canOpenFile: function(fullPath) {
+          return fullPath === "blah";
         }
-        it("should register a factory", function () {
-            runs(function () {
-                var factory = createMockFactory();
-                spyOn(factory, "canOpenFile");
-                MainViewFactory.registerViewFactory(factory);
-                MainViewFactory.findSuitableFactoryForPath();
-                expect(factory.canOpenFile).toHaveBeenCalled();
-            });
-        });
-        it("should find a factory", function () {
-            runs(function () {
-                var factory = createMockFactory();
-
-                MainViewFactory.registerViewFactory(factory);
-                var result = MainViewFactory.findSuitableFactoryForPath("blah");
-
-                expect(result).toBeTruthy();
-            });
-        });
-        it("should not find a factory", function () {
-            runs(function () {
-                var factory = createMockFactory();
-                MainViewFactory.registerViewFactory(factory);
-                var result = MainViewFactory.findSuitableFactoryForPath("blahblah");
-                expect(result).toBeFalsy();
-            });
-        });
+      };
+    }
+    it("should register a factory", function() {
+      runs(function() {
+        var factory = createMockFactory();
+        spyOn(factory, "canOpenFile");
+        MainViewFactory.registerViewFactory(factory);
+        MainViewFactory.findSuitableFactoryForPath();
+        expect(factory.canOpenFile).toHaveBeenCalled();
+      });
     });
-});
+    it("should find a factory", function() {
+      runs(function() {
+        var factory = createMockFactory();
 
+        MainViewFactory.registerViewFactory(factory);
+        var result = MainViewFactory.findSuitableFactoryForPath("blah");
+
+        expect(result).toBeTruthy();
+      });
+    });
+    it("should not find a factory", function() {
+      runs(function() {
+        var factory = createMockFactory();
+        MainViewFactory.registerViewFactory(factory);
+        var result = MainViewFactory.findSuitableFactoryForPath("blahblah");
+        expect(result).toBeFalsy();
+      });
+    });
+  });
+});

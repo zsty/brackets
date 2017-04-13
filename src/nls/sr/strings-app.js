@@ -22,6 +22,6 @@
  */
 
 define({
-    // product-specific strings
-    "APP_NAME"                             : "Заграде"
+  // product-specific strings
+  APP_NAME: "Заграде"
 });

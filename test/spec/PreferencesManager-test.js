@@ -23,58 +23,64 @@
 
 /*global describe, it, expect, beforeEach, runs, beforeFirst, afterLast, spyOn, waitsForDone */
 
-define(function (require, exports, module) {
-    'use strict';
+define(function(require, exports, module) {
+  "use strict";
+  // Load dependent modules
+  var SpecRunnerUtils = require("spec/SpecRunnerUtils"),
+    testPath = SpecRunnerUtils.getTestPath("/spec/PreferencesBase-test-files"),
+    nonProjectFile = SpecRunnerUtils.getTestPath(
+      "/spec/PreferencesBase-test.js"
+    ),
+    PreferencesManager,
+    testWindow;
 
-    // Load dependent modules
-    var SpecRunnerUtils         = require("spec/SpecRunnerUtils"),
-        testPath                = SpecRunnerUtils.getTestPath("/spec/PreferencesBase-test-files"),
-        nonProjectFile          = SpecRunnerUtils.getTestPath("/spec/PreferencesBase-test.js"),
-        PreferencesManager,
-        testWindow;
+  describe("PreferencesManager", function() {
+    this.category = "integration";
 
-    describe("PreferencesManager", function () {
-        this.category = "integration";
+    beforeFirst(function() {
+      SpecRunnerUtils.createTestWindowAndRun(this, function(w) {
+        testWindow = w;
 
-        beforeFirst(function () {
-            SpecRunnerUtils.createTestWindowAndRun(this, function (w) {
-                testWindow = w;
-
-                // Load module instances from brackets.test
-                PreferencesManager = testWindow.brackets.test.PreferencesManager;
-                SpecRunnerUtils.loadProjectInTestWindow(testPath);
-            });
-        });
-
-        afterLast(function () {
-            PreferencesManager = null;
-            SpecRunnerUtils.closeTestWindow();
-        });
-
-        it("should find preferences in the project", function () {
-            var projectWithoutSettings = SpecRunnerUtils.getTestPath("/spec/WorkingSetView-test-files"),
-                FileViewController = testWindow.brackets.test.FileViewController;
-            waitsForDone(SpecRunnerUtils.openProjectFiles(".brackets.json"));
-
-            runs(function () {
-                expect(PreferencesManager.get("spaceUnits")).toBe(9);
-                waitsForDone(FileViewController.openAndSelectDocument(nonProjectFile,
-                             FileViewController.WORKING_SET_VIEW));
-
-            });
-
-            runs(function () {
-                expect(PreferencesManager.get("spaceUnits")).not.toBe(9);
-
-                // Changing projects will force a change in the project scope.
-                SpecRunnerUtils.loadProjectInTestWindow(projectWithoutSettings);
-            });
-            runs(function () {
-                waitsForDone(SpecRunnerUtils.openProjectFiles("file_one.js"));
-            });
-            runs(function () {
-                expect(PreferencesManager.get("spaceUnits")).not.toBe(9);
-            });
-        });
+        // Load module instances from brackets.test
+        PreferencesManager = testWindow.brackets.test.PreferencesManager;
+        SpecRunnerUtils.loadProjectInTestWindow(testPath);
+      });
     });
+
+    afterLast(function() {
+      PreferencesManager = null;
+      SpecRunnerUtils.closeTestWindow();
+    });
+
+    it("should find preferences in the project", function() {
+      var projectWithoutSettings = SpecRunnerUtils.getTestPath(
+        "/spec/WorkingSetView-test-files"
+      ),
+        FileViewController = testWindow.brackets.test.FileViewController;
+      waitsForDone(SpecRunnerUtils.openProjectFiles(".brackets.json"));
+
+      runs(function() {
+        expect(PreferencesManager.get("spaceUnits")).toBe(9);
+        waitsForDone(
+          FileViewController.openAndSelectDocument(
+            nonProjectFile,
+            FileViewController.WORKING_SET_VIEW
+          )
+        );
+      });
+
+      runs(function() {
+        expect(PreferencesManager.get("spaceUnits")).not.toBe(9);
+
+        // Changing projects will force a change in the project scope.
+        SpecRunnerUtils.loadProjectInTestWindow(projectWithoutSettings);
+      });
+      runs(function() {
+        waitsForDone(SpecRunnerUtils.openProjectFiles("file_one.js"));
+      });
+      runs(function() {
+        expect(PreferencesManager.get("spaceUnits")).not.toBe(9);
+      });
+    });
+  });
 });

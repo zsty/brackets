@@ -21,50 +21,48 @@
  *
  */
 
-define(function (require, exports, module) {
-
-    "use strict";
-
-    // Code that needs to display user strings should call require("strings") to load
-    // src/strings.js. This file will dynamically load strings.js for the specified brackets.locale.
-    //
-    // See the README.md file in this folder for information on how to add a new translation for
-    // another language or locale.
-    //
-    // TODO: dynamically populate the local prefix list below?
-    module.exports = {
-        root: true,
-        "bg": true,
-        "cs": true,
-        "da": true,
-        "de": true,
-        "el": true,
-        "en-gb": true,
-        "es": true,
-        "fa-ir": true,
-        "fi": true,
-        "fr": true,
-        "gl": true,
-        "hr": true,
-        "hu": true,
-        "id": true,
-        "it": true,
-        "ja": true,
-        "ko": true,
-        "lv": true,
-        "nb": true,
-        "nl": true,
-        "pl": true,
-        "pt-br": true,
-        "pt-pt": true,
-        "ro": true,
-        "ru": true,
-        "sk": true,
-        "sr": true,
-        "sv": true,
-        "tr": true,
-        "uk": true,
-        "zh-cn": true,
-        "zh-tw": true
-    };
+define(function(require, exports, module) {
+  "use strict";
+  // Code that needs to display user strings should call require("strings") to load
+  // src/strings.js. This file will dynamically load strings.js for the specified brackets.locale.
+  //
+  // See the README.md file in this folder for information on how to add a new translation for
+  // another language or locale.
+  //
+  // TODO: dynamically populate the local prefix list below?
+  module.exports = {
+    root: true,
+    bg: true,
+    cs: true,
+    da: true,
+    de: true,
+    el: true,
+    "en-gb": true,
+    es: true,
+    "fa-ir": true,
+    fi: true,
+    fr: true,
+    gl: true,
+    hr: true,
+    hu: true,
+    id: true,
+    it: true,
+    ja: true,
+    ko: true,
+    lv: true,
+    nb: true,
+    nl: true,
+    pl: true,
+    "pt-br": true,
+    "pt-pt": true,
+    ro: true,
+    ru: true,
+    sk: true,
+    sr: true,
+    sv: true,
+    tr: true,
+    uk: true,
+    "zh-cn": true,
+    "zh-tw": true
+  };
 });

@@ -21,15 +21,14 @@
  *
  */
 
-define(function (require, exports, module) {
-    "use strict";
-    
-    var FileSystemEntry = require("filesystem/FileSystemEntry"),
-        Content         = require("filesystem/impls/filer/lib/content"),
-        Path            = require("filesystem/impls/filer/BracketsFiler").Path,
-        defaultHTML     = require("text!filesystem/impls/filer/lib/default.html");
+define(function(require, exports, module) {
+  "use strict";
+  var FileSystemEntry = require("filesystem/FileSystemEntry"),
+    Content = require("filesystem/impls/filer/lib/content"),
+    Path = require("filesystem/impls/filer/BracketsFiler").Path,
+    defaultHTML = require("text!filesystem/impls/filer/lib/default.html");
 
-    /*
+  /*
      * Model for a File.
      *
      * This class should *not* be instantiated directly. Use FileSystem.getFileForPath,
@@ -41,23 +40,23 @@ define(function (require, exports, module) {
      * @param {!string} fullPath The full path for this File.
      * @param {!FileSystem} fileSystem The file system associated with this File.
      */
-    function File(fullPath, fileSystem) {
-        this._isFile = true;
-        FileSystemEntry.call(this, fullPath, fileSystem);
-    }
+  function File(fullPath, fileSystem) {
+    this._isFile = true;
+    FileSystemEntry.call(this, fullPath, fileSystem);
+  }
 
-    File.prototype = Object.create(FileSystemEntry.prototype);
-    File.prototype.constructor = File;
-    File.prototype.parentClass = FileSystemEntry.prototype;
+  File.prototype = Object.create(FileSystemEntry.prototype);
+  File.prototype.constructor = File;
+  File.prototype.parentClass = FileSystemEntry.prototype;
 
-    /**
+  /**
      * Cached contents of this file. This value is nullable but should NOT be undefined.
      * @private
      * @type {?string}
      */
-    File.prototype._contents = null;
+  File.prototype._contents = null;
 
-    /**
+  /**
      * Consistency hash for this file. Reads and writes update this value, and
      * writes confirm the hash before overwriting existing files. The type of
      * this object is dependent on the FileSystemImpl; the only constraint is
@@ -65,66 +64,70 @@ define(function (require, exports, module) {
      * @private
      * @type {?object}
      */
-    File.prototype._hash = null;
+  File.prototype._hash = null;
 
-    /**
+  /**
      * Clear any cached data for this file. Note that this explicitly does NOT
      * clear the file's hash.
      * @private
      */
-    File.prototype._clearCachedData = function () {
-        FileSystemEntry.prototype._clearCachedData.apply(this);
-        this._contents = null;
-    };
+  File.prototype._clearCachedData = function() {
+    FileSystemEntry.prototype._clearCachedData.apply(this);
+    this._contents = null;
+  };
 
-    /**
+  /**
      * Read a file.
      *
      * @param {Object=} options Currently unused.
      * @param {function (?string, string=, FileSystemStats=)} callback Callback that is passed the
      *              FileSystemError string or the file's contents and its stats.
      */
-    File.prototype.read = function (options, callback) {
-        if (typeof (options) === "function") {
-            callback = options;
-            options = {};
+  File.prototype.read = function(options, callback) {
+    if (typeof options === "function") {
+      callback = options;
+      options = {};
+    }
+
+    // We don't need to check isWatched() here because contents are only saved
+    // for watched files. Note that we need to explicitly test this._contents
+    // for a default value; otherwise it could be the empty string, which is
+    // falsey.
+    if (this._contents !== null && this._stat) {
+      callback(null, this._contents, this._stat);
+      return;
+    }
+
+    var watched = this._isWatched();
+    if (watched) {
+      options.stat = this._stat;
+    }
+
+    this._impl.readFile(
+      this._path,
+      options,
+      function(err, data, stat) {
+        if (err) {
+          this._clearCachedData();
+          callback(err);
+          return;
         }
 
-        // We don't need to check isWatched() here because contents are only saved
-        // for watched files. Note that we need to explicitly test this._contents
-        // for a default value; otherwise it could be the empty string, which is
-        // falsey.
-        if (this._contents !== null && this._stat) {
-            callback(null, this._contents, this._stat);
-            return;
-        }
+        // Always store the hash
+        this._hash = stat._hash;
 
-        var watched = this._isWatched();
+        // Only cache data for watched files
         if (watched) {
-            options.stat = this._stat;
+          this._stat = stat;
+          this._contents = data;
         }
 
-        this._impl.readFile(this._path, options, function (err, data, stat) {
-            if (err) {
-                this._clearCachedData();
-                callback(err);
-                return;
-            }
+        callback(err, data, stat);
+      }.bind(this)
+    );
+  };
 
-            // Always store the hash
-            this._hash = stat._hash;
-
-            // Only cache data for watched files
-            if (watched) {
-                this._stat = stat;
-                this._contents = data;
-            }
-
-            callback(err, data, stat);
-        }.bind(this));
-    };
-
-    /**
+  /**
      * Write a file.
      *
      * @param {string} data Data to write.
@@ -132,86 +135,93 @@ define(function (require, exports, module) {
      * @param {function (?string, FileSystemStats=)=} callback Callback that is passed the
      *              FileSystemError string or the file's new stats.
      */
-    File.prototype.write = function (data, options, callback) {
-        if (typeof options === "function") {
-            callback = options;
-            options = {};
+  File.prototype.write = function(data, options, callback) {
+    if (typeof options === "function") {
+      callback = options;
+      options = {};
+    } else {
+      if (options === undefined) {
+        options = {};
+      }
+
+      callback = callback || function() {};
+    }
+
+    // If the file is of type HTML and it's empty
+    // change the content to be that of a default HTML file
+    if (Content.isHTML(Path.extname(this._path)) && data === "") {
+      data = defaultHTML;
+    }
+
+    // Request a consistency check if the write is not blind
+    if (!options.blind) {
+      options.expectedHash = this._hash;
+      options.expectedContents = this._contents;
+    }
+
+    // Block external change events until after the write has finished
+    this._fileSystem._beginChange();
+
+    this._impl.writeFile(
+      this._path,
+      data,
+      options,
+      function(err, stat, created) {
+        if (err) {
+          this._clearCachedData();
+          try {
+            callback(err);
+            return;
+          } finally {
+            // Always unblock external change events
+            this._fileSystem._endChange();
+          }
+        }
+
+        // Always store the hash
+        this._hash = stat._hash;
+
+        // Only cache data for watched files
+        if (this._isWatched()) {
+          this._stat = stat;
+          this._contents = data;
+        }
+
+        if (created) {
+          var parent = this._fileSystem.getDirectoryForPath(this.parentPath);
+          this._fileSystem._handleDirectoryChange(
+            parent,
+            function(added, removed) {
+              try {
+                // Notify the caller
+                callback(null, stat);
+              } finally {
+                if (parent._isWatched()) {
+                  // If the write succeeded and the parent directory is watched,
+                  // fire a synthetic change event
+                  this._fileSystem._fireChangeEvent(parent, added, removed);
+                }
+                // Always unblock external change events
+                this._fileSystem._endChange();
+              }
+            }.bind(this)
+          );
         } else {
-            if (options === undefined) {
-                options = {};
-            }
+          try {
+            // Notify the caller
+            callback(null, stat);
+          } finally {
+            // existing file modified
+            this._fileSystem._fireChangeEvent(this);
 
-            callback = callback || function () {};
+            // Always unblock external change events
+            this._fileSystem._endChange();
+          }
         }
+      }.bind(this)
+    );
+  };
 
-        // If the file is of type HTML and it's empty
-        // change the content to be that of a default HTML file
-        if(Content.isHTML(Path.extname(this._path)) && data === "") {
-            data = defaultHTML;
-        }
-        
-        // Request a consistency check if the write is not blind
-        if (!options.blind) {
-            options.expectedHash = this._hash;
-            options.expectedContents = this._contents;
-        }
-
-        // Block external change events until after the write has finished
-        this._fileSystem._beginChange();
-
-        this._impl.writeFile(this._path, data, options, function (err, stat, created) {
-            if (err) {
-                this._clearCachedData();
-                try {
-                    callback(err);
-                    return;
-                } finally {
-                    // Always unblock external change events
-                    this._fileSystem._endChange();
-                }
-            }
-
-            // Always store the hash
-            this._hash = stat._hash;
-
-            // Only cache data for watched files
-            if (this._isWatched()) {
-                this._stat = stat;
-                this._contents = data;
-            }
-
-            if (created) {
-                var parent = this._fileSystem.getDirectoryForPath(this.parentPath);
-                this._fileSystem._handleDirectoryChange(parent, function (added, removed) {
-                    try {
-                        // Notify the caller
-                        callback(null, stat);
-                    } finally {
-                        if (parent._isWatched()) {
-                            // If the write succeeded and the parent directory is watched,
-                            // fire a synthetic change event
-                            this._fileSystem._fireChangeEvent(parent, added, removed);
-
-                        }
-                        // Always unblock external change events
-                        this._fileSystem._endChange();
-                    }
-                }.bind(this));
-            } else {
-                try {
-                    // Notify the caller
-                    callback(null, stat);
-                } finally {
-                    // existing file modified
-                    this._fileSystem._fireChangeEvent(this);
-
-                    // Always unblock external change events
-                    this._fileSystem._endChange();
-                }
-            }
-        }.bind(this));
-    };
-
-    // Export this class
-    module.exports = File;
+  // Export this class
+  module.exports = File;
 });

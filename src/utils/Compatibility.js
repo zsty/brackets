@@ -24,56 +24,60 @@
 /**
  * Compatibility shims for running Brackets in various environments, browsers.
  */
-define(function (require, exports, module) {
-    "use strict";
-
-    // [IE10] String.prototype missing trimRight() and trimLeft()
-    if (!String.prototype.trimRight) {
-        String.prototype.trimRight = function () { return this.replace(/\s+$/, ""); };
-    }
-    if (!String.prototype.trimLeft) {
-        String.prototype.trimLeft = function () { return this.replace(/^\s+/, ""); };
-    }
-
-    // Feature detection for Error.stack. Not all browsers expose it
-    // and Brackets assumes it will be a non-null string.
-    if (typeof (new Error()).stack === "undefined") {
-        Error.prototype.stack = "";
-    }
-
-    var memoryStorage = {
-        _items: {},
-        getItem: function(key) {
-            return memoryStorage._items[key];
-        },
-        setItem: function(key, value) {
-            // Mimic localStorage string storage
-            value = "" + value;
-            memoryStorage._items[key] = value;
-        },
-        removeItem: function(key) {
-            delete memoryStorage._item[key];
-        },
-        clear: function() {
-            memoryStorage._items = {};
-        }
+define(function(require, exports, module) {
+  "use strict";
+  // [IE10] String.prototype missing trimRight() and trimLeft()
+  if (!String.prototype.trimRight) {
+    String.prototype.trimRight = function() {
+      return this.replace(/\s+$/, "");
     };
+  }
+  if (!String.prototype.trimLeft) {
+    String.prototype.trimLeft = function() {
+      return this.replace(/^\s+/, "");
+    };
+  }
 
-    exports.localStorage = (function(window) {
-        var localStorage;
+  // Feature detection for Error.stack. Not all browsers expose it
+  // and Brackets assumes it will be a non-null string.
+  if (typeof new Error().stack === "undefined") {
+    Error.prototype.stack = "";
+  }
 
-        try {
-            localStorage = window.localStorage;
-            if(typeof window.localStorage === 'undefined') {
-                console.warn("localStorage is unavailable, using temporary memory storage instead");
-                localStorage = memoryStorage;
-            }
-        } catch(e) {
-            console.warn("Unable to use localStorage in Brackets with: ", e);
-            localStorage = memoryStorage;
-        } finally {
-            return localStorage;
-        }
-    }(window));
+  var memoryStorage = {
+    _items: {},
+    getItem: function(key) {
+      return memoryStorage._items[key];
+    },
+    setItem: function(key, value) {
+      // Mimic localStorage string storage
+      value = "" + value;
+      memoryStorage._items[key] = value;
+    },
+    removeItem: function(key) {
+      delete memoryStorage._item[key];
+    },
+    clear: function() {
+      memoryStorage._items = {};
+    }
+  };
 
+  exports.localStorage = (function(window) {
+    var localStorage;
+
+    try {
+      localStorage = window.localStorage;
+      if (typeof window.localStorage === "undefined") {
+        console.warn(
+          "localStorage is unavailable, using temporary memory storage instead"
+        );
+        localStorage = memoryStorage;
+      }
+    } catch (e) {
+      console.warn("Unable to use localStorage in Brackets with: ", e);
+      localStorage = memoryStorage;
+    } finally {
+      return localStorage;
+    }
+  })(window);
 });

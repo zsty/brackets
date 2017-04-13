@@ -24,26 +24,24 @@
 /**
  *  Utilities functions related to localization/i18n
  */
-define(function (require, exports, module) {
-    "use strict";
+define(function(require, exports, module) {
+  "use strict";
+  var Strings = require("strings");
 
-    var Strings = require("strings");
-
-    /*
+  /*
      * Converts a language code to its written name, if possible.
      * If not possible, the language code is simply returned.
      *
      * @param {string} locale The two-char language code
      * @return {string} The language's name or the given language code
      */
-    function getLocalizedLabel(locale) {
-        var key  = "LOCALE_" + locale.toUpperCase().replace("-", "_"),
-            i18n = Strings[key];
+  function getLocalizedLabel(locale) {
+    var key = "LOCALE_" + locale.toUpperCase().replace("-", "_"),
+      i18n = Strings[key];
 
-        return i18n === undefined ? locale : i18n;
-    }
+    return i18n === undefined ? locale : i18n;
+  }
 
-
-    // Define public API
-    exports.getLocalizedLabel = getLocalizedLabel;
+  // Define public API
+  exports.getLocalizedLabel = getLocalizedLabel;
 });

@@ -32,68 +32,66 @@
  * Views or View Factories are responsible for restoring the view state when the view of that file is created
  * by recalling the cached state.  Views determine what data is store in the view state and how to restore it.
  */
-define(function (require, exports, module) {
-    "use strict";
+define(function(require, exports, module) {
+  "use strict";
+  var _ = require("thirdparty/lodash");
 
-    var _ = require("thirdparty/lodash");
-
-    /**
+  /**
      * The view state cache.
      * @type {Object.<string,*>}
      * @private
      */
-    var _viewStateCache = {};
+  var _viewStateCache = {};
 
-    /**
+  /**
      * resets the view state cache
      */
-    function reset() {
-        _viewStateCache = {};
-    }
+  function reset() {
+    _viewStateCache = {};
+  }
 
-    /**
+  /**
      * Sets the view state for the specfied file
      * @param {!File} file - the file to record the view state for
      * @param {?*} viewState - any data that the view needs to restore the view state.
      */
-    function _setViewState(file, viewState) {
-        _viewStateCache[file.fullPath] = viewState;
-    }
+  function _setViewState(file, viewState) {
+    _viewStateCache[file.fullPath] = viewState;
+  }
 
-
-    /**
+  /**
      * Updates the view state for the specified view
      * @param {!{!getFile:function():File, getViewState:function():*}} view - the to save state
      * @param {?*} viewState - any data that the view needs to restore the view state.
      */
-    function updateViewState(view) {
-        if (view.getViewState) {
-            _setViewState(view.getFile(), view.getViewState());
-        }
+  function updateViewState(view) {
+    if (view.getViewState) {
+      _setViewState(view.getFile(), view.getViewState());
     }
+  }
 
-    /**
+  /**
      * gets the view state for the specified file
      * @param {!File} file - the file to record the view state for
      * @return {?*} whatever data that was saved earlier with a call setViewState
      */
-    function getViewState(file) {
-        return _viewStateCache[file.fullPath];
-    }
+  function getViewState(file) {
+    return _viewStateCache[file.fullPath];
+  }
 
-    /**
+  /**
      * adds an array of view states
      * @param {!object.<string, *>} viewStates - View State object to append to the current set of view states
      */
-    function addViewStates(viewStates) {
-        _viewStateCache = _.extend(_viewStateCache, viewStates);
-    }
+  function addViewStates(viewStates) {
+    _viewStateCache = _.extend(_viewStateCache, viewStates);
+  }
 
-    /*
+  /*
      * Public API
      */
-    exports.reset           = reset;
-    exports.updateViewState = updateViewState;
-    exports.getViewState    = getViewState;
-    exports.addViewStates   = addViewStates;
+  exports.reset = reset;
+  exports.updateViewState = updateViewState;
+  exports.getViewState = getViewState;
+  exports.addViewStates = addViewStates;
 });

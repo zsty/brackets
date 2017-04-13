@@ -23,19 +23,18 @@
 
 /*jslint regexp: true */
 
-define(function (require, exports, module) {
-    "use strict";
+define(function(require, exports, module) {
+  "use strict";
+  var Acorn = require("node_modules/acorn/dist/acorn");
 
-    var Acorn                       = require("node_modules/acorn/dist/acorn");
+  var LANGUAGE_ID = "javascript",
+    HTML_LANGUAGE_ID = "html",
+    PHP_LANGUAGE_ID = "php",
+    SUPPORTED_LANGUAGES = [LANGUAGE_ID, HTML_LANGUAGE_ID, PHP_LANGUAGE_ID],
+    SINGLE_QUOTE = "'",
+    DOUBLE_QUOTE = '"';
 
-    var LANGUAGE_ID                 = "javascript",
-        HTML_LANGUAGE_ID            = "html",
-        PHP_LANGUAGE_ID             = "php",
-        SUPPORTED_LANGUAGES         = [LANGUAGE_ID, HTML_LANGUAGE_ID, PHP_LANGUAGE_ID],
-        SINGLE_QUOTE                = "'",
-        DOUBLE_QUOTE                = "\"";
-
-    /**
+  /**
      * Create a hint token with name value that occurs at the given list of
      * positions.
      *
@@ -44,64 +43,64 @@ define(function (require, exports, module) {
      *      the token occurs
      * @return {Object} - a new hint token
      */
-    function makeToken(value, positions) {
-        positions = positions || [];
+  function makeToken(value, positions) {
+    positions = positions || [];
 
-        return {
-            value: value,
-            positions: positions
-        };
-    }
+    return {
+      value: value,
+      positions: positions
+    };
+  }
 
-    /**
+  /**
      * Is the string key perhaps a valid JavaScript identifier?
      *
      * @param {string} key - string to test.
      * @return {boolean} - could key be a valid identifier?
      */
-    function maybeIdentifier(key) {
-        var result = false,
-            i;
+  function maybeIdentifier(key) {
+    var result = false, i;
 
-        for (i = 0; i < key.length; i++) {
-            result = Acorn.isIdentifierChar(key.charCodeAt(i));
-            if (!result) {
-                break;
-            }
-        }
-
-        return result;
+    for (i = 0; i < key.length; i++) {
+      result = Acorn.isIdentifierChar(key.charCodeAt(i));
+      if (!result) {
+        break;
+      }
     }
 
-    /**
+    return result;
+  }
+
+  /**
      * Is the token's class hintable? (A very conservative test.)
      *
      * @param {Object} token - the token to test for hintability
      * @return {boolean} - could the token be hintable?
      */
-    function hintable(token) {
-
-        function _isInsideRegExp(token) {
-            return token.state && (token.state.lastType === "regexp" ||
-                   (token.state.localState && token.state.localState.lastType === "regexp"));
-        }
-
-        switch (token.type) {
-        case "comment":
-        case "number":
-        case "regexp":
-        case "string":
-        case "def":     // exclude variable & param decls
-            return false;
-        case "string-2":
-            // exclude strings inside a regexp
-            return !_isInsideRegExp(token);
-        default:
-            return true;
-        }
+  function hintable(token) {
+    function _isInsideRegExp(token) {
+      return token.state &&
+        (token.state.lastType === "regexp" ||
+          (token.state.localState &&
+            token.state.localState.lastType === "regexp"));
     }
 
-    /**
+    switch (token.type) {
+      case "comment":
+      case "number":
+      case "regexp":
+      case "string":
+      case "def": // exclude variable & param decls
+        return false;
+      case "string-2":
+        // exclude strings inside a regexp
+        return !_isInsideRegExp(token);
+      default:
+        return true;
+    }
+  }
+
+  /**
      *  Determine if hints should be displayed for the given key.
      *
      * @param {string} key - key entered by the user
@@ -109,23 +108,23 @@ define(function (require, exports, module) {
      * @return {boolean} true if the hints should be shown for the key,
      * false otherwise.
      */
-    function hintableKey(key, showOnDot) {
-        return (key === null || (showOnDot && key === ".") || maybeIdentifier(key));
-    }
+  function hintableKey(key, showOnDot) {
+    return key === null || (showOnDot && key === ".") || maybeIdentifier(key);
+  }
 
-    /*
+  /*
      * Get a JS-hints-specific event name. Used to prevent event namespace
      * pollution.
      *
      * @param {string} name - the unqualified event name
      * @return {string} - the qualified event name
      */
-    function eventName(name) {
-        var EVENT_TAG = "brackets-js-hints";
-        return name + "." + EVENT_TAG;
-    }
+  function eventName(name) {
+    var EVENT_TAG = "brackets-js-hints";
+    return name + "." + EVENT_TAG;
+  }
 
-    /*
+  /*
      * Annotate a list of tokens as literals of a particular kind;
      * if string literals, annotate with an appropriate delimiter.
      *
@@ -138,23 +137,23 @@ define(function (require, exports, module) {
      *      added to indicate what the default delimiter should be (viz. a
      *      single or double quotation mark).
      */
-    function annotateLiterals(literals, kind) {
-        return literals.map(function (t) {
-            t.literal = true;
-            t.kind = kind;
-            t.origin = "ecmascript";
-            if (kind === "string") {
-                if (/[\\\\]*[^\\]"/.test(t.value)) {
-                    t.delimiter = SINGLE_QUOTE;
-                } else {
-                    t.delimiter = DOUBLE_QUOTE;
-                }
-            }
-            return t;
-        });
-    }
+  function annotateLiterals(literals, kind) {
+    return literals.map(function(t) {
+      t.literal = true;
+      t.kind = kind;
+      t.origin = "ecmascript";
+      if (kind === "string") {
+        if (/[\\\\]*[^\\]"/.test(t.value)) {
+          t.delimiter = SINGLE_QUOTE;
+        } else {
+          t.delimiter = DOUBLE_QUOTE;
+        }
+      }
+      return t;
+    });
+  }
 
-    /*
+  /*
      * Annotate a list of tokens as keywords
      *
      * @param {Array.<Object>} keyword - list of keyword tokens
@@ -162,49 +161,76 @@ define(function (require, exports, module) {
      *      new keyword {boolean} property has been added to indicate that the
      *      hint is a keyword.
      */
-    function annotateKeywords(keywords) {
-        return keywords.map(function (t) {
-            t.keyword = true;
-            t.origin = "ecmascript";
-            return t;
-        });
-    }
+  function annotateKeywords(keywords) {
+    return keywords.map(function(t) {
+      t.keyword = true;
+      t.origin = "ecmascript";
+      return t;
+    });
+  }
 
-    function isSupportedLanguage(languageId) {
-        return SUPPORTED_LANGUAGES.indexOf(languageId) !== -1;
-    }
+  function isSupportedLanguage(languageId) {
+    return SUPPORTED_LANGUAGES.indexOf(languageId) !== -1;
+  }
 
-    var KEYWORD_NAMES   = [
-        "break", "case", "catch", "class", "const", "continue", "debugger",
-        "default", "delete", "do", "else", "export", "extends", "finally",
-        "for", "function", "if", "import", "in", "instanceof", "let", "new",
-        "return", "super", "switch", "this", "throw", "try", "typeof", "var",
-        "void", "while", "with", "yield"
-    ],
-        KEYWORD_TOKENS  = KEYWORD_NAMES.map(function (t) {
-            return makeToken(t, []);
-        }),
-        KEYWORDS        = annotateKeywords(KEYWORD_TOKENS);
+  var KEYWORD_NAMES = [
+    "break",
+    "case",
+    "catch",
+    "class",
+    "const",
+    "continue",
+    "debugger",
+    "default",
+    "delete",
+    "do",
+    "else",
+    "export",
+    "extends",
+    "finally",
+    "for",
+    "function",
+    "if",
+    "import",
+    "in",
+    "instanceof",
+    "let",
+    "new",
+    "return",
+    "super",
+    "switch",
+    "this",
+    "throw",
+    "try",
+    "typeof",
+    "var",
+    "void",
+    "while",
+    "with",
+    "yield"
+  ],
+    KEYWORD_TOKENS = KEYWORD_NAMES.map(function(t) {
+      return makeToken(t, []);
+    }),
+    KEYWORDS = annotateKeywords(KEYWORD_TOKENS);
 
-    var LITERAL_NAMES   = [
-        "true", "false", "null"
-    ],
-        LITERAL_TOKENS  = LITERAL_NAMES.map(function (t) {
-            return makeToken(t, []);
-        }),
-        LITERALS        = annotateLiterals(LITERAL_TOKENS);
+  var LITERAL_NAMES = ["true", "false", "null"],
+    LITERAL_TOKENS = LITERAL_NAMES.map(function(t) {
+      return makeToken(t, []);
+    }),
+    LITERALS = annotateLiterals(LITERAL_TOKENS);
 
-    exports.makeToken                   = makeToken;
-    exports.hintable                    = hintable;
-    exports.hintableKey                 = hintableKey;
-    exports.maybeIdentifier             = maybeIdentifier;
-    exports.eventName                   = eventName;
-    exports.annotateLiterals            = annotateLiterals;
-    exports.isSupportedLanguage         = isSupportedLanguage;
-    exports.KEYWORDS                    = KEYWORDS;
-    exports.LITERALS                    = LITERALS;
-    exports.LANGUAGE_ID                 = LANGUAGE_ID;
-    exports.SINGLE_QUOTE                = SINGLE_QUOTE;
-    exports.DOUBLE_QUOTE                = DOUBLE_QUOTE;
-    exports.SUPPORTED_LANGUAGES         = SUPPORTED_LANGUAGES;
+  exports.makeToken = makeToken;
+  exports.hintable = hintable;
+  exports.hintableKey = hintableKey;
+  exports.maybeIdentifier = maybeIdentifier;
+  exports.eventName = eventName;
+  exports.annotateLiterals = annotateLiterals;
+  exports.isSupportedLanguage = isSupportedLanguage;
+  exports.KEYWORDS = KEYWORDS;
+  exports.LITERALS = LITERALS;
+  exports.LANGUAGE_ID = LANGUAGE_ID;
+  exports.SINGLE_QUOTE = SINGLE_QUOTE;
+  exports.DOUBLE_QUOTE = DOUBLE_QUOTE;
+  exports.SUPPORTED_LANGUAGES = SUPPORTED_LANGUAGES;
 });

@@ -27,71 +27,67 @@
  * EditorStatusBar. (Although in practice StatusBar's HTML structure and initialization
  * assume it's only used for this one purpose, and all the APIs are on a singleton).
  */
-define(function (require, exports, module) {
-    'use strict';
+define(function(require, exports, module) {
+  "use strict";
+  var AppInit = require("utils/AppInit"),
+    StatusBarHTML = require("text!widgets/StatusBar.html"),
+    Strings = require("strings"),
+    WorkspaceManager = require("view/WorkspaceManager"),
+    Mustache = require("thirdparty/mustache/mustache");
 
-    var AppInit          = require("utils/AppInit"),
-        StatusBarHTML    = require("text!widgets/StatusBar.html"),
-        Strings          = require("strings"),
-        WorkspaceManager = require("view/WorkspaceManager"),
-        Mustache         = require("thirdparty/mustache/mustache");
+  var _init = false;
 
-    var _init = false;
+  // Indicates if the busy cursor is active to avoid unnecesary operations
+  var _busyCursor = false;
 
-    // Indicates if the busy cursor is active to avoid unnecesary operations
-    var _busyCursor = false;
+  // A simple regexp to sanitize indicator ids
+  var _indicatorIDRegexp = new RegExp("[^a-zA-Z 0-9]+", "g");
 
-    // A simple regexp to sanitize indicator ids
-    var _indicatorIDRegexp = new RegExp("[^a-zA-Z 0-9]+", "g");
+  // These vars are initialized by the AppInit.htmlReady handler
+  // below since they refer to DOM elements
+  var $statusInfo, $statusBar, $indicators, $busyIndicator;
 
-    // These vars are initialized by the AppInit.htmlReady handler
-    // below since they refer to DOM elements
-    var $statusInfo,
-        $statusBar,
-        $indicators,
-        $busyIndicator;
+  // XXXBramble: whether the status bar is enabled or disabled
+  var _enabled = false;
 
-    // XXXBramble: whether the status bar is enabled or disabled
-    var _enabled = false;
-        
-    /**
+  /**
      * Shows the 'busy' indicator
      * @param {boolean} updateCursor Sets the cursor to "wait"
      */
-    function showBusyIndicator(updateCursor) {
-        if (!_init) {
-            console.error("StatusBar API invoked before status bar created");
-            return;
-        }
-
-        if (updateCursor) {
-            _busyCursor = true;
-            $("*").addClass("busyCursor");
-        }
-
-        $busyIndicator.addClass("spin");
+  function showBusyIndicator(updateCursor) {
+    if (!_init) {
+      console.error("StatusBar API invoked before status bar created");
+      return;
     }
 
-    /**
+    if (updateCursor) {
+      _busyCursor = true;
+      $("*").addClass("busyCursor");
+    }
+
+    $busyIndicator.addClass("spin");
+  }
+
+  /**
      * Hides the 'busy' indicator
      */
-    function hideBusyIndicator() {
-        if (!_init) {
-            console.error("StatusBar API invoked before status bar created");
-            return;
-        }
-
-        // Check if we are using the busyCursor class to avoid
-        // unnecesary calls to $('*').removeClass()
-        if (_busyCursor) {
-            _busyCursor = false;
-            $("*").removeClass("busyCursor");
-        }
-
-        $busyIndicator.removeClass("spin");
+  function hideBusyIndicator() {
+    if (!_init) {
+      console.error("StatusBar API invoked before status bar created");
+      return;
     }
 
-    /**
+    // Check if we are using the busyCursor class to avoid
+    // unnecesary calls to $('*').removeClass()
+    if (_busyCursor) {
+      _busyCursor = false;
+      $("*").removeClass("busyCursor");
+    }
+
+    $busyIndicator.removeClass("spin");
+  }
+
+  /**
      * Registers a new status indicator
      * @param {string} id Registration id of the indicator to be updated.
      * @param {(DOMNode|jQueryObject)=} indicator Optional DOMNode for the indicator
@@ -102,203 +98,200 @@ define(function (require, exports, module) {
      *          The new indicator will be inserted before (i.e. to the left of)
      *          the indicator specified by this parameter.
      */
-    function addIndicator(id, indicator, visible, style, tooltip, insertBefore) {
-        if (!_init) {
-            console.error("StatusBar API invoked before status bar created");
-            return;
-        }
-
-        indicator = indicator || window.document.createElement("div");
-        tooltip = tooltip || "";
-        style = style || "";
-        id = id.replace(_indicatorIDRegexp, "-") || "";
-
-        var $indicator = $(indicator);
-
-        $indicator.attr("id", id);
-        $indicator.attr("title", tooltip);
-        $indicator.addClass("indicator");
-        $indicator.addClass(style);
-
-        if (!visible) {
-            $indicator.hide();
-        }
-
-        // This code looks backwards because the DOM model is ordered
-        // top-to-bottom but the UI view is ordered right-to-left. The concept
-        // of "before" in the model is "after" in the view, and vice versa.
-        if (insertBefore && $("#" + insertBefore).length > 0) {
-            $indicator.insertAfter("#" + insertBefore);
-        } else {
-            // No positioning is provided, put on left end of indicators, but
-            // to right of "busy" indicator (which is usually hidden).
-            var $busyIndicator = $("#status-bar .spinner");
-            $indicator.insertBefore($busyIndicator);
-        }
+  function addIndicator(id, indicator, visible, style, tooltip, insertBefore) {
+    if (!_init) {
+      console.error("StatusBar API invoked before status bar created");
+      return;
     }
 
-    /**
+    indicator = indicator || window.document.createElement("div");
+    tooltip = tooltip || "";
+    style = style || "";
+    id = id.replace(_indicatorIDRegexp, "-") || "";
+
+    var $indicator = $(indicator);
+
+    $indicator.attr("id", id);
+    $indicator.attr("title", tooltip);
+    $indicator.addClass("indicator");
+    $indicator.addClass(style);
+
+    if (!visible) {
+      $indicator.hide();
+    }
+
+    // This code looks backwards because the DOM model is ordered
+    // top-to-bottom but the UI view is ordered right-to-left. The concept
+    // of "before" in the model is "after" in the view, and vice versa.
+    if (insertBefore && $("#" + insertBefore).length > 0) {
+      $indicator.insertAfter("#" + insertBefore);
+    } else {
+      // No positioning is provided, put on left end of indicators, but
+      // to right of "busy" indicator (which is usually hidden).
+      var $busyIndicator = $("#status-bar .spinner");
+      $indicator.insertBefore($busyIndicator);
+    }
+  }
+
+  /**
      * Updates a status indicator
      * @param {string} id Registration id of the indicator to be updated.
      * @param {boolean} visible Shows or hides the indicator over the statusbar.
      * @param {string=} style Sets the attribute "class" of the indicator.
      * @param {string=} tooltip Sets the attribute "title" of the indicator.
      */
-    function updateIndicator(id, visible, style, tooltip) {
-        if (!_init && !!brackets.test) {
-            console.error("StatusBar API invoked before status bar created");
-            return;
-        }
-
-        var $indicator = $("#" + id.replace(_indicatorIDRegexp, "-"));
-
-        if ($indicator) {
-
-            if (visible) {
-                $indicator.show();
-            } else {
-                $indicator.hide();
-            }
-
-            if (style) {
-                $indicator.removeClass();
-                $indicator.addClass(style);
-            } else {
-                $indicator.removeClass();
-                $indicator.addClass("indicator");
-            }
-
-            if (tooltip) {
-                $indicator.attr("title", tooltip);
-            }
-        }
+  function updateIndicator(id, visible, style, tooltip) {
+    if (!_init && !!brackets.test) {
+      console.error("StatusBar API invoked before status bar created");
+      return;
     }
 
-    /**
+    var $indicator = $("#" + id.replace(_indicatorIDRegexp, "-"));
+
+    if ($indicator) {
+      if (visible) {
+        $indicator.show();
+      } else {
+        $indicator.hide();
+      }
+
+      if (style) {
+        $indicator.removeClass();
+        $indicator.addClass(style);
+      } else {
+        $indicator.removeClass();
+        $indicator.addClass("indicator");
+      }
+
+      if (tooltip) {
+        $indicator.attr("title", tooltip);
+      }
+    }
+  }
+
+  /**
      * Hide the statusbar Information Panel
      */
-    function hideInformation() {
-        $statusInfo.css("display", "none");
-    }
+  function hideInformation() {
+    $statusInfo.css("display", "none");
+  }
 
-    /**
+  /**
      * Show the statusbar Information Panel
      */
-    function showInformation() {
-        $statusInfo.css("display", "");
-    }
+  function showInformation() {
+    $statusInfo.css("display", "");
+  }
 
-    /**
+  /**
      * Hide the statusbar Indicators
      */
-    function hideIndicators() {
-        $indicators.css("display", "none");
-    }
+  function hideIndicators() {
+    $indicators.css("display", "none");
+  }
 
-    /**
+  /**
      * Show the statusbar Indicators
      */
-    function showIndicators() {
-        $indicators.css("display", "");
-    }
+  function showIndicators() {
+    $indicators.css("display", "");
+  }
 
-
-    /**
+  /**
      * Hides all panels but not the status bar
      */
-    function hideAllPanes() {
-        hideInformation();
-        hideIndicators();
-    }
+  function hideAllPanes() {
+    hideInformation();
+    hideIndicators();
+  }
 
-    /**
+  /**
      * Shows all panels (will not show a hidden statusbar)
      */
-    function showAllPanes() {
-        showInformation();
-        showIndicators();
-    }
+  function showAllPanes() {
+    showInformation();
+    showIndicators();
+  }
 
-
-    /**
+  /**
      * Hide the statusbar
      */
-    function hide() {
-        if (!_init) {
-            console.error("StatusBar API invoked before status bar created");
-            return;
-        }
-
-        if ($statusBar.is(":visible")) {
-            $statusBar.hide();
-            WorkspaceManager.recomputeLayout();
-        }
+  function hide() {
+    if (!_init) {
+      console.error("StatusBar API invoked before status bar created");
+      return;
     }
 
-    /**
+    if ($statusBar.is(":visible")) {
+      $statusBar.hide();
+      WorkspaceManager.recomputeLayout();
+    }
+  }
+
+  /**
      * Show the statusbar
      */
-    function show() {
-        if (!_init) {
-            console.error("StatusBar API invoked before status bar created");
-            return;
-        }
-
-        // XXXBramble: ignore requests to show the status bar if not enabled
-        if (!_enabled) {
-            return;
-        }
-
-        if (!$statusBar.is(":visible")) {
-            $statusBar.show();
-            WorkspaceManager.recomputeLayout();
-        }
+  function show() {
+    if (!_init) {
+      console.error("StatusBar API invoked before status bar created");
+      return;
     }
-    
-    /**
+
+    // XXXBramble: ignore requests to show the status bar if not enabled
+    if (!_enabled) {
+      return;
+    }
+
+    if (!$statusBar.is(":visible")) {
+      $statusBar.show();
+      WorkspaceManager.recomputeLayout();
+    }
+  }
+
+  /**
      * XXXBramble: Disables the status bar completely, such that calls to show() do nothing
      */
-    function enable() {
-        _enabled = true;
-        show();
-    }
+  function enable() {
+    _enabled = true;
+    show();
+  }
 
-    /**
+  /**
      * XXXBramble: Enables the status bar, such that calls to show() do something
      */
-    function disable() {
-        _enabled = false;
-        hide();
-    }
+  function disable() {
+    _enabled = false;
+    hide();
+  }
 
-    AppInit.htmlReady(function () {
-        var $parent = $(".main-view .content");
-        $parent.append(Mustache.render(StatusBarHTML, Strings));
+  AppInit.htmlReady(function() {
+    var $parent = $(".main-view .content");
+    $parent.append(Mustache.render(StatusBarHTML, Strings));
 
-        // Initialize items dependent on HTML DOM
-        $statusBar          = $("#status-bar");
-        $indicators         = $("#status-indicators");
-        $busyIndicator      = $("#status-bar .spinner");
-        $statusInfo         = $("#status-info");
+    // Initialize items dependent on HTML DOM
+    $statusBar = $("#status-bar");
+    $indicators = $("#status-indicators");
+    $busyIndicator = $("#status-bar .spinner");
+    $statusInfo = $("#status-info");
 
-        _init = true;
+    _init = true;
 
-        // hide on init
-        hide();
-    });
+    // hide on init
+    hide();
+  });
 
-    exports.hideInformation   = hideInformation;
-    exports.showInformation   = showInformation;
-    exports.showBusyIndicator = showBusyIndicator;
-    exports.hideBusyIndicator = hideBusyIndicator;
-    exports.hideIndicators    = hideIndicators;
-    exports.showIndicators    = showIndicators;
-    exports.hideAllPanes      = hideAllPanes;
-    exports.showAllPanes      = showAllPanes;
-    exports.addIndicator      = addIndicator;
-    exports.updateIndicator   = updateIndicator;
-    exports.hide              = hide;
-    exports.show              = show;
-    exports.enable            = enable;
-    exports.disable           = disable;
+  exports.hideInformation = hideInformation;
+  exports.showInformation = showInformation;
+  exports.showBusyIndicator = showBusyIndicator;
+  exports.hideBusyIndicator = hideBusyIndicator;
+  exports.hideIndicators = hideIndicators;
+  exports.showIndicators = showIndicators;
+  exports.hideAllPanes = hideAllPanes;
+  exports.showAllPanes = showAllPanes;
+  exports.addIndicator = addIndicator;
+  exports.updateIndicator = updateIndicator;
+  exports.hide = hide;
+  exports.show = show;
+  exports.enable = enable;
+  exports.disable = disable;
 });

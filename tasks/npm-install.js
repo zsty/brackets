@@ -25,74 +25,88 @@
 /*jslint node: true */
 "use strict";
 
-module.exports = function (grunt) {
+module.exports = function(grunt) {
+  var _ = require("lodash"),
+    common = require("./lib/common")(grunt),
+    build = require("./build")(grunt),
+    glob = require("glob"),
+    path = require("path"),
+    exec = require("child_process").exec;
 
-    var _       = require("lodash"),
-        common  = require("./lib/common")(grunt),
-        build   = require("./build")(grunt),
-        glob    = require("glob"),
-        path    = require("path"),
-        exec    = require("child_process").exec;
-    
-    function runNpmInstall(where, callback) {
-        grunt.log.writeln("running npm install --production in " + where);
-        exec('npm install --production', { cwd: './' + where }, function (err, stdout, stderr) {
-            if (err) {
-                grunt.log.error(stderr);
-            } else {
-                grunt.log.writeln(stdout || "finished npm install in " + where);
-            }
-            return err ? callback(stderr) : callback(null, stdout);
-        });
-    }
-
-    grunt.registerTask("npm-install", "Install node_modules to the dist folder so it gets bundled with release", function () {
-        // XXXBramble: skip shrinkwrap
-        //var npmShrinkwrapJSON = grunt.file.readJSON("npm-shrinkwrap.json");
-        //common.writeJSON(grunt, "dist/npm-shrinkwrap.json", npmShrinkwrapJSON);
-
-        var packageJSON = grunt.file.readJSON("package.json");
-        delete packageJSON.devDependencies;
-        delete packageJSON.scripts; // we don't want to run post-install scripts in dist folder
-        common.writeJSON(grunt, "dist/package.json", packageJSON);
-        var packageJSON = grunt.file.readJSON("dist/package.json");
-
-        var done = this.async();
-        runNpmInstall("dist", function (err) {
-            return err ? done(false) : done();
-        });
-    });
-
-    grunt.registerTask("npm-install-src", "Install node_modules to the src folder", function () {
-        var done = this.async();
-        runNpmInstall("src", function (err) {
-            return err ? done(false) : done();
-        });
-    });
-    
-    grunt.registerTask("npm-install-extensions", "Install node_modules for default extensions which have package.json defined", function () {
-        var _done = this.async();
-        glob("src/extensions/**/package.json", function (err, files) {
-            if (err) {
-                grunt.log.error(err);
-                return _done(false);
-            }
-            files = files.filter(function (path) {
-                return path.indexOf("node_modules") === -1;
-            });
-            var done = _.after(files.length, _done);
-            files.forEach(function (file) {
-                runNpmInstall(path.dirname(file), function (err) {
-                    return err ? _done(false) : done();
-                });
-            });
-        });
-    });
-
-    grunt.registerTask(
-        "npm-install-source",
-        "Install node_modules for src folder and default extensions which have package.json defined",
-        ["npm-install-src", "copy:thirdparty", "npm-install-extensions"]
+  function runNpmInstall(where, callback) {
+    grunt.log.writeln("running npm install --production in " + where);
+    exec(
+      "npm install --production",
+      { cwd: "./" + where },
+      function(err, stdout, stderr) {
+        if (err) {
+          grunt.log.error(stderr);
+        } else {
+          grunt.log.writeln(stdout || "finished npm install in " + where);
+        }
+        return err ? callback(stderr) : callback(null, stdout);
+      }
     );
+  }
 
+  grunt.registerTask(
+    "npm-install",
+    "Install node_modules to the dist folder so it gets bundled with release",
+    function() {
+      // XXXBramble: skip shrinkwrap
+      //var npmShrinkwrapJSON = grunt.file.readJSON("npm-shrinkwrap.json");
+      //common.writeJSON(grunt, "dist/npm-shrinkwrap.json", npmShrinkwrapJSON);
+
+      var packageJSON = grunt.file.readJSON("package.json");
+      delete packageJSON.devDependencies;
+      delete packageJSON.scripts; // we don't want to run post-install scripts in dist folder
+      common.writeJSON(grunt, "dist/package.json", packageJSON);
+      var packageJSON = grunt.file.readJSON("dist/package.json");
+
+      var done = this.async();
+      runNpmInstall("dist", function(err) {
+        return err ? done(false) : done();
+      });
+    }
+  );
+
+  grunt.registerTask(
+    "npm-install-src",
+    "Install node_modules to the src folder",
+    function() {
+      var done = this.async();
+      runNpmInstall("src", function(err) {
+        return err ? done(false) : done();
+      });
+    }
+  );
+
+  grunt.registerTask(
+    "npm-install-extensions",
+    "Install node_modules for default extensions which have package.json defined",
+    function() {
+      var _done = this.async();
+      glob("src/extensions/**/package.json", function(err, files) {
+        if (err) {
+          grunt.log.error(err);
+          return _done(false);
+        }
+        files = files.filter(function(path) {
+          return path.indexOf("node_modules") === -1;
+        });
+        var done = _.after(files.length, _done);
+        files.forEach(function(file) {
+          runNpmInstall(path.dirname(file), function(err) {
+            return err ? _done(false) : done();
+          });
+        });
+      });
+    }
+  );
+
+  grunt.registerTask(
+    "npm-install-source",
+    "Install node_modules for src folder and default extensions which have package.json defined",
+    ["npm-install-src", "copy:thirdparty", "npm-install-extensions"]
+  );
 };

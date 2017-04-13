@@ -21,98 +21,97 @@
  *
  */
 
-define(function (require, exports, module) {
-    "use strict";
+define(function(require, exports, module) {
+  "use strict";
+  // Brackets modules
+  var FileUtils = brackets.getModule("file/FileUtils"),
+    ExtensionUtils = brackets.getModule("utils/ExtensionUtils"),
+    DocumentManager = brackets.getModule("document/DocumentManager"),
+    MainViewFactory = brackets.getModule("view/MainViewFactory"),
+    Mustache = brackets.getModule("thirdparty/mustache/mustache"),
+    ConfigViewContent = require("text!htmlContent/Config.html");
 
-    // Brackets modules
-    var FileUtils                   = brackets.getModule("file/FileUtils"),
-        ExtensionUtils              = brackets.getModule("utils/ExtensionUtils"),
-        DocumentManager             = brackets.getModule("document/DocumentManager"),
-        MainViewFactory             = brackets.getModule("view/MainViewFactory"),
-        Mustache                    = brackets.getModule("thirdparty/mustache/mustache"),
-        ConfigViewContent           = require("text!htmlContent/Config.html");
+  /* our module object */
+  var _module = module;
 
-    /* our module object */
-    var _module = module;
+  /* @type {Object.<string, ConfigView>} List of open views */
+  function ConfigView(doc, $container) {
+    this.$container = $container;
+    this.doc = doc;
+    this.json = JSON.parse(this.doc.getText());
+    this.$view = $(Mustache.render(ConfigViewContent, this.json));
+    this.$view.css({
+      "background-image": "url(file://" +
+        FileUtils.getNativeModuleDirectoryPath(_module) +
+        "/htmlContent/logo-sm.png)",
+      "background-position": "bottom right",
+      "background-repeat": "no-repeat"
+    });
+    $container.append(this.$view);
+  }
 
-    /* @type {Object.<string, ConfigView>} List of open views */
-    function ConfigView(doc, $container) {
-        this.$container = $container;
-        this.doc = doc;
-        this.json = JSON.parse(this.doc.getText());
-        this.$view = $(Mustache.render(ConfigViewContent, this.json));
-        this.$view.css({
-            "background-image": "url(file://" + FileUtils.getNativeModuleDirectoryPath(_module) + "/htmlContent/logo-sm.png)",
-            "background-position": "bottom right",
-            "background-repeat": "no-repeat"
-        });
-        $container.append(this.$view);
-    }
-
-    /*
+  /*
      * Retrieves the file object for this view
      * return {!File} the file object for this view
      */
-    ConfigView.prototype.getFile = function () {
-        return this.doc.file;
-    };
+  ConfigView.prototype.getFile = function() {
+    return this.doc.file;
+  };
 
-    /*
+  /*
      * Updates the layout of the view
      */
-    ConfigView.prototype.updateLayout = function () {
-    };
+  ConfigView.prototype.updateLayout = function() {};
 
-    /*
+  /*
      * Destroys the view
      */
-    ConfigView.prototype.destroy = function () {
-        this.$view.remove();
-    };
+  ConfigView.prototype.destroy = function() {
+    this.$view.remove();
+  };
 
-    /*
+  /*
      * Creates a view of a file (.brackets.json)
      * @param {!File} file - the file to create a view for
      * @param {!Pane} pane - the pane where to create the view
      * @private
      */
-    function _createConfigViewOf(file, pane) {
-        var result = new $.Deferred(),
-            view = pane.findViewOfFile(file.fullPath);
+  function _createConfigViewOf(file, pane) {
+    var result = new $.Deferred(), view = pane.findViewOfFile(file.fullPath);
 
-        if (view) {
-            // existing view, then just show it
-            pane.showView(view);
-            result.resolve(view.getFile());
-        } else {
-            DocumentManager.getDocumentForPath(file.fullPath)
-                .done(function (doc) {
-                    var view = new ConfigView(doc, pane.$el);
-                    pane.addView(view, true);
-                    result.resolve(doc.file);
-                })
-                .fail(function (fileError) {
-                    result.reject(fileError);
-                });
-        }
-        return result.promise();
+    if (view) {
+      // existing view, then just show it
+      pane.showView(view);
+      result.resolve(view.getFile());
+    } else {
+      DocumentManager.getDocumentForPath(file.fullPath)
+        .done(function(doc) {
+          var view = new ConfigView(doc, pane.$el);
+          pane.addView(view, true);
+          result.resolve(doc.file);
+        })
+        .fail(function(fileError) {
+          result.reject(fileError);
+        });
     }
+    return result.promise();
+  }
 
-    /*
+  /*
      *  Create a view factory that can create views for the file
      *  `.brackets.json` in a project's root folder.
      */
-    var configViewFactory = {
-        canOpenFile: function (fullPath) {
-            var filename = fullPath.substr(fullPath.lastIndexOf("/") + 1);
-            return (filename.toLowerCase() === ".brackets.json");
-        },
-        openFile: function (file, pane) {
-            return _createConfigViewOf(file, pane);
-        }
-    };
+  var configViewFactory = {
+    canOpenFile: function(fullPath) {
+      var filename = fullPath.substr(fullPath.lastIndexOf("/") + 1);
+      return filename.toLowerCase() === ".brackets.json";
+    },
+    openFile: function(file, pane) {
+      return _createConfigViewOf(file, pane);
+    }
+  };
 
-    /* load styles used by our template */
-    ExtensionUtils.loadStyleSheet(module, "styles/styles.css");
-    MainViewFactory.registerViewFactory(configViewFactory);
+  /* load styles used by our template */
+  ExtensionUtils.loadStyleSheet(module, "styles/styles.css");
+  MainViewFactory.registerViewFactory(configViewFactory);
 });

@@ -23,90 +23,92 @@
 
 /*global appshell */
 
-define(function (require, exports, module) {
-    "use strict";
+define(function(require, exports, module) {
+  "use strict";
+  var Menus = brackets.getModule("command/Menus"),
+    CommandManager = brackets.getModule("command/CommandManager"),
+    Strings = brackets.getModule("strings"),
+    Dialogs = brackets.getModule("widgets/Dialogs"),
+    DefaultDialogs = brackets.getModule("widgets/DefaultDialogs"),
+    StringUtils = brackets.getModule("utils/StringUtils");
 
-    var Menus                   = brackets.getModule("command/Menus"),
-        CommandManager          = brackets.getModule("command/CommandManager"),
-        Strings                 = brackets.getModule("strings"),
-        Dialogs                 = brackets.getModule("widgets/Dialogs"),
-        DefaultDialogs          = brackets.getModule("widgets/DefaultDialogs"),
-        StringUtils             = brackets.getModule("utils/StringUtils");
-
-    function _mapCLToolsErrorCodeToString(errorCode) {
-
-        var errorString;
-        switch (errorCode) {
-        case appshell.app.ERR_CL_TOOLS_RMFAILED:
-            errorString = Strings.ERROR_CLTOOLS_RMFAILED;
-            break;
-        case appshell.app.ERR_CL_TOOLS_MKDIRFAILED:
-            errorString = Strings.ERROR_CLTOOLS_MKDIRFAILED;
-            break;
-        case appshell.app.ERR_CL_TOOLS_SYMLINKFAILED:
-            errorString = Strings.ERROR_CLTOOLS_LNFAILED;
-            break;
-        case appshell.app.ERR_CL_TOOLS_SERVFAILED:
-            errorString = Strings.ERROR_CLTOOLS_SERVFAILED;
-            break;
-        case appshell.app.ERR_CL_TOOLS_NOTSUPPORTED:
-            errorString = Strings.ERROR_CLTOOLS_NOTSUPPORTED;
-            break;
-        default:
-            errorString = StringUtils.format(Strings.GENERIC_ERROR, errorCode);
-            break;
-        }
-
-        return errorString;
+  function _mapCLToolsErrorCodeToString(errorCode) {
+    var errorString;
+    switch (errorCode) {
+      case appshell.app.ERR_CL_TOOLS_RMFAILED:
+        errorString = Strings.ERROR_CLTOOLS_RMFAILED;
+        break;
+      case appshell.app.ERR_CL_TOOLS_MKDIRFAILED:
+        errorString = Strings.ERROR_CLTOOLS_MKDIRFAILED;
+        break;
+      case appshell.app.ERR_CL_TOOLS_SYMLINKFAILED:
+        errorString = Strings.ERROR_CLTOOLS_LNFAILED;
+        break;
+      case appshell.app.ERR_CL_TOOLS_SERVFAILED:
+        errorString = Strings.ERROR_CLTOOLS_SERVFAILED;
+        break;
+      case appshell.app.ERR_CL_TOOLS_NOTSUPPORTED:
+        errorString = Strings.ERROR_CLTOOLS_NOTSUPPORTED;
+        break;
+      default:
+        errorString = StringUtils.format(Strings.GENERIC_ERROR, errorCode);
+        break;
     }
 
-    function handleInstallCommandResult(errorCode) {
-        var dialog;
+    return errorString;
+  }
 
-        if (errorCode === appshell.app.ERR_CL_TOOLS_CANCELLED) {
-            // The user has cancelled the authentication dialog.
-            return;
-        } else if (errorCode === appshell.app.NO_ERROR) {
-            // flag success message here.
-            dialog = Dialogs.showModalDialog(
-                DefaultDialogs.DIALOG_ID_INFO,
-                Strings.CREATING_LAUNCH_SCRIPT_TITLE,
-                Strings.LAUNCH_SCRIPT_CREATE_SUCCESS
-            );
-            Dialogs.addLinkTooltips(dialog);
+  function handleInstallCommandResult(errorCode) {
+    var dialog;
 
-        } else {
-            var errorString = _mapCLToolsErrorCodeToString(errorCode);
-            var errMsg = StringUtils.format(Strings.ERROR_CREATING_LAUNCH_SCRIPT, errorString);
-            dialog = Dialogs.showModalDialog(
-                DefaultDialogs.DIALOG_ID_ERROR,
-                Strings.CREATING_LAUNCH_SCRIPT_TITLE,
-                errMsg
-            );
-            Dialogs.addLinkTooltips(dialog);
-        }
+    if (errorCode === appshell.app.ERR_CL_TOOLS_CANCELLED) {
+      // The user has cancelled the authentication dialog.
+      return;
+    } else if (errorCode === appshell.app.NO_ERROR) {
+      // flag success message here.
+      dialog = Dialogs.showModalDialog(
+        DefaultDialogs.DIALOG_ID_INFO,
+        Strings.CREATING_LAUNCH_SCRIPT_TITLE,
+        Strings.LAUNCH_SCRIPT_CREATE_SUCCESS
+      );
+      Dialogs.addLinkTooltips(dialog);
+    } else {
+      var errorString = _mapCLToolsErrorCodeToString(errorCode);
+      var errMsg = StringUtils.format(
+        Strings.ERROR_CREATING_LAUNCH_SCRIPT,
+        errorString
+      );
+      dialog = Dialogs.showModalDialog(
+        DefaultDialogs.DIALOG_ID_ERROR,
+        Strings.CREATING_LAUNCH_SCRIPT_TITLE,
+        errMsg
+      );
+      Dialogs.addLinkTooltips(dialog);
     }
+  }
 
-    function handleInstallCommand() {
-        appshell.app.installCommandLine(function (serviceCode) {
-            handleInstallCommandResult(serviceCode);
-        });
-    }
+  function handleInstallCommand() {
+    appshell.app.installCommandLine(function(serviceCode) {
+      handleInstallCommandResult(serviceCode);
+    });
+  }
 
-    // Register the command and add the menu to file menu.
-    function addCommand() {
+  // Register the command and add the menu to file menu.
+  function addCommand() {
+    var menu = Menus.getMenu(Menus.AppMenuBar.FILE_MENU),
+      INSTALL_COMMAND_SCRIPT = "file.installCommandScript";
 
-        var menu                    = Menus.getMenu(Menus.AppMenuBar.FILE_MENU),
-            INSTALL_COMMAND_SCRIPT  = "file.installCommandScript";
+    CommandManager.register(
+      Strings.CMD_LAUNCH_SCRIPT_MAC,
+      INSTALL_COMMAND_SCRIPT,
+      handleInstallCommand
+    );
+    menu.addMenuDivider();
+    menu.addMenuItem(INSTALL_COMMAND_SCRIPT);
+  }
 
-        CommandManager.register(Strings.CMD_LAUNCH_SCRIPT_MAC, INSTALL_COMMAND_SCRIPT, handleInstallCommand);
-        menu.addMenuDivider();
-        menu.addMenuItem(INSTALL_COMMAND_SCRIPT);
-    }
-
-    // Append this menu only for Mac.
-    if (brackets.platform === "mac") {
-        addCommand();
-    }
-
+  // Append this menu only for Mac.
+  if (brackets.platform === "mac") {
+    addCommand();
+  }
 });

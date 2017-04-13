@@ -21,10 +21,9 @@
  *
  */
 
-define(function (require, exports, module) {
-    "use strict";
-
-    /*
+define(function(require, exports, module) {
+  "use strict";
+  /*
      * Represents file or directory structure watched by the FileSystem. If the
      * entry is a directory, all children (that pass the supplied filter function)
      * are also watched. A WatchedRoot object begins and ends its life in the
@@ -39,38 +38,37 @@ define(function (require, exports, module) {
      * @param {function(string, string):boolean} filter
      * @param {Array<string>} filterGlobs
      */
-    function WatchedRoot(entry, filter, filterGlobs) {
-        this.entry = entry;
-        this.filter = filter;
-        this.filterGlobs = filterGlobs;
-    }
+  function WatchedRoot(entry, filter, filterGlobs) {
+    this.entry = entry;
+    this.filter = filter;
+    this.filterGlobs = filterGlobs;
+  }
 
-    // Status constants
-    WatchedRoot.INACTIVE = 0;
-    WatchedRoot.STARTING = 1;
-    WatchedRoot.ACTIVE = 2;
+  // Status constants
+  WatchedRoot.INACTIVE = 0;
+  WatchedRoot.STARTING = 1;
+  WatchedRoot.ACTIVE = 2;
 
-    /**
+  /**
      * @type {File|Directory}
      */
-    WatchedRoot.prototype.entry = null;
+  WatchedRoot.prototype.entry = null;
 
-    /**
+  /**
      * @type {function(string, string):boolean}
      */
-    WatchedRoot.prototype.filter = null;
+  WatchedRoot.prototype.filter = null;
 
-    /**
+  /**
      * @type {Array<string>}
      */
-    WatchedRoot.prototype.filterGlobs = null;
+  WatchedRoot.prototype.filterGlobs = null;
 
-    /**
+  /**
      * @type {number}
      */
-    WatchedRoot.prototype.status = WatchedRoot.INACTIVE;
+  WatchedRoot.prototype.status = WatchedRoot.INACTIVE;
 
-
-    // Export this class
-    module.exports = WatchedRoot;
+  // Export this class
+  module.exports = WatchedRoot;
 });

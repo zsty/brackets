@@ -21,13 +21,12 @@
  *
  */
 
-define(function (require, exports, module) {
-    "use strict";
+define(function(require, exports, module) {
+  "use strict";
+  var BaseServer = require("LiveDevelopment/Servers/BaseServer").BaseServer,
+    LiveDevelopmentUtils = require("LiveDevelopment/LiveDevelopmentUtils");
 
-    var BaseServer             = require("LiveDevelopment/Servers/BaseServer").BaseServer,
-        LiveDevelopmentUtils   = require("LiveDevelopment/LiveDevelopmentUtils");
-
-    /**
+  /**
      * Live preview server for user specified server as defined with Live Preview Base Url
      * Project setting. In a clean installation of Brackets, this is the highest priority
      * server provider, if defined.
@@ -41,33 +40,33 @@ define(function (require, exports, module) {
      * @param {!{baseUrl: string, root: string, pathResolver: function(string)}} config
      * @extends {BaseServer}
      */
-    function UserServer(config) {
-        BaseServer.call(this, config);
-    }
+  function UserServer(config) {
+    BaseServer.call(this, config);
+  }
 
-    UserServer.prototype = Object.create(BaseServer.prototype);
-    UserServer.prototype.constructor = UserServer;
+  UserServer.prototype = Object.create(BaseServer.prototype);
+  UserServer.prototype.constructor = UserServer;
 
-    /**
+  /**
      * Determines whether we can serve local file.
      * @param {string} localPath A local path to file being served.
      * @return {boolean} true for yes, otherwise false.
      */
-    UserServer.prototype.canServe = function (localPath) {
-        // UserServer can only function when the project specifies a base URL
-        if (!this._baseUrl) {
-            return false;
-        }
+  UserServer.prototype.canServe = function(localPath) {
+    // UserServer can only function when the project specifies a base URL
+    if (!this._baseUrl) {
+      return false;
+    }
 
-        // If we can't transform the local path to a project relative path,
-        // the path cannot be served
-        if (localPath === this._pathResolver(localPath)) {
-            return false;
-        }
+    // If we can't transform the local path to a project relative path,
+    // the path cannot be served
+    if (localPath === this._pathResolver(localPath)) {
+      return false;
+    }
 
-        return LiveDevelopmentUtils.isStaticHtmlFileExt(localPath) ||
-            LiveDevelopmentUtils.isServerHtmlFileExt(localPath);
-    };
+    return LiveDevelopmentUtils.isStaticHtmlFileExt(localPath) ||
+      LiveDevelopmentUtils.isServerHtmlFileExt(localPath);
+  };
 
-    exports.UserServer = UserServer;
+  exports.UserServer = UserServer;
 });

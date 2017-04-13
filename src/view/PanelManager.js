@@ -24,34 +24,38 @@
 /**
  * @deprecated This module provided for backwards compatibility.  Use WorkspaceManager instead.
  */
-define(function (require, exports, module) {
-    "use strict";
+define(function(require, exports, module) {
+  "use strict";
+  var WorkspaceManager = require("view/WorkspaceManager"),
+    EventDispatcher = require("utils/EventDispatcher"),
+    DeprecationWarning = require("utils/DeprecationWarning");
 
-    var WorkspaceManager        = require("view/WorkspaceManager"),
-        EventDispatcher         = require("utils/EventDispatcher"),
-        DeprecationWarning      = require("utils/DeprecationWarning");
-
-    /**
+  /**
      * Creates a deprecation warning event handler
      * @param {!string} the event being deprecated
      * @param {!string} the new event to use
      */
-    function _deprecateEvent(oldEventName, newEventName) {
-        DeprecationWarning.deprecateEvent(exports,
-                                          WorkspaceManager,
-                                          oldEventName,
-                                          newEventName,
-                                          "PanelManager." + oldEventName,
-                                          "MainViewManager." + newEventName);
-    }
+  function _deprecateEvent(oldEventName, newEventName) {
+    DeprecationWarning.deprecateEvent(
+      exports,
+      WorkspaceManager,
+      oldEventName,
+      newEventName,
+      "PanelManager." + oldEventName,
+      "MainViewManager." + newEventName
+    );
+  }
 
-    // Define public API
-    exports.createBottomPanel   = function (id, $panel, minSize) {
-        DeprecationWarning.deprecationWarning("Use WorkspaceManager.createBottomPanel() instead of PanelManager.createBottomPanel().", true);
-        return WorkspaceManager.createBottomPanel(id, $panel, minSize);
-    };
+  // Define public API
+  exports.createBottomPanel = function(id, $panel, minSize) {
+    DeprecationWarning.deprecationWarning(
+      "Use WorkspaceManager.createBottomPanel() instead of PanelManager.createBottomPanel().",
+      true
+    );
+    return WorkspaceManager.createBottomPanel(id, $panel, minSize);
+  };
 
-    // Deprecated PanelManager events
-    EventDispatcher.makeEventDispatcher(exports);
-    _deprecateEvent("editorAreaResize", "workspaceUpdateLayout");
+  // Deprecated PanelManager events
+  EventDispatcher.makeEventDispatcher(exports);
+  _deprecateEvent("editorAreaResize", "workspaceUpdateLayout");
 });

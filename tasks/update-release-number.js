@@ -25,24 +25,25 @@
 /*jslint node: true */
 "use strict";
 
-module.exports = function (grunt) {
-    var common = require("./lib/common")(grunt),
-        semver = require("semver");
+module.exports = function(grunt) {
+  var common = require("./lib/common")(grunt), semver = require("semver");
 
-    // task: update-release-number
-    // Updates the version property in package.json
-    grunt.registerTask('update-release-number', function () {
-        var path        = "package.json",
-            packageJSON = grunt.file.readJSON(path),
-            release     = grunt.option("release") || "";
+  // task: update-release-number
+  // Updates the version property in package.json
+  grunt.registerTask("update-release-number", function() {
+    var path = "package.json",
+      packageJSON = grunt.file.readJSON(path),
+      release = grunt.option("release") || "";
 
-        if (!release || !semver.valid(release)) {
-            grunt.fail.fatal("Please specify a release. e.g. grunt update-release-number --release=1.1.0");
-        }
+    if (!release || !semver.valid(release)) {
+      grunt.fail.fatal(
+        "Please specify a release. e.g. grunt update-release-number --release=1.1.0"
+      );
+    }
 
-        packageJSON.version = release + "-0";
-        packageJSON.apiVersion = release;
+    packageJSON.version = release + "-0";
+    packageJSON.apiVersion = release;
 
-        common.writeJSON(grunt, path, packageJSON);
-    });
+    common.writeJSON(grunt, path, packageJSON);
+  });
 };

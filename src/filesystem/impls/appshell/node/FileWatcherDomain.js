@@ -30,9 +30,9 @@ var os = require("os");
 var watcherManager = require("./FileWatcherManager");
 var watcherImpl;
 if (process.platform === "win32") {
-    watcherImpl = require("./CSharpWatcher");
+  watcherImpl = require("./CSharpWatcher");
 } else {
-    watcherImpl = require("./ChokidarWatcher");
+  watcherImpl = require("./ChokidarWatcher");
 }
 
 /**
@@ -40,59 +40,59 @@ if (process.platform === "win32") {
  * The fileWatcher domain handles watching and un-watching directories.
  */
 function init(domainManager) {
-    if (!domainManager.hasDomain("fileWatcher")) {
-        domainManager.registerDomain("fileWatcher", {major: 0, minor: 1});
-    }
+  if (!domainManager.hasDomain("fileWatcher")) {
+    domainManager.registerDomain("fileWatcher", { major: 0, minor: 1 });
+  }
 
-    domainManager.registerCommand(
-        "fileWatcher",
-        "watchPath",
-        watcherManager.watchPath,
-        false,
-        "Start watching a file or directory",
-        [{
-            name: "path",
-            type: "string",
-            description: "absolute filesystem path of the file or directory to watch"
-        }, {
-            name: "ignored",
-            type: "array",
-            description: "list of path to ignore"
-        }]
-    );
-    domainManager.registerCommand(
-        "fileWatcher",
-        "unwatchPath",
-        watcherManager.unwatchPath,
-        false,
-        "Stop watching a single file or a directory and it's descendants",
-        [{
-            name: "path",
-            type: "string",
-            description: "absolute filesystem path of the file or directory to unwatch"
-        }]
-    );
-    domainManager.registerCommand(
-        "fileWatcher",
-        "unwatchAll",
-        watcherManager.unwatchAll,
-        false,
-        "Stop watching all files and directories"
-    );
-    domainManager.registerEvent(
-        "fileWatcher",
-        "change",
-        [
-            {name: "event", type: "string"},
-            {name: "parentDirPath", type: "string"},
-            {name: "entryName", type: "string"},
-            {name: "statsObj", type: "object"}
-        ]
-    );
+  domainManager.registerCommand(
+    "fileWatcher",
+    "watchPath",
+    watcherManager.watchPath,
+    false,
+    "Start watching a file or directory",
+    [
+      {
+        name: "path",
+        type: "string",
+        description: "absolute filesystem path of the file or directory to watch"
+      },
+      {
+        name: "ignored",
+        type: "array",
+        description: "list of path to ignore"
+      }
+    ]
+  );
+  domainManager.registerCommand(
+    "fileWatcher",
+    "unwatchPath",
+    watcherManager.unwatchPath,
+    false,
+    "Stop watching a single file or a directory and it's descendants",
+    [
+      {
+        name: "path",
+        type: "string",
+        description: "absolute filesystem path of the file or directory to unwatch"
+      }
+    ]
+  );
+  domainManager.registerCommand(
+    "fileWatcher",
+    "unwatchAll",
+    watcherManager.unwatchAll,
+    false,
+    "Stop watching all files and directories"
+  );
+  domainManager.registerEvent("fileWatcher", "change", [
+    { name: "event", type: "string" },
+    { name: "parentDirPath", type: "string" },
+    { name: "entryName", type: "string" },
+    { name: "statsObj", type: "object" }
+  ]);
 
-    watcherManager.setDomainManager(domainManager);
-    watcherManager.setWatcherImpl(watcherImpl);
-
+  watcherManager.setDomainManager(domainManager);
+  watcherManager.setWatcherImpl(watcherImpl);
 }
 
 exports.init = init;

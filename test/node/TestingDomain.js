@@ -33,59 +33,61 @@ var fs = require("fs-extra");
  * The testing domain provides utilities for tests.
  */
 function init(domainManager) {
-    if (!domainManager.hasDomain("testing")) {
-        domainManager.registerDomain("testing", {major: 0, minor: 1});
-    }
-    domainManager.registerCommand(
-        "testing",
-        "remove",
-        fs.remove,
-        true,
-        "Remove the directory at the path",
-        [{
-            name: "path",
-            type: "string",
-            description: "path to the directory to remove"
-        }]
-    );
-    domainManager.registerCommand(
-        "testing",
-        "copy",
-        fs.copy,
-        true,
-        "Copy a file or directory. The directory can have contents. Like cp -r.",
-        [
-            {
-                name: "src",
-                type: "string",
-                description: "directory source to copy"
-            },
-            {
-                name: "dest",
-                type: "string",
-                description: "destination directory"
-            }
-        ]
-    );
-    domainManager.registerCommand(
-        "testing",
-        "rename",
-        fs.rename,
-        true,
-        "Rename a file or directory.",
-        [
-            {
-                name: "src",
-                type: "string",
-                description: "source path"
-            },
-            {
-                name: "dest",
-                type: "string",
-                description: "destination path"
-            }
-        ]
-    );
+  if (!domainManager.hasDomain("testing")) {
+    domainManager.registerDomain("testing", { major: 0, minor: 1 });
+  }
+  domainManager.registerCommand(
+    "testing",
+    "remove",
+    fs.remove,
+    true,
+    "Remove the directory at the path",
+    [
+      {
+        name: "path",
+        type: "string",
+        description: "path to the directory to remove"
+      }
+    ]
+  );
+  domainManager.registerCommand(
+    "testing",
+    "copy",
+    fs.copy,
+    true,
+    "Copy a file or directory. The directory can have contents. Like cp -r.",
+    [
+      {
+        name: "src",
+        type: "string",
+        description: "directory source to copy"
+      },
+      {
+        name: "dest",
+        type: "string",
+        description: "destination directory"
+      }
+    ]
+  );
+  domainManager.registerCommand(
+    "testing",
+    "rename",
+    fs.rename,
+    true,
+    "Rename a file or directory.",
+    [
+      {
+        name: "src",
+        type: "string",
+        description: "source path"
+      },
+      {
+        name: "dest",
+        type: "string",
+        description: "destination path"
+      }
+    ]
+  );
 }
 
 exports.init = init;

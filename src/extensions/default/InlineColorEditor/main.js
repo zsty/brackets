@@ -21,16 +21,14 @@
  *
  */
 
-define(function (require, exports, module) {
-    "use strict";
+define(function(require, exports, module) {
+  "use strict";
+  var EditorManager = brackets.getModule("editor/EditorManager"),
+    ExtensionUtils = brackets.getModule("utils/ExtensionUtils"),
+    InlineColorEditor = require("InlineColorEditor").InlineColorEditor,
+    ColorUtils = brackets.getModule("utils/ColorUtils");
 
-    var EditorManager       = brackets.getModule("editor/EditorManager"),
-        ExtensionUtils      = brackets.getModule("utils/ExtensionUtils"),
-        InlineColorEditor   = require("InlineColorEditor").InlineColorEditor,
-        ColorUtils          = brackets.getModule("utils/ColorUtils");
-
-
-    /**
+  /**
      * Prepare hostEditor for an InlineColorEditor at pos if possible. Return
      * editor context if so; otherwise null.
      *
@@ -38,45 +36,45 @@ define(function (require, exports, module) {
      * @param {{line:Number, ch:Number}} pos
      * @return {?{color:String, marker:TextMarker}}
      */
-    function prepareEditorForProvider(hostEditor, pos) {
-        var colorRegEx, cursorLine, match, sel, start, end, endPos, marker;
+  function prepareEditorForProvider(hostEditor, pos) {
+    var colorRegEx, cursorLine, match, sel, start, end, endPos, marker;
 
-        sel = hostEditor.getSelection();
-        if (sel.start.line !== sel.end.line) {
-            return null;
-        }
-
-        colorRegEx = new RegExp(ColorUtils.COLOR_REGEX);
-        cursorLine = hostEditor.document.getLine(pos.line);
-
-        // Loop through each match of colorRegEx and stop when the one that contains pos is found.
-        do {
-            match = colorRegEx.exec(cursorLine);
-            if (match) {
-                start = match.index;
-                end = start + match[0].length;
-            }
-        } while (match && (pos.ch < start || pos.ch > end));
-
-        if (!match) {
-            return null;
-        }
-
-        // Adjust pos to the beginning of the match so that the inline editor won't get
-        // dismissed while we're updating the color with the new values from user's inline editing.
-        pos.ch = start;
-        endPos = {line: pos.line, ch: end};
-
-        marker = hostEditor._codeMirror.markText(pos, endPos);
-        hostEditor.setSelection(pos, endPos);
-
-        return {
-            color: match[0],
-            marker: marker
-        };
+    sel = hostEditor.getSelection();
+    if (sel.start.line !== sel.end.line) {
+      return null;
     }
 
-    /**
+    colorRegEx = new RegExp(ColorUtils.COLOR_REGEX);
+    cursorLine = hostEditor.document.getLine(pos.line);
+
+    // Loop through each match of colorRegEx and stop when the one that contains pos is found.
+    do {
+      match = colorRegEx.exec(cursorLine);
+      if (match) {
+        start = match.index;
+        end = start + match[0].length;
+      }
+    } while (match && (pos.ch < start || pos.ch > end));
+
+    if (!match) {
+      return null;
+    }
+
+    // Adjust pos to the beginning of the match so that the inline editor won't get
+    // dismissed while we're updating the color with the new values from user's inline editing.
+    pos.ch = start;
+    endPos = { line: pos.line, ch: end };
+
+    marker = hostEditor._codeMirror.markText(pos, endPos);
+    hostEditor.setSelection(pos, endPos);
+
+    return {
+      color: match[0],
+      marker: marker
+    };
+  }
+
+  /**
      * Registered as an inline editor provider: creates an InlineEditorColor when the cursor
      * is on a color value (in any flavor of code).
      *
@@ -85,34 +83,33 @@ define(function (require, exports, module) {
      * @return {?$.Promise} synchronously resolved with an InlineWidget, or null if there's
      *      no color at pos.
      */
-    function inlineColorEditorProvider(hostEditor, pos) {
-        var context = prepareEditorForProvider(hostEditor, pos),
-            inlineColorEditor,
-            result;
+  function inlineColorEditorProvider(hostEditor, pos) {
+    var context = prepareEditorForProvider(hostEditor, pos),
+      inlineColorEditor,
+      result;
 
-        if (!context) {
-            return null;
-        } else {
-            inlineColorEditor = new InlineColorEditor(context.color, context.marker);
-            inlineColorEditor.load(hostEditor);
+    if (!context) {
+      return null;
+    } else {
+      inlineColorEditor = new InlineColorEditor(context.color, context.marker);
+      inlineColorEditor.load(hostEditor);
 
-            result = new $.Deferred();
-            result.resolve(inlineColorEditor);
-            return result.promise();
-        }
+      result = new $.Deferred();
+      result.resolve(inlineColorEditor);
+      return result.promise();
     }
+  }
 
+  // Initialize extension
 
-    // Initialize extension
+  // XXXBramble: use css vs less
+  ExtensionUtils.loadStyleSheet(module, "css/main.css");
 
-    // XXXBramble: use css vs less
-    ExtensionUtils.loadStyleSheet(module, "css/main.css");
+  EditorManager.registerInlineEditProvider(inlineColorEditorProvider);
 
-    EditorManager.registerInlineEditProvider(inlineColorEditorProvider);
+  // for use by other InlineColorEditors
+  exports.prepareEditorForProvider = prepareEditorForProvider;
 
-    // for use by other InlineColorEditors
-    exports.prepareEditorForProvider = prepareEditorForProvider;
-
-    // for unit tests only
-    exports.inlineColorEditorProvider = inlineColorEditorProvider;
+  // for unit tests only
+  exports.inlineColorEditorProvider = inlineColorEditorProvider;
 });

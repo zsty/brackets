@@ -25,37 +25,38 @@
  *  Utilities functions to display deprecation warning in the console.
  *
  */
-define(function (require, exports, module) {
-    "use strict";
+define(function(require, exports, module) {
+  "use strict";
+  var EventDispatcher = require("utils/EventDispatcher");
 
-    var EventDispatcher = require("utils/EventDispatcher");
+  var displayedWarnings = {};
 
-
-    var displayedWarnings = {};
-
-    /**
+  /**
      * Trim the stack so that it does not have the call to this module,
      * and all the calls to require.js to load the extension that shows
      * this deprecation warning.
      */
-    function _trimStack(stack) {
-        var indexOfFirstRequireJSline;
+  function _trimStack(stack) {
+    var indexOfFirstRequireJSline;
 
-        // Remove everything in the stack up to the end of the line that shows this module file path
-        stack = stack.substr(stack.indexOf(")\n") + 2);
+    // Remove everything in the stack up to the end of the line that shows this module file path
+    stack = stack.substr(stack.indexOf(")\n") + 2);
 
-        // Find the very first line of require.js in the stack if the call is from an extension.
-        // Remove all those lines from the call stack.
-        indexOfFirstRequireJSline = stack.indexOf("requirejs/require.js");
-        if (indexOfFirstRequireJSline !== -1) {
-            indexOfFirstRequireJSline = stack.lastIndexOf(")", indexOfFirstRequireJSline) + 1;
-            stack = stack.substr(0, indexOfFirstRequireJSline);
-        }
-
-        return stack;
+    // Find the very first line of require.js in the stack if the call is from an extension.
+    // Remove all those lines from the call stack.
+    indexOfFirstRequireJSline = stack.indexOf("requirejs/require.js");
+    if (indexOfFirstRequireJSline !== -1) {
+      indexOfFirstRequireJSline = stack.lastIndexOf(
+        ")",
+        indexOfFirstRequireJSline
+      ) + 1;
+      stack = stack.substr(0, indexOfFirstRequireJSline);
     }
 
-    /**
+    return stack;
+  }
+
+  /**
      * Show deprecation warning with the call stack if it
      * has never been displayed before.
      * @param {!string} message The deprecation message to be displayed.
@@ -67,33 +68,36 @@ define(function (require, exports, module) {
      * @param {number=} callerStackPos Only used if oncePerCaller=true. Overrides the `Error().stack` depth
      *     where the client-code caller can be found. Only needed if extra shim layers are involved.
      */
-    function deprecationWarning(message, oncePerCaller, callerStackPos) {
-        // If oncePerCaller isn't set, then only show the message once no matter who calls it.
-        if (!message || (!oncePerCaller && displayedWarnings[message])) {
-            return;
-        }
-
-        // Don't show the warning again if we've already gotten it from the current caller.
-        // The true caller location is the fourth line in the stack trace:
-        // * 0 is the word "Error"
-        // * 1 is this function
-        // * 2 is the caller of this function (the one throwing the deprecation warning)
-        // * 3 is the actual caller of the deprecated function.
-        var stack = new Error().stack,
-            callerLocation = stack.split("\n")[callerStackPos || 3];
-        if (oncePerCaller && displayedWarnings[message] && displayedWarnings[message][callerLocation]) {
-            return;
-        }
-
-        console.warn(message + "\n" + _trimStack(stack));
-        if (!displayedWarnings[message]) {
-            displayedWarnings[message] = {};
-        }
-        displayedWarnings[message][callerLocation] = true;
+  function deprecationWarning(message, oncePerCaller, callerStackPos) {
+    // If oncePerCaller isn't set, then only show the message once no matter who calls it.
+    if (!message || (!oncePerCaller && displayedWarnings[message])) {
+      return;
     }
 
+    // Don't show the warning again if we've already gotten it from the current caller.
+    // The true caller location is the fourth line in the stack trace:
+    // * 0 is the word "Error"
+    // * 1 is this function
+    // * 2 is the caller of this function (the one throwing the deprecation warning)
+    // * 3 is the actual caller of the deprecated function.
+    var stack = new Error().stack,
+      callerLocation = stack.split("\n")[callerStackPos || 3];
+    if (
+      oncePerCaller &&
+      displayedWarnings[message] &&
+      displayedWarnings[message][callerLocation]
+    ) {
+      return;
+    }
 
-    /**
+    console.warn(message + "\n" + _trimStack(stack));
+    if (!displayedWarnings[message]) {
+      displayedWarnings[message] = {};
+    }
+    displayedWarnings[message][callerLocation] = true;
+  }
+
+  /**
      * Show a deprecation warning if there are listeners for the event
      *
      * ```
@@ -112,37 +116,51 @@ define(function (require, exports, module) {
      * @param {string=} canonicalOutboundName - the canonical name of the old event
      * @param {string=} canonicalInboundName - the canonical name of the new event
      */
-    function deprecateEvent(outbound, inbound, oldEventName, newEventName, canonicalOutboundName, canonicalInboundName) {
-        // Mark deprecated so EventDispatcher.on() will emit warnings
-        EventDispatcher.markDeprecated(outbound, oldEventName, canonicalInboundName);
+  function deprecateEvent(
+    outbound,
+    inbound,
+    oldEventName,
+    newEventName,
+    canonicalOutboundName,
+    canonicalInboundName
+  ) {
+    // Mark deprecated so EventDispatcher.on() will emit warnings
+    EventDispatcher.markDeprecated(
+      outbound,
+      oldEventName,
+      canonicalInboundName
+    );
 
-        // create an event handler for the new event to listen for
-        inbound.on(newEventName, function () {
-            // Dispatch the event in case anyone is still listening
-            EventDispatcher.triggerWithArray(outbound, oldEventName, Array.prototype.slice.call(arguments, 1));
-        });
-    }
+    // create an event handler for the new event to listen for
+    inbound.on(newEventName, function() {
+      // Dispatch the event in case anyone is still listening
+      EventDispatcher.triggerWithArray(
+        outbound,
+        oldEventName,
+        Array.prototype.slice.call(arguments, 1)
+      );
+    });
+  }
 
-
-    /**
+  /**
      * Create a deprecation warning and action for updated constants
      * @param {!string} old Menu Id
      * @param {!string} new Menu Id
      */
-    function deprecateConstant(obj, oldId, newId) {
-        var warning     = "Use Menus." + newId + " instead of Menus." + oldId,
-            newValue    = obj[newId];
+  function deprecateConstant(obj, oldId, newId) {
+    var warning = "Use Menus." + newId + " instead of Menus." + oldId,
+      newValue = obj[newId];
 
-        Object.defineProperty(obj, oldId, {
-            get: function () {
-                deprecationWarning(warning, true);
-                return newValue;
-            }
-        });
-    }
+    Object.defineProperty(obj, oldId, {
+      get: function() {
+        deprecationWarning(warning, true);
+        return newValue;
+      }
+    });
+  }
 
-    // Define public API
-    exports.deprecationWarning   = deprecationWarning;
-    exports.deprecateEvent       = deprecateEvent;
-    exports.deprecateConstant      = deprecateConstant;
+  // Define public API
+  exports.deprecationWarning = deprecationWarning;
+  exports.deprecateEvent = deprecateEvent;
+  exports.deprecateConstant = deprecateConstant;
 });

@@ -21,53 +21,49 @@
  *
  */
 
-define(function (require, exports, module) {
-    "use strict";
+define(function(require, exports, module) {
+  "use strict";
+  var CodeMirror = require("thirdparty/CodeMirror/lib/codemirror"),
+    PreferencesManager = require("preferences/PreferencesManager"),
+    prefs = PreferencesManager.getExtensionPrefs("themes");
 
-    var CodeMirror         = require("thirdparty/CodeMirror/lib/codemirror"),
-        PreferencesManager = require("preferences/PreferencesManager"),
-        prefs              = PreferencesManager.getExtensionPrefs("themes");
+  var $scrollbars = $("<style id='scrollbars'>").appendTo("head");
 
-    var $scrollbars = $("<style id='scrollbars'>").appendTo("head");
-
-
-    /**
+  /**
      * Load scrollbar styling based on whether or not theme scrollbars are enabled.
      *
      * @param {ThemeManager.Theme} theme Is the theme object with the corresponding scrollbar style
      *   to be updated
      */
-    function updateScrollbars(theme) {
-        theme = theme || {};
-        if (prefs.get("themeScrollbars")) {
-            var scrollbar = (theme.scrollbar || []).join(" ");
-            $scrollbars.text(scrollbar || "");
-        } else {
-            $scrollbars.text("");
-        }
+  function updateScrollbars(theme) {
+    theme = theme || {};
+    if (prefs.get("themeScrollbars")) {
+      var scrollbar = (theme.scrollbar || []).join(" ");
+      $scrollbars.text(scrollbar || "");
+    } else {
+      $scrollbars.text("");
     }
+  }
 
-
-    /**
+  /**
      *  Handles updating codemirror with the current selection of themes.
      *
      * @param {CodeMirror} cm is the CodeMirror instance currently loaded
      */
-    function updateThemes(cm) {
-        var newTheme = prefs.get("theme"),
-            cmTheme  = (cm.getOption("theme") || "").replace(/[\s]*/, ""); // Normalize themes string
+  function updateThemes(cm) {
+    var newTheme = prefs.get("theme"),
+      cmTheme = (cm.getOption("theme") || "").replace(/[\s]*/, ""); // Normalize themes string
 
-        // Check if the editor already has the theme applied...
-        if (cmTheme === newTheme) {
-            return;
-        }
-
-        // Setup current and further documents to get the new theme...
-        CodeMirror.defaults.theme = newTheme;
-        cm.setOption("theme", newTheme);
+    // Check if the editor already has the theme applied...
+    if (cmTheme === newTheme) {
+      return;
     }
 
+    // Setup current and further documents to get the new theme...
+    CodeMirror.defaults.theme = newTheme;
+    cm.setOption("theme", newTheme);
+  }
 
-    exports.updateScrollbars = updateScrollbars;
-    exports.updateThemes     = updateThemes;
+  exports.updateScrollbars = updateScrollbars;
+  exports.updateThemes = updateThemes;
 });

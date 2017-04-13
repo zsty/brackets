@@ -24,50 +24,49 @@
 /**
  * This is a collection of utility functions for gathering performance data.
  */
-define(function (require, exports, module) {
-    "use strict";
+define(function(require, exports, module) {
+  "use strict";
+  var _ = require("thirdparty/lodash"),
+    StringUtils = require("utils/StringUtils");
 
-    var _            = require("thirdparty/lodash"),
-        StringUtils  = require("utils/StringUtils");
+  // make sure the global brackets variable is loaded
+  require("utils/Global");
 
-    // make sure the global brackets variable is loaded
-    require("utils/Global");
-
-    /**
+  /**
      * Flag to enable/disable performance data gathering. Default is true (enabled)
      * @type {boolean} enabled
      */
-    var enabled = brackets && !!brackets.app.getElapsedMilliseconds;
+  var enabled = brackets && !!brackets.app.getElapsedMilliseconds;
 
-    /**
+  /**
      * Peformance data is stored in this hash object. The key is the name of the
      * test (passed to markStart/addMeasurement), and the value is the time, in
      * milliseconds, that it took to run the test. If multiple runs of the same test
      * are made, the value is an Array with each run stored as an entry in the Array.
      */
-    var perfData = {};
+  var perfData = {};
 
-    /**
+  /**
      * Active tests. This is a hash of all tests that have had markStart() called,
      * but have not yet had addMeasurement() called.
      */
-    var activeTests = {};
+  var activeTests = {};
 
-    /**
+  /**
      * Updatable tests. This is a hash of all tests that have had markStart() called,
      * and have had updateMeasurement() called. Caller must explicitly remove tests
      * from this list using finalizeMeasurement()
      */
-    var updatableTests = {};
+  var updatableTests = {};
 
-    /**
+  /**
      * @private
      * Keeps the track of measurements sequence number for re-entrant sequences with
      * the same name currently running. Entries are created and deleted as needed.
      */
-    var _reentTests = {};
+  var _reentTests = {};
 
-    /**
+  /**
      * @private
      * A unique key to log performance data
      *
@@ -75,76 +74,78 @@ define(function (require, exports, module) {
      * @param {!string} name A short name for this measurement
      * @param {?number} reent Sequence identifier for parallel tests of the same name
      */
-    function PerfMeasurement(id, name, reent) {
-        this.name = name;
-        this.reent = reent;
-        if (id) {
-            this.id = id;
-        } else {
-            this.id = (reent) ? "[reent " + this.reent + "] " + name : name;
-        }
+  function PerfMeasurement(id, name, reent) {
+    this.name = name;
+    this.reent = reent;
+    if (id) {
+      this.id = id;
+    } else {
+      this.id = reent ? "[reent " + this.reent + "] " + name : name;
     }
+  }
 
-    /**
+  /**
      * Override toString() to allow using PerfMeasurement as an array key without
      * explicit conversion.
      */
-    PerfMeasurement.prototype.toString = function () {
-        return this.name;
-    };
+  PerfMeasurement.prototype.toString = function() {
+    return this.name;
+  };
 
-    /**
+  /**
      * Create a new PerfMeasurement key. Adds itself to the module export.
      * Can be accessed on the module, e.g. PerfUtils.MY_PERF_KEY.
      *
      * @param {!string} id Unique ID for this measurement name
      * @param {!name} name A short name for this measurement
      */
-    function createPerfMeasurement(id, name) {
-        var pm = new PerfMeasurement(id, name);
-        exports[id] = pm;
+  function createPerfMeasurement(id, name) {
+    var pm = new PerfMeasurement(id, name);
+    exports[id] = pm;
 
-        return pm;
-    }
+    return pm;
+  }
 
-    /**
+  /**
      * @private
      * Generates PerfMeasurements based on the name or array of names.
      */
-    function _generatePerfMeasurements(name) {
-        // always convert it to array so that the rest of the routines could rely on it
-        var id = (!Array.isArray(name)) ? [name] : name;
-        // generate unique identifiers for each name
-        var i;
-        for (i = 0; i < id.length; i++) {
-            if (!(id[i] instanceof PerfMeasurement)) {
-                if (_reentTests[id[i]] === undefined) {
-                    _reentTests[id[i]] = 0;
-                } else {
-                    _reentTests[id[i]]++;
-                }
-                id[i] = new PerfMeasurement(undefined, id[i], _reentTests[id[i]]);
-            }
+  function _generatePerfMeasurements(name) {
+    // always convert it to array so that the rest of the routines could rely on it
+    var id = !Array.isArray(name) ? [name] : name;
+    // generate unique identifiers for each name
+    var i;
+    for (i = 0; i < id.length; i++) {
+      if (!(id[i] instanceof PerfMeasurement)) {
+        if (_reentTests[id[i]] === undefined) {
+          _reentTests[id[i]] = 0;
+        } else {
+          _reentTests[id[i]]++;
         }
-        return id;
+        id[i] = new PerfMeasurement(undefined, id[i], _reentTests[id[i]]);
+      }
     }
+    return id;
+  }
 
-    /**
+  /**
      * @private
      * Helper function for markStart()
      *
      * @param {Object} id  Timer id.
      * @param {number} time  Timer start time.
      */
-    function _markStart(id, time) {
-        if (activeTests[id.id]) {
-            console.error("Recursive tests with the same id are not supported. Timer id: " + id.id);
-        }
-
-        activeTests[id.id] = { startTime: time };
+  function _markStart(id, time) {
+    if (activeTests[id.id]) {
+      console.error(
+        "Recursive tests with the same id are not supported. Timer id: " + id.id
+      );
     }
 
-    /**
+    activeTests[id.id] = { startTime: time };
+  }
+
+  /**
      * Start a new named timer. The name should be as descriptive as possible, since
      * this name will appear as an entry in the performance report.
      * For example: "Open file: /Users/brackets/src/ProjectManager.js"
@@ -158,22 +159,22 @@ define(function (require, exports, module) {
      * @param {(string|Array.<string>)} name  Single name or an Array of names.
      * @return {(Object|Array.<Object>)} Opaque timer id or array of timer ids.
      */
-    function markStart(name) {
-        if (!enabled) {
-            return;
-        }
-
-        var time = brackets.app.getElapsedMilliseconds();
-        var id = _generatePerfMeasurements(name);
-        var i;
-
-        for (i = 0; i < id.length; i++) {
-            _markStart(id[i], time);
-        }
-        return id.length > 1 ? id : id[0];
+  function markStart(name) {
+    if (!enabled) {
+      return;
     }
 
-    /**
+    var time = brackets.app.getElapsedMilliseconds();
+    var id = _generatePerfMeasurements(name);
+    var i;
+
+    for (i = 0; i < id.length; i++) {
+      _markStart(id[i], time);
+    }
+    return id.length > 1 ? id : id[0];
+  }
+
+  /**
      * Stop a timer and add its measurements to the performance data.
      *
      * Multiple measurements can be stored for any given name. If there are
@@ -184,45 +185,44 @@ define(function (require, exports, module) {
      *
      * @param {Object} id  Timer id.
      */
-    function addMeasurement(id) {
-        if (!enabled) {
-            return;
-        }
-
-        if (!(id instanceof PerfMeasurement)) {
-            id = new PerfMeasurement(id, id);
-        }
-
-        var elapsedTime = brackets.app.getElapsedMilliseconds();
-
-        if (activeTests[id.id]) {
-            elapsedTime -= activeTests[id.id].startTime;
-            delete activeTests[id.id];
-        }
-
-        if (perfData[id]) {
-            // We have existing data, add to it
-            if (Array.isArray(perfData[id])) {
-                perfData[id].push(elapsedTime);
-            } else {
-                // Current data is a number, convert to Array
-                perfData[id] = [perfData[id], elapsedTime];
-            }
-        } else {
-            perfData[id] = elapsedTime;
-        }
-
-        if (id.reent !== undefined) {
-            if (_reentTests[id] === 0) {
-                delete _reentTests[id];
-            } else {
-                _reentTests[id]--;
-            }
-        }
-
+  function addMeasurement(id) {
+    if (!enabled) {
+      return;
     }
 
-    /**
+    if (!(id instanceof PerfMeasurement)) {
+      id = new PerfMeasurement(id, id);
+    }
+
+    var elapsedTime = brackets.app.getElapsedMilliseconds();
+
+    if (activeTests[id.id]) {
+      elapsedTime -= activeTests[id.id].startTime;
+      delete activeTests[id.id];
+    }
+
+    if (perfData[id]) {
+      // We have existing data, add to it
+      if (Array.isArray(perfData[id])) {
+        perfData[id].push(elapsedTime);
+      } else {
+        // Current data is a number, convert to Array
+        perfData[id] = [perfData[id], elapsedTime];
+      }
+    } else {
+      perfData[id] = elapsedTime;
+    }
+
+    if (id.reent !== undefined) {
+      if (_reentTests[id] === 0) {
+        delete _reentTests[id];
+      } else {
+        _reentTests[id]--;
+      }
+    }
+  }
+
+  /**
      * This function is similar to addMeasurement(), but it allows timing the
      * *last* event, when you don't know which event will be the last one.
      *
@@ -241,36 +241,35 @@ define(function (require, exports, module) {
      *
      * @param {Object} id  Timer id.
      */
-    function updateMeasurement(id) {
-        var elapsedTime = brackets.app.getElapsedMilliseconds();
+  function updateMeasurement(id) {
+    var elapsedTime = brackets.app.getElapsedMilliseconds();
 
-        if (updatableTests[id.id]) {
-            // update existing measurement
-            elapsedTime -= updatableTests[id].startTime;
+    if (updatableTests[id.id]) {
+      // update existing measurement
+      elapsedTime -= updatableTests[id].startTime;
 
-            // update
-            if (perfData[id] && Array.isArray(perfData[id])) {
-                // We have existing data and it's an array, so update the last entry
-                perfData[id][perfData[id].length - 1] = elapsedTime;
-            } else {
-                // No current data or a single entry, so set/update it
-                perfData[id] = elapsedTime;
-            }
+      // update
+      if (perfData[id] && Array.isArray(perfData[id])) {
+        // We have existing data and it's an array, so update the last entry
+        perfData[id][perfData[id].length - 1] = elapsedTime;
+      } else {
+        // No current data or a single entry, so set/update it
+        perfData[id] = elapsedTime;
+      }
+    } else {
+      // not yet in updatable list
 
-        } else {
-            // not yet in updatable list
+      if (activeTests[id.id]) {
+        // save startTime in updatable list before addMeasurement() deletes it
+        updatableTests[id.id] = { startTime: activeTests[id.id].startTime };
+      }
 
-            if (activeTests[id.id]) {
-                // save startTime in updatable list before addMeasurement() deletes it
-                updatableTests[id.id] = { startTime: activeTests[id.id].startTime };
-            }
-
-            // let addMeasurement() handle the initial case
-            addMeasurement(id);
-        }
+      // let addMeasurement() handle the initial case
+      addMeasurement(id);
     }
+  }
 
-    /**
+  /**
      * Remove timer from lists so next action starts a new measurement
      *
      * updateMeasurement may not have been called, so timer may be
@@ -278,17 +277,17 @@ define(function (require, exports, module) {
      *
      * @param {Object} id  Timer id.
      */
-    function finalizeMeasurement(id) {
-        if (activeTests[id.id]) {
-            delete activeTests[id.id];
-        }
-
-        if (updatableTests[id.id]) {
-            delete updatableTests[id.id];
-        }
+  function finalizeMeasurement(id) {
+    if (activeTests[id.id]) {
+      delete activeTests[id.id];
     }
 
-    /**
+    if (updatableTests[id.id]) {
+      delete updatableTests[id.id];
+    }
+  }
+
+  /**
      * Returns whether a timer is active or not, where "active" means that
      * timer has been started with addMark(), but has not been added to perfdata
      * with addMeasurement().
@@ -296,11 +295,11 @@ define(function (require, exports, module) {
      * @param {Object} id  Timer id.
      * @return {boolean} Whether a timer is active or not.
      */
-    function isActive(id) {
-        return (activeTests[id.id]) ? true : false;
-    }
+  function isActive(id) {
+    return activeTests[id.id] ? true : false;
+  }
 
-    /**
+  /**
      * return single value, or comma separated values for an array or return aggregated values with
      * <min value, average, max value, standard deviation>
      * @param   {Array}    entry          An array or a single value
@@ -309,122 +308,127 @@ define(function (require, exports, module) {
      * @return {String}   a single value, or comma separated values in an array or
      *                     <min(avg)max[standard deviation]> if aggregateStats is set
      */
-    function getValueAsString(entry, aggregateStats) {
-        if (!Array.isArray(entry)) {
-            return entry;
-        }
-
-        if (aggregateStats) {
-            var sum = 0,
-                avg,
-                min = _.min(entry),
-                max = _.max(entry),
-                sd,
-                variationSum = 0;
-
-            entry.forEach(function (value) {
-                sum += value;
-            });
-            avg = Math.round(sum / entry.length);
-            entry.forEach(function (value) {
-                variationSum += Math.pow(value - avg, 2);
-            });
-            sd = Math.round(Math.sqrt(variationSum / entry.length));
-            return min + "(" + avg + ")" + max + "[" + sd + "]";
-        } else {
-            return entry.join(", ");
-        }
+  function getValueAsString(entry, aggregateStats) {
+    if (!Array.isArray(entry)) {
+      return entry;
     }
 
-    /**
+    if (aggregateStats) {
+      var sum = 0,
+        avg,
+        min = _.min(entry),
+        max = _.max(entry),
+        sd,
+        variationSum = 0;
+
+      entry.forEach(function(value) {
+        sum += value;
+      });
+      avg = Math.round(sum / entry.length);
+      entry.forEach(function(value) {
+        variationSum += Math.pow(value - avg, 2);
+      });
+      sd = Math.round(Math.sqrt(variationSum / entry.length));
+      return min + "(" + avg + ")" + max + "[" + sd + "]";
+    } else {
+      return entry.join(", ");
+    }
+  }
+
+  /**
      * Returns the performance data as a tab delimited string
      * @return {string}
      */
-    function getDelimitedPerfData() {
-        var result = "";
-        _.forEach(perfData, function (entry, testName) {
-            result += getValueAsString(entry) + "\t" + testName + "\n";
-        });
+  function getDelimitedPerfData() {
+    var result = "";
+    _.forEach(perfData, function(entry, testName) {
+      result += getValueAsString(entry) + "\t" + testName + "\n";
+    });
 
-        return result;
-    }
+    return result;
+  }
 
-    /**
+  /**
      * Returns the measured value for the given measurement name.
      * @param {Object} id The measurement to retreive.
      */
-    function getData(id) {
-        if (!id) {
-            return perfData;
-        }
-
-        return perfData[id];
+  function getData(id) {
+    if (!id) {
+      return perfData;
     }
 
-    /**
+    return perfData[id];
+  }
+
+  /**
      * Returns the Performance metrics to be logged for health report
      * @return {Object} An object with the health data logs to be sent
      */
-    function getHealthReport() {
-        var healthReport = {
-            projectLoadTimes : "",
-            fileOpenTimes : ""
-        };
+  function getHealthReport() {
+    var healthReport = {
+      projectLoadTimes: "",
+      fileOpenTimes: ""
+    };
 
-        _.forEach(perfData, function (entry, testName) {
-            if (StringUtils.startsWith(testName, "Application Startup")) {
-                healthReport.AppStartupTime = getValueAsString(entry);
-            } else if (StringUtils.startsWith(testName, "brackets module dependencies resolved")) {
-                healthReport.ModuleDepsResolved = getValueAsString(entry);
-            } else if (StringUtils.startsWith(testName, "Load Project")) {
-                healthReport.projectLoadTimes += ":" + getValueAsString(entry, true);
-            } else if (StringUtils.startsWith(testName, "Open File")) {
-                healthReport.fileOpenTimes += ":" + getValueAsString(entry, true);
-            }
-        });
+    _.forEach(perfData, function(entry, testName) {
+      if (StringUtils.startsWith(testName, "Application Startup")) {
+        healthReport.AppStartupTime = getValueAsString(entry);
+      } else if (
+        StringUtils.startsWith(
+          testName,
+          "brackets module dependencies resolved"
+        )
+      ) {
+        healthReport.ModuleDepsResolved = getValueAsString(entry);
+      } else if (StringUtils.startsWith(testName, "Load Project")) {
+        healthReport.projectLoadTimes += ":" + getValueAsString(entry, true);
+      } else if (StringUtils.startsWith(testName, "Open File")) {
+        healthReport.fileOpenTimes += ":" + getValueAsString(entry, true);
+      }
+    });
 
-        return healthReport;
-    }
+    return healthReport;
+  }
 
-    function searchData(regExp) {
-        var keys = Object.keys(perfData).filter(function (key) {
-            return regExp.test(key);
-        });
+  function searchData(regExp) {
+    var keys = Object.keys(perfData).filter(function(key) {
+      return regExp.test(key);
+    });
 
-        var datas = [];
+    var datas = [];
 
-        keys.forEach(function (key) {
-            datas.push(perfData[key]);
-        });
+    keys.forEach(function(key) {
+      datas.push(perfData[key]);
+    });
 
-        return datas;
-    }
+    return datas;
+  }
 
-    /**
+  /**
      * Clear all logs including metric data and active tests.
      */
-    function clear() {
-        perfData = {};
-        activeTests = {};
-        updatableTests = {};
-        _reentTests = {};
-    }
+  function clear() {
+    perfData = {};
+    activeTests = {};
+    updatableTests = {};
+    _reentTests = {};
+  }
 
-    // create performance measurement constants
-    createPerfMeasurement("INLINE_WIDGET_OPEN", "Open inline editor or docs");
-    createPerfMeasurement("INLINE_WIDGET_CLOSE", "Close inline editor or docs");
+  // create performance measurement constants
+  createPerfMeasurement("INLINE_WIDGET_OPEN", "Open inline editor or docs");
+  createPerfMeasurement("INLINE_WIDGET_CLOSE", "Close inline editor or docs");
 
-    // extensions may create additional measurement constants during their lifecycle
+  // extensions may create additional measurement constants during their lifecycle
 
-    exports.addMeasurement          = addMeasurement;
-    exports.finalizeMeasurement     = finalizeMeasurement;
-    exports.isActive                = isActive;
-    exports.markStart               = markStart;
-    exports.getData                 = getData;
-    exports.searchData              = searchData;
-    exports.updateMeasurement       = updateMeasurement;
-    exports.getDelimitedPerfData    = getDelimitedPerfData;
-    exports.createPerfMeasurement   = createPerfMeasurement;
-    exports.clear                   = clear;
-    exports.getHealthReport         = getHealthReport;
+  exports.addMeasurement = addMeasurement;
+  exports.finalizeMeasurement = finalizeMeasurement;
+  exports.isActive = isActive;
+  exports.markStart = markStart;
+  exports.getData = getData;
+  exports.searchData = searchData;
+  exports.updateMeasurement = updateMeasurement;
+  exports.getDelimitedPerfData = getDelimitedPerfData;
+  exports.createPerfMeasurement = createPerfMeasurement;
+  exports.clear = clear;
+  exports.getHealthReport = getHealthReport;
 });

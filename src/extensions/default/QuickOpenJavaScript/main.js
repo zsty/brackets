@@ -21,18 +21,16 @@
  *
  */
 
-define(function (require, exports, module) {
-    "use strict";
+define(function(require, exports, module) {
+  "use strict";
+  var EditorManager = brackets.getModule("editor/EditorManager"),
+    QuickOpen = brackets.getModule("search/QuickOpen"),
+    QuickOpenHelper = brackets.getModule("search/QuickOpenHelper"),
+    JSUtils = brackets.getModule("language/JSUtils"),
+    DocumentManager = brackets.getModule("document/DocumentManager"),
+    StringMatch = brackets.getModule("utils/StringMatch");
 
-    var EditorManager       = brackets.getModule("editor/EditorManager"),
-        QuickOpen           = brackets.getModule("search/QuickOpen"),
-        QuickOpenHelper     = brackets.getModule("search/QuickOpenHelper"),
-        JSUtils             = brackets.getModule("language/JSUtils"),
-        DocumentManager     = brackets.getModule("document/DocumentManager"),
-        StringMatch         = brackets.getModule("utils/StringMatch");
-
-
-   /**
+  /**
     * FileLocation class
     * @constructor
     * @param {string} fullPath
@@ -41,76 +39,79 @@ define(function (require, exports, module) {
     * @param {number} chTo column end position
     * @param {string} functionName
     */
-    function FileLocation(fullPath, line, chFrom, chTo, functionName) {
-        this.fullPath = fullPath;
-        this.line = line;
-        this.chFrom = chFrom;
-        this.chTo = chTo;
-        this.functionName = functionName;
-    }
+  function FileLocation(fullPath, line, chFrom, chTo, functionName) {
+    this.fullPath = fullPath;
+    this.line = line;
+    this.chFrom = chFrom;
+    this.chTo = chTo;
+    this.functionName = functionName;
+  }
 
-    /**
+  /**
      * Contains a list of information about functions for a single document.
      *
      * @return {?Array.<FileLocation>}
      */
-    function createFunctionList() {
-        var doc = DocumentManager.getCurrentDocument();
-        if (!doc) {
-            return;
-        }
-
-        var functionList = [];
-        var docText = doc.getText();
-        var lines = docText.split("\n");
-        var functions = JSUtils.findAllMatchingFunctionsInText(docText, "*");
-        functions.forEach(function (funcEntry) {
-            var chFrom = lines[funcEntry.lineStart].indexOf(funcEntry.name);
-            var chTo = chFrom + funcEntry.name.length;
-            functionList.push(new FileLocation(null, funcEntry.lineStart, chFrom, chTo, funcEntry.name));
-        });
-        return functionList;
+  function createFunctionList() {
+    var doc = DocumentManager.getCurrentDocument();
+    if (!doc) {
+      return;
     }
 
+    var functionList = [];
+    var docText = doc.getText();
+    var lines = docText.split("\n");
+    var functions = JSUtils.findAllMatchingFunctionsInText(docText, "*");
+    functions.forEach(function(funcEntry) {
+      var chFrom = lines[funcEntry.lineStart].indexOf(funcEntry.name);
+      var chTo = chFrom + funcEntry.name.length;
+      functionList.push(
+        new FileLocation(
+          null,
+          funcEntry.lineStart,
+          chFrom,
+          chTo,
+          funcEntry.name
+        )
+      );
+    });
+    return functionList;
+  }
 
-
-    /**
+  /**
      * @param {string} query what the user is searching for
      * @param {StringMatch.StringMatcher} matcher object that caches search-in-progress data
      * @return {Array.<SearchResult>} sorted and filtered results that match the query
      */
-    function search(query, matcher) {
-        var functionList = matcher.functionList;
-        if (!functionList) {
-            functionList = createFunctionList();
-            matcher.functionList = functionList;
-        }
-        query = query.slice(query.indexOf("@") + 1, query.length);
-
-        // Filter and rank how good each match is
-        var filteredList = $.map(functionList, function (fileLocation) {
-            var searchResult = matcher.match(fileLocation.functionName, query);
-            if (searchResult) {
-                searchResult.fileLocation = fileLocation;
-            }
-            return searchResult;
-        });
-
-        // Sort based on ranking & basic alphabetical order
-        StringMatch.basicMatchSort(filteredList);
-
-        return filteredList;
+  function search(query, matcher) {
+    var functionList = matcher.functionList;
+    if (!functionList) {
+      functionList = createFunctionList();
+      matcher.functionList = functionList;
     }
+    query = query.slice(query.indexOf("@") + 1, query.length);
 
-    QuickOpen.addQuickOpenPlugin(
-        {
-            name: "JavaScript functions",
-            languageIds: ["javascript"],
-            search: search,
-            match: QuickOpenHelper.match,
-            itemFocus: QuickOpenHelper.itemFocus,
-            itemSelect: QuickOpenHelper.itemSelect
-        }
-    );
+    // Filter and rank how good each match is
+    var filteredList = $.map(functionList, function(fileLocation) {
+      var searchResult = matcher.match(fileLocation.functionName, query);
+      if (searchResult) {
+        searchResult.fileLocation = fileLocation;
+      }
+      return searchResult;
+    });
 
+    // Sort based on ranking & basic alphabetical order
+    StringMatch.basicMatchSort(filteredList);
+
+    return filteredList;
+  }
+
+  QuickOpen.addQuickOpenPlugin({
+    name: "JavaScript functions",
+    languageIds: ["javascript"],
+    search: search,
+    match: QuickOpenHelper.match,
+    itemFocus: QuickOpenHelper.itemFocus,
+    itemSelect: QuickOpenHelper.itemSelect
+  });
 });

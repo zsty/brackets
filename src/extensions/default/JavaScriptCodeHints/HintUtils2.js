@@ -27,10 +27,9 @@
  * This is done because of the require config in tern-worker.js needed to load tern libraries. Libraries
  * that include, say "acorn", will fail to load.
  */
-define(function (require, exports, module) {
-    "use strict";
-
-    /**
+define(function(require, exports, module) {
+  "use strict";
+  /**
      * Format the given parameter array. Handles separators between
      * parameters, syntax for optional parameters, and the order of the
      * parameter type and parameter name.
@@ -46,61 +45,63 @@ define(function (require, exports, module) {
      * default behavior is to include both parameter names and types.
      * @return {string} - formatted parameter hint
      */
-    function formatParameterHint(params, appendSeparators, appendParameter, typesOnly) {
-        var result = "",
-            pendingOptional = false;
+  function formatParameterHint(
+    params,
+    appendSeparators,
+    appendParameter,
+    typesOnly
+  ) {
+    var result = "", pendingOptional = false;
 
-        params.forEach(function (value, i) {
-            var param = value.type,
-                separators = "";
+    params.forEach(function(value, i) {
+      var param = value.type, separators = "";
 
-            if (value.isOptional) {
-                // if an optional param is following by an optional parameter, then
-                // terminate the bracket. Otherwise enclose a required parameter
-                // in the same bracket.
-                if (pendingOptional) {
-                    separators += "]";
-                }
-
-                pendingOptional = true;
-            }
-
-            if (i > 0) {
-                separators += ", ";
-            }
-
-            if (value.isOptional) {
-                separators += "[";
-            }
-
-            if (appendSeparators) {
-                appendSeparators(separators);
-            }
-
-            result += separators;
-
-            if (!typesOnly) {
-                param += " " + value.name;
-            }
-
-            if (appendParameter) {
-                appendParameter(param, i);
-            }
-
-            result += param;
-
-        });
-
+      if (value.isOptional) {
+        // if an optional param is following by an optional parameter, then
+        // terminate the bracket. Otherwise enclose a required parameter
+        // in the same bracket.
         if (pendingOptional) {
-            if (appendSeparators) {
-                appendSeparators("]");
-            }
-
-            result += "]";
+          separators += "]";
         }
 
-        return result;
+        pendingOptional = true;
+      }
+
+      if (i > 0) {
+        separators += ", ";
+      }
+
+      if (value.isOptional) {
+        separators += "[";
+      }
+
+      if (appendSeparators) {
+        appendSeparators(separators);
+      }
+
+      result += separators;
+
+      if (!typesOnly) {
+        param += " " + value.name;
+      }
+
+      if (appendParameter) {
+        appendParameter(param, i);
+      }
+
+      result += param;
+    });
+
+    if (pendingOptional) {
+      if (appendSeparators) {
+        appendSeparators("]");
+      }
+
+      result += "]";
     }
 
-    exports.formatParameterHint = formatParameterHint;
+    return result;
+  }
+
+  exports.formatParameterHint = formatParameterHint;
 });

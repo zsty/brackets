@@ -21,134 +21,135 @@
  *
  */
 
-define(function (require, exports, module) {
-    "use strict";
+define(function(require, exports, module) {
+  "use strict";
+  var _ = brackets.getModule("thirdparty/lodash"),
+    AnimationUtils = brackets.getModule("utils/AnimationUtils"),
+    ExtensionUtils = brackets.getModule("utils/ExtensionUtils"),
+    Strings = brackets.getModule("strings");
 
-    var _               = brackets.getModule("thirdparty/lodash"),
-        AnimationUtils  = brackets.getModule("utils/AnimationUtils"),
-        ExtensionUtils  = brackets.getModule("utils/ExtensionUtils"),
-        Strings         = brackets.getModule("strings");
+  var $span = null,
+    errorCount = 0,
+    _attached = false,
+    _windowOnError,
+    _consoleError,
+    _consoleClear;
 
-    var $span      = null,
-        errorCount = 0,
-        _attached  = false,
-        _windowOnError,
-        _consoleError,
-        _consoleClear;
+  ExtensionUtils.loadStyleSheet(module, "styles.css");
 
-    ExtensionUtils.loadStyleSheet(module, "styles.css");
+  function showDeveloperTools() {
+    try {
+      brackets.app.showDeveloperTools();
+    } catch (err) {
+      console.error(err);
+    }
+  }
 
-    function showDeveloperTools() {
-        try {
-            brackets.app.showDeveloperTools();
-        } catch (err) {
-            console.error(err);
-        }
+  function handleClick(event) {
+    if (event.shiftKey) {
+      window.console.clear();
+    } else {
+      showDeveloperTools();
+    }
+  }
+
+  function refreshIndicator() {
+    // never show 0 errors
+    if (!_attached || errorCount === 0) {
+      // hide notifier if it was attached previously
+      // but errorCount was cleared or it was disabled
+      if ($span) {
+        $span.parent().hide();
+      }
+      return;
     }
 
-    function handleClick(event) {
-        if (event.shiftKey) {
-            window.console.clear();
-        } else {
-            showDeveloperTools();
-        }
+    // update span if it was created before
+    if ($span) {
+      $span.text(errorCount).parent().show();
+      return;
     }
 
-    function refreshIndicator() {
-        // never show 0 errors
-        if (!_attached || errorCount === 0) {
-            // hide notifier if it was attached previously
-            // but errorCount was cleared or it was disabled
-            if ($span) {
-                $span.parent().hide();
-            }
-            return;
-        }
+    // create the span
+    $span = $("<span>").text(errorCount);
+    $("<div>")
+      .attr("id", "error-counter")
+      .attr("title", Strings.CMD_SHOW_DEV_TOOLS + "\u2026")
+      .text(Strings.ERRORS + ": ")
+      .append($span)
+      .on("click", handleClick)
+      .insertBefore("#status-bar .spinner");
+  }
 
-        // update span if it was created before
-        if ($span) {
-            $span.text(errorCount).parent().show();
-            return;
-        }
+  var blink = _.debounce(
+    function() {
+      AnimationUtils.animateUsingClass($span.parent()[0], "flash", 1500);
+    },
+    100
+  );
 
-        // create the span
-        $span = $("<span>").text(errorCount);
-        $("<div>")
-            .attr("id", "error-counter")
-            .attr("title", Strings.CMD_SHOW_DEV_TOOLS + "\u2026")
-            .text(Strings.ERRORS + ": ")
-            .append($span)
-            .on("click", handleClick)
-            .insertBefore("#status-bar .spinner");
+  function incErrorCount() {
+    errorCount++;
+    blink();
+    refreshIndicator();
+  }
+
+  function clearErrorCount() {
+    errorCount = 0;
+    refreshIndicator();
+  }
+
+  function attachFunctions() {
+    if (_attached) {
+      return;
     }
 
-    var blink = _.debounce(function () {
-        AnimationUtils.animateUsingClass($span.parent()[0], "flash", 1500);
-    }, 100);
+    _attached = true;
+    _windowOnError = window.onerror;
+    _consoleError = window.console.error;
+    _consoleClear = window.console.clear;
 
-    function incErrorCount() {
-        errorCount++;
-        blink();
-        refreshIndicator();
+    // https://developer.mozilla.org/en-US/docs/Web/API/GlobalEventHandlers.onerror
+    window.onerror = function(errorMsg, url, lineNumber) {
+      incErrorCount();
+      if (_windowOnError) {
+        return _windowOnError(errorMsg, url, lineNumber);
+      }
+      // return false means that we didn't handle this error and it should run the default handler
+      return false;
+    };
+
+    window.console.error = function() {
+      incErrorCount();
+      return _consoleError.apply(window.console, arguments);
+    };
+
+    window.console.clear = function() {
+      clearErrorCount();
+      return _consoleClear.apply(window.console, arguments);
+    };
+  }
+
+  function detachFunctions() {
+    if (!_attached) {
+      return;
     }
 
-    function clearErrorCount() {
-        errorCount = 0;
-        refreshIndicator();
+    _attached = false;
+    window.onerror = _windowOnError;
+    window.console.error = _consoleError;
+    window.console.clear = _consoleClear;
+  }
+
+  function toggle(bool) {
+    if (bool) {
+      attachFunctions();
+    } else {
+      detachFunctions();
     }
+    refreshIndicator();
+  }
 
-    function attachFunctions() {
-        if (_attached) {
-            return;
-        }
-
-        _attached      = true;
-        _windowOnError = window.onerror;
-        _consoleError  = window.console.error;
-        _consoleClear  = window.console.clear;
-
-        // https://developer.mozilla.org/en-US/docs/Web/API/GlobalEventHandlers.onerror
-        window.onerror = function (errorMsg, url, lineNumber) {
-            incErrorCount();
-            if (_windowOnError) {
-                return _windowOnError(errorMsg, url, lineNumber);
-            }
-            // return false means that we didn't handle this error and it should run the default handler
-            return false;
-        };
-
-        window.console.error = function () {
-            incErrorCount();
-            return _consoleError.apply(window.console, arguments);
-        };
-
-        window.console.clear = function () {
-            clearErrorCount();
-            return _consoleClear.apply(window.console, arguments);
-        };
-    }
-
-    function detachFunctions() {
-        if (!_attached) {
-            return;
-        }
-
-        _attached            = false;
-        window.onerror       = _windowOnError;
-        window.console.error = _consoleError;
-        window.console.clear = _consoleClear;
-    }
-
-    function toggle(bool) {
-        if (bool) {
-            attachFunctions();
-        } else {
-            detachFunctions();
-        }
-        refreshIndicator();
-    }
-
-    // Public API
-    exports.toggle = toggle;
-
+  // Public API
+  exports.toggle = toggle;
 });

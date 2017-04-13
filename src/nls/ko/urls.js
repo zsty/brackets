@@ -22,7 +22,7 @@
  */
 
 define({
-    // Relative to the samples folder
-    "ADOBE_THIRD_PARTY"         : "http://www.adobe.com/go/thirdparty_kr/",
-    "WEB_PLATFORM_DOCS_LICENSE" : "http://creativecommons.org/licenses/by/3.0/deed.ko"
+  // Relative to the samples folder
+  ADOBE_THIRD_PARTY: "http://www.adobe.com/go/thirdparty_kr/",
+  WEB_PLATFORM_DOCS_LICENSE: "http://creativecommons.org/licenses/by/3.0/deed.ko"
 });

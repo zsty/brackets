@@ -21,52 +21,58 @@
  *
  */
 
-define(function (require, exports, module) {
-    "use strict";
+define(function(require, exports, module) {
+  "use strict";
+  var AppInit = brackets.getModule("utils/AppInit"),
+    HealthLogger = brackets.getModule("utils/HealthLogger"),
+    Menus = brackets.getModule("command/Menus"),
+    CommandManager = brackets.getModule("command/CommandManager"),
+    Strings = brackets.getModule("strings"),
+    Commands = brackets.getModule("command/Commands"),
+    PreferencesManager = brackets.getModule("preferences/PreferencesManager"),
+    HealthDataNotification = require("HealthDataNotification"), // self-initializes to show first-launch notification
+    HealthDataManager = require("HealthDataManager"), // self-initializes timer to send data
+    HealthDataPopup = require("HealthDataPopup");
 
-    var AppInit                 = brackets.getModule("utils/AppInit"),
-        HealthLogger            = brackets.getModule("utils/HealthLogger"),
-        Menus                   = brackets.getModule("command/Menus"),
-        CommandManager          = brackets.getModule("command/CommandManager"),
-        Strings                 = brackets.getModule("strings"),
-        Commands                = brackets.getModule("command/Commands"),
-        PreferencesManager      = brackets.getModule("preferences/PreferencesManager"),
+  var menu = Menus.getMenu(Menus.AppMenuBar.HELP_MENU),
+    healthDataCmdId = "healthData.healthDataStatistics";
 
-        HealthDataNotification  = require("HealthDataNotification"),  // self-initializes to show first-launch notification
-        HealthDataManager       = require("HealthDataManager"),  // self-initializes timer to send data
-        HealthDataPopup         = require("HealthDataPopup");
+  // Handles the command execution for Health Data menu item
+  function handleHealthDataStatistics() {
+    HealthDataNotification.handleHealthDataStatistics();
+  }
 
-    var menu            = Menus.getMenu(Menus.AppMenuBar.HELP_MENU),
-        healthDataCmdId = "healthData.healthDataStatistics";
+  // Register the command and add the menu item for the Health Data Statistics
+  function addCommand() {
+    CommandManager.register(
+      Strings.CMD_HEALTH_DATA_STATISTICS,
+      healthDataCmdId,
+      handleHealthDataStatistics
+    );
 
-    // Handles the command execution for Health Data menu item
-    function handleHealthDataStatistics() {
-        HealthDataNotification.handleHealthDataStatistics();
-    }
+    menu.addMenuItem(
+      healthDataCmdId,
+      "",
+      Menus.AFTER,
+      Commands.HELP_SHOW_EXT_FOLDER
+    );
+    menu.addMenuDivider(Menus.AFTER, Commands.HELP_SHOW_EXT_FOLDER);
+  }
 
-    // Register the command and add the menu item for the Health Data Statistics
-    function addCommand() {
-        CommandManager.register(Strings.CMD_HEALTH_DATA_STATISTICS, healthDataCmdId, handleHealthDataStatistics);
+  function initTest() {
+    brackets.test.HealthDataPreview = require("HealthDataPreview");
+    brackets.test.HealthDataManager = HealthDataManager;
+    brackets.test.HealthDataNotification = HealthDataNotification;
+    brackets.test.HealthDataPopup = HealthDataPopup;
 
-        menu.addMenuItem(healthDataCmdId, "", Menus.AFTER, Commands.HELP_SHOW_EXT_FOLDER);
-        menu.addMenuDivider(Menus.AFTER, Commands.HELP_SHOW_EXT_FOLDER);
-    }
+    var prefs = PreferencesManager.getExtensionPrefs("healthData");
+    HealthLogger.setHealthLogsEnabled(prefs.get("healthDataTracking"));
+  }
 
-    function initTest() {
-        brackets.test.HealthDataPreview      = require("HealthDataPreview");
-        brackets.test.HealthDataManager      = HealthDataManager;
-        brackets.test.HealthDataNotification = HealthDataNotification;
-        brackets.test.HealthDataPopup        = HealthDataPopup;
+  AppInit.appReady(function() {
+    initTest();
+    HealthLogger.init();
+  });
 
-        var prefs = PreferencesManager.getExtensionPrefs("healthData");
-        HealthLogger.setHealthLogsEnabled(prefs.get("healthDataTracking"));
-    }
-
-    AppInit.appReady(function () {
-        initTest();
-        HealthLogger.init();
-    });
-
-    addCommand();
-
+  addCommand();
 });

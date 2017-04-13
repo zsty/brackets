@@ -21,56 +21,59 @@
  *
  */
 
-define(function (require, exports, module) {
-    'use strict';
+define(function(require, exports, module) {
+  "use strict";
+  // Load Brackets modules
+  var InlineWidget = brackets.getModule("editor/InlineWidget").InlineWidget;
 
-    // Load Brackets modules
-    var InlineWidget        = brackets.getModule("editor/InlineWidget").InlineWidget;
+  // Load tempalte
+  var inlineEditorTemplate = require("text!InlineImageViewer.html");
 
-    // Load tempalte
-    var inlineEditorTemplate = require("text!InlineImageViewer.html");
+  function InlineImageViewer(fileName, fullPath) {
+    this.fileName = fileName;
+    this.fullPath = fullPath;
+    InlineWidget.call(this);
+  }
+  InlineImageViewer.prototype = Object.create(InlineWidget.prototype);
+  InlineImageViewer.prototype.constructor = InlineImageViewer;
+  InlineImageViewer.prototype.parentClass = InlineWidget.prototype;
 
-    function InlineImageViewer(fileName, fullPath) {
-        this.fileName = fileName;
-        this.fullPath = fullPath;
-        InlineWidget.call(this);
-    }
-    InlineImageViewer.prototype = Object.create(InlineWidget.prototype);
-    InlineImageViewer.prototype.constructor = InlineImageViewer;
-    InlineImageViewer.prototype.parentClass = InlineWidget.prototype;
+  InlineImageViewer.prototype.fileName = null;
+  InlineImageViewer.prototype.fullPath = null;
+  InlineImageViewer.prototype.$wrapperDiv = null;
+  InlineImageViewer.prototype.$image = null;
 
-    InlineImageViewer.prototype.fileName = null;
-    InlineImageViewer.prototype.fullPath = null;
-    InlineImageViewer.prototype.$wrapperDiv = null;
-    InlineImageViewer.prototype.$image = null;
+  InlineImageViewer.prototype.load = function(hostEditor) {
+    InlineImageViewer.prototype.parentClass.load.apply(this, arguments);
 
-    InlineImageViewer.prototype.load = function (hostEditor) {
-        InlineImageViewer.prototype.parentClass.load.apply(this, arguments);
+    this.$wrapperDiv = $(inlineEditorTemplate);
 
-        this.$wrapperDiv = $(inlineEditorTemplate);
+    // TODO (jason-sanjose): Use handlebars.js and update template to
+    // use expressions instead e.g. {{filename}}
+    // Header
+    $(this.$wrapperDiv.find("span")).text(this.fileName);
 
-        // TODO (jason-sanjose): Use handlebars.js and update template to
-        // use expressions instead e.g. {{filename}}
-        // Header
-        $(this.$wrapperDiv.find("span")).text(this.fileName);
+    // Image
+    this.$image = $(this.$wrapperDiv.find("img")).attr("src", this.fullPath);
 
-        // Image
-        this.$image = $(this.$wrapperDiv.find("img")).attr("src", this.fullPath);
+    this.$htmlContent.append(this.$wrapperDiv);
+    this.$htmlContent.click(this.close.bind(this));
+  };
 
-        this.$htmlContent.append(this.$wrapperDiv);
-        this.$htmlContent.click(this.close.bind(this));
-    };
+  InlineImageViewer.prototype.onAdded = function() {
+    InlineImageViewer.prototype.parentClass.onAdded.apply(this, arguments);
+    window.setTimeout(this._sizeEditorToContent.bind(this));
+  };
 
-    InlineImageViewer.prototype.onAdded = function () {
-        InlineImageViewer.prototype.parentClass.onAdded.apply(this, arguments);
-        window.setTimeout(this._sizeEditorToContent.bind(this));
-    };
+  InlineImageViewer.prototype._sizeEditorToContent = function() {
+    // TODO: image might not be loaded yet--need to listen for load event and update then.
+    this.hostEditor.setInlineWidgetHeight(
+      this,
+      this.$wrapperDiv.height() + 20,
+      true
+    );
+    this.$image.css("opacity", 1);
+  };
 
-    InlineImageViewer.prototype._sizeEditorToContent = function () {
-        // TODO: image might not be loaded yet--need to listen for load event and update then.
-        this.hostEditor.setInlineWidgetHeight(this, this.$wrapperDiv.height() + 20, true);
-        this.$image.css("opacity", 1);
-    };
-
-    module.exports = InlineImageViewer;
+  module.exports = InlineImageViewer;
 });

@@ -40,31 +40,34 @@ var _domainManager;
  * @param {string} url
  */
 function _cmdLaunch(url) {
-    open(url);
+  open(url);
 }
-
 
 /**
  * Initializes the domain and registers commands.
  * @param {DomainManager} domainManager The DomainManager for the server
  */
 function init(domainManager) {
-    _domainManager = domainManager;
-    if (!domainManager.hasDomain("launcher")) {
-        domainManager.registerDomain("launcher", {major: 0, minor: 1});
-    }
-    domainManager.registerCommand(
-        "launcher",      // domain name
-        "launch",       // command name
-        _cmdLaunch,     // command handler function
-        false,          // this command is synchronous in Node
-        "Launches a given HTML file in the browser for live development",
-        [
-            { name: "url", type: "string", description: "file:// url to the HTML file" },
-            { name: "browser", type: "string", description: "browser name"}
-        ],
-        []
-    );
+  _domainManager = domainManager;
+  if (!domainManager.hasDomain("launcher")) {
+    domainManager.registerDomain("launcher", { major: 0, minor: 1 });
+  }
+  domainManager.registerCommand(
+    "launcher", // domain name
+    "launch", // command name
+    _cmdLaunch, // command handler function
+    false, // this command is synchronous in Node
+    "Launches a given HTML file in the browser for live development",
+    [
+      {
+        name: "url",
+        type: "string",
+        description: "file:// url to the HTML file"
+      },
+      { name: "browser", type: "string", description: "browser name" }
+    ],
+    []
+  );
 }
 
 exports.init = init;

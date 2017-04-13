@@ -2,20 +2,19 @@
 /*global define */
 
 // Camera component to preview the photo taken
-define(function (require, exports, module) {
-    "use strict";
+define(function(require, exports, module) {
+  "use strict";
+  function Photo(context) {
+    this.context = context;
+    this.canvas = {};
+    this.data = null;
+  }
 
-    function Photo(context) {
-        this.context = context;
-        this.canvas = {};
-        this.data = null;
-    }
+  // Update the photo with a newly taken snapshot
+  Photo.prototype.update = function() {
+    this.data = this.canvas.interface.toDataURL("image/png");
+    this.interface.setAttribute("src", this.data);
+  };
 
-    // Update the photo with a newly taken snapshot
-    Photo.prototype.update = function() {
-        this.data = this.canvas.interface.toDataURL("image/png");
-        this.interface.setAttribute("src", this.data);
-    };
-
-    module.exports = Photo;
+  module.exports = Photo;
 });

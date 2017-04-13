@@ -27,33 +27,33 @@
 "use strict";
 
 var DecompressZip = require("decompress-zip"),
-    semver        = require("semver"),
-    path          = require("path"),
-    temp          = require("temp"),
-    fs            = require("fs-extra");
+  semver = require("semver"),
+  path = require("path"),
+  temp = require("temp"),
+  fs = require("fs-extra");
 
 // Track and cleanup files at exit
 temp.track();
 
 var Errors = {
-    NOT_FOUND_ERR: "NOT_FOUND_ERR",                       // {0} is path where ZIP file was expected
-    INVALID_ZIP_FILE: "INVALID_ZIP_FILE",                 // {0} is path to ZIP file
-    INVALID_PACKAGE_JSON: "INVALID_PACKAGE_JSON",         // {0} is JSON parse error, {1} is path to ZIP file
-    MISSING_PACKAGE_NAME: "MISSING_PACKAGE_NAME",         // {0} is path to ZIP file
-    BAD_PACKAGE_NAME: "BAD_PACKAGE_NAME",                 // {0} is the name
-    MISSING_PACKAGE_VERSION: "MISSING_PACKAGE_VERSION",   // {0} is path to ZIP file
-    INVALID_VERSION_NUMBER: "INVALID_VERSION_NUMBER",     // {0} is version string in JSON, {1} is path to ZIP file
-    MISSING_MAIN: "MISSING_MAIN",                         // {0} is path to ZIP file
-    MISSING_PACKAGE_JSON: "MISSING_PACKAGE_JSON",         // {0} is path to ZIP file
-    INVALID_BRACKETS_VERSION: "INVALID_BRACKETS_VERSION", // {0} is the version string in JSON, {1} is the path to the zip file,
-    DISALLOWED_WORDS: "DISALLOWED_WORDS"                  // {0} is the field with the word, {1} is a string list of words that were in violation, {2} is the path to the zip file
+  NOT_FOUND_ERR: "NOT_FOUND_ERR", // {0} is path where ZIP file was expected
+  INVALID_ZIP_FILE: "INVALID_ZIP_FILE", // {0} is path to ZIP file
+  INVALID_PACKAGE_JSON: "INVALID_PACKAGE_JSON", // {0} is JSON parse error, {1} is path to ZIP file
+  MISSING_PACKAGE_NAME: "MISSING_PACKAGE_NAME", // {0} is path to ZIP file
+  BAD_PACKAGE_NAME: "BAD_PACKAGE_NAME", // {0} is the name
+  MISSING_PACKAGE_VERSION: "MISSING_PACKAGE_VERSION", // {0} is path to ZIP file
+  INVALID_VERSION_NUMBER: "INVALID_VERSION_NUMBER", // {0} is version string in JSON, {1} is path to ZIP file
+  MISSING_MAIN: "MISSING_MAIN", // {0} is path to ZIP file
+  MISSING_PACKAGE_JSON: "MISSING_PACKAGE_JSON", // {0} is path to ZIP file
+  INVALID_BRACKETS_VERSION: "INVALID_BRACKETS_VERSION", // {0} is the version string in JSON, {1} is the path to the zip file,
+  DISALLOWED_WORDS: "DISALLOWED_WORDS" // {0} is the field with the word, {1} is a string list of words that were in violation, {2} is the path to the zip file
 };
 
 /*
  * Directories to ignore when determining whether the contents of an extension are
  * in a subfolder.
  */
-var ignoredFolders = [ "__MACOSX" ];
+var ignoredFolders = ["__MACOSX"];
 
 /**
  * Returns true if the name presented is acceptable as a package name. This enforces the
@@ -70,10 +70,10 @@ var ignoredFolders = [ "__MACOSX" ];
  * @return {boolean} true if the name is valid
  */
 function validateName(name) {
-    if (/^[a-z0-9][a-z0-9._\-]*$/.exec(name)) {
-        return true;
-    }
-    return false;
+  if (/^[a-z0-9][a-z0-9._\-]*$/.exec(name)) {
+    return true;
+  }
+  return false;
 }
 
 // Parses strings of the form "name <email> (url)" where email and url are optional
@@ -94,30 +94,30 @@ var _personRegex = /^([^<\(]+)(?:\s+<([^>]+)>)?(?:\s+\(([^\)]+)\))?$/;
  * @return {Object} person object with name and optional email and url
  */
 function parsePersonString(obj) {
-    if (typeof (obj) === "string") {
-        var parts = _personRegex.exec(obj);
+  if (typeof obj === "string") {
+    var parts = _personRegex.exec(obj);
 
-        // No regex match, so we just synthesize an object with an opaque name string
-        if (!parts) {
-            return {
-                name: obj
-            };
-        } else {
-            var result = {
-                name: parts[1]
-            };
-            if (parts[2]) {
-                result.email = parts[2];
-            }
-            if (parts[3]) {
-                result.url = parts[3];
-            }
-            return result;
-        }
+    // No regex match, so we just synthesize an object with an opaque name string
+    if (!parts) {
+      return {
+        name: obj
+      };
     } else {
-        // obj is not a string, so return as is
-        return obj;
+      var result = {
+        name: parts[1]
+      };
+      if (parts[2]) {
+        result.email = parts[2];
+      }
+      if (parts[3]) {
+        result.url = parts[3];
+      }
+      return result;
     }
+  } else {
+    // obj is not a string, so return as is
+    return obj;
+  }
 }
 
 /**
@@ -128,15 +128,15 @@ function parsePersonString(obj) {
  * @return {String[]} words that matched
  */
 function containsWords(wordlist, str) {
-    var i;
-    var matches = [];
-    for (i = 0; i < wordlist.length; i++) {
-        var re = new RegExp("\\b" + wordlist[i] + "\\b", "i");
-        if (re.exec(str)) {
-            matches.push(wordlist[i]);
-        }
+  var i;
+  var matches = [];
+  for (i = 0; i < wordlist.length; i++) {
+    var re = new RegExp("\\b" + wordlist[i] + "\\b", "i");
+    if (re.exec(str)) {
+      matches.push(wordlist[i]);
     }
-    return matches;
+  }
+  return matches;
 }
 
 /**
@@ -149,26 +149,26 @@ function containsWords(wordlist, str) {
  * @param {function(Error, string)} callback function to accept err, commonPrefix (which will be "" if there is none)
  */
 function findCommonPrefix(extractDir, callback) {
-    fs.readdir(extractDir, function (err, files) {
-        ignoredFolders.forEach(function (folder) {
-            var index = files.indexOf(folder);
-            if (index !== -1) {
-                files.splice(index, 1);
-            }
-        });
-        if (err) {
-            callback(err);
-        } else if (files.length === 1) {
-            var name = files[0];
-            if (fs.statSync(path.join(extractDir, name)).isDirectory()) {
-                callback(null, name);
-            } else {
-                callback(null, "");
-            }
-        } else {
-            callback(null, "");
-        }
+  fs.readdir(extractDir, function(err, files) {
+    ignoredFolders.forEach(function(folder) {
+      var index = files.indexOf(folder);
+      if (index !== -1) {
+        files.splice(index, 1);
+      }
     });
+    if (err) {
+      callback(err);
+    } else if (files.length === 1) {
+      var name = files[0];
+      if (fs.statSync(path.join(extractDir, name)).isDirectory()) {
+        callback(null, name);
+      } else {
+        callback(null, "");
+      }
+    } else {
+      callback(null, "");
+    }
+  });
 }
 
 /**
@@ -180,80 +180,87 @@ function findCommonPrefix(extractDir, callback) {
  * @param {function(Error, Array.<Array.<string, ...>>, Object)} callback function to call with array of errors and metadata
  */
 function validatePackageJSON(path, packageJSON, options, callback) {
-    var errors = [];
-    if (fs.existsSync(packageJSON)) {
-        fs.readFile(packageJSON, {
-            encoding: "utf8"
-        }, function (err, data) {
-            if (err) {
-                callback(err, null, null);
-                return;
-            }
-
-            var metadata;
-
-            try {
-                metadata = JSON.parse(data);
-            } catch (e) {
-                errors.push([Errors.INVALID_PACKAGE_JSON, e.toString(), path]);
-                callback(null, errors, undefined);
-                return;
-            }
-
-            // confirm required fields in the metadata
-            if (!metadata.name) {
-                errors.push([Errors.MISSING_PACKAGE_NAME, path]);
-            } else if (!validateName(metadata.name)) {
-                errors.push([Errors.BAD_PACKAGE_NAME, metadata.name]);
-            }
-            if (!metadata.version) {
-                errors.push([Errors.MISSING_PACKAGE_VERSION, path]);
-            } else if (!semver.valid(metadata.version)) {
-                errors.push([Errors.INVALID_VERSION_NUMBER, metadata.version, path]);
-            }
-
-            // normalize the author
-            if (metadata.author) {
-                metadata.author = parsePersonString(metadata.author);
-            }
-
-            // contributors should be an array of people.
-            // normalize each entry.
-            if (metadata.contributors) {
-                if (metadata.contributors.map) {
-                    metadata.contributors = metadata.contributors.map(function (person) {
-                        return parsePersonString(person);
-                    });
-                } else {
-                    metadata.contributors = [
-                        parsePersonString(metadata.contributors)
-                    ];
-                }
-            }
-
-            if (metadata.engines && metadata.engines.brackets) {
-                var range = metadata.engines.brackets;
-                if (!semver.validRange(range)) {
-                    errors.push([Errors.INVALID_BRACKETS_VERSION, range, path]);
-                }
-            }
-
-            if (options.disallowedWords) {
-                ["title", "description", "name"].forEach(function (field) {
-                    var words = containsWords(options.disallowedWords, metadata[field]);
-                    if (words.length > 0) {
-                        errors.push([Errors.DISALLOWED_WORDS, field, words.toString(), path]);
-                    }
-                });
-            }
-            callback(null, errors, metadata);
-        });
-    } else {
-        if (options.requirePackageJSON) {
-            errors.push([Errors.MISSING_PACKAGE_JSON, path]);
+  var errors = [];
+  if (fs.existsSync(packageJSON)) {
+    fs.readFile(
+      packageJSON,
+      {
+        encoding: "utf8"
+      },
+      function(err, data) {
+        if (err) {
+          callback(err, null, null);
+          return;
         }
-        callback(null, errors, null);
+
+        var metadata;
+
+        try {
+          metadata = JSON.parse(data);
+        } catch (e) {
+          errors.push([Errors.INVALID_PACKAGE_JSON, e.toString(), path]);
+          callback(null, errors, undefined);
+          return;
+        }
+
+        // confirm required fields in the metadata
+        if (!metadata.name) {
+          errors.push([Errors.MISSING_PACKAGE_NAME, path]);
+        } else if (!validateName(metadata.name)) {
+          errors.push([Errors.BAD_PACKAGE_NAME, metadata.name]);
+        }
+        if (!metadata.version) {
+          errors.push([Errors.MISSING_PACKAGE_VERSION, path]);
+        } else if (!semver.valid(metadata.version)) {
+          errors.push([Errors.INVALID_VERSION_NUMBER, metadata.version, path]);
+        }
+
+        // normalize the author
+        if (metadata.author) {
+          metadata.author = parsePersonString(metadata.author);
+        }
+
+        // contributors should be an array of people.
+        // normalize each entry.
+        if (metadata.contributors) {
+          if (metadata.contributors.map) {
+            metadata.contributors = metadata.contributors.map(function(person) {
+              return parsePersonString(person);
+            });
+          } else {
+            metadata.contributors = [parsePersonString(metadata.contributors)];
+          }
+        }
+
+        if (metadata.engines && metadata.engines.brackets) {
+          var range = metadata.engines.brackets;
+          if (!semver.validRange(range)) {
+            errors.push([Errors.INVALID_BRACKETS_VERSION, range, path]);
+          }
+        }
+
+        if (options.disallowedWords) {
+          ["title", "description", "name"].forEach(function(field) {
+            var words = containsWords(options.disallowedWords, metadata[field]);
+            if (words.length > 0) {
+              errors.push([
+                Errors.DISALLOWED_WORDS,
+                field,
+                words.toString(),
+                path
+              ]);
+            }
+          });
+        }
+        callback(null, errors, metadata);
+      }
+    );
+  } else {
+    if (options.requirePackageJSON) {
+      errors.push([Errors.MISSING_PACKAGE_JSON, path]);
     }
+    callback(null, errors, null);
+  }
 }
 
 /**
@@ -265,50 +272,55 @@ function validatePackageJSON(path, packageJSON, options, callback) {
  * @param {function(Error, {errors: Array, metadata: Object, commonPrefix: string, extractDir: string})} callback function to call with the result
  */
 function extractAndValidateFiles(zipPath, extractDir, options, callback) {
-    var unzipper = new DecompressZip(zipPath);
-    unzipper.on("error", function (err) {
-        // General error to report for problems reading the file
-        callback(null, {
-            errors: [[Errors.INVALID_ZIP_FILE, zipPath, err]]
-        });
+  var unzipper = new DecompressZip(zipPath);
+  unzipper.on("error", function(err) {
+    // General error to report for problems reading the file
+    callback(null, {
+      errors: [[Errors.INVALID_ZIP_FILE, zipPath, err]]
+    });
+    return;
+  });
+
+  unzipper.on("extract", function(log) {
+    findCommonPrefix(extractDir, function(err, commonPrefix) {
+      if (err) {
+        callback(err, null);
         return;
-    });
+      }
+      var packageJSON = path.join(extractDir, commonPrefix, "package.json");
+      validatePackageJSON(
+        zipPath,
+        packageJSON,
+        options,
+        function(err, errors, metadata) {
+          if (err) {
+            callback(err, null);
+            return;
+          }
+          var mainJS = path.join(extractDir, commonPrefix, "main.js"),
+            isTheme = metadata && metadata.theme;
 
-    unzipper.on("extract", function (log) {
-        findCommonPrefix(extractDir, function (err, commonPrefix) {
-            if (err) {
-                callback(err, null);
-                return;
-            }
-            var packageJSON = path.join(extractDir, commonPrefix, "package.json");
-            validatePackageJSON(zipPath, packageJSON, options, function (err, errors, metadata) {
-                if (err) {
-                    callback(err, null);
-                    return;
-                }
-                var mainJS  = path.join(extractDir, commonPrefix, "main.js"),
-                    isTheme = metadata && metadata.theme;
-
-                // Throw missing main.js file only for non-theme extensions
-                if (!isTheme && !fs.existsSync(mainJS)) {
-                    errors.push([Errors.MISSING_MAIN, zipPath, mainJS]);
-                }
-                callback(null, {
-                    errors: errors,
-                    metadata: metadata,
-                    commonPrefix: commonPrefix,
-                    extractDir: extractDir
-                });
-            });
-        });
-    });
-
-    unzipper.extract({
-        path: extractDir,
-        filter: function (file) {
-            return file.type !== "SymbolicLink";
+          // Throw missing main.js file only for non-theme extensions
+          if (!isTheme && !fs.existsSync(mainJS)) {
+            errors.push([Errors.MISSING_MAIN, zipPath, mainJS]);
+          }
+          callback(null, {
+            errors: errors,
+            metadata: metadata,
+            commonPrefix: commonPrefix,
+            extractDir: extractDir
+          });
         }
+      );
     });
+  });
+
+  unzipper.extract({
+    path: extractDir,
+    filter: function(file) {
+      return file.type !== "SymbolicLink";
+    }
+  });
 }
 
 /**
@@ -331,22 +343,22 @@ function extractAndValidateFiles(zipPath, extractDir, options, callback) {
  * @param {function} callback (err, result)
  */
 function validate(path, options, callback) {
-    options = options || {};
-    fs.exists(path, function (doesExist) {
-        if (!doesExist) {
-            callback(null, {
-                errors: [[Errors.NOT_FOUND_ERR, path]]
-            });
-            return;
-        }
-        temp.mkdir("bracketsPackage_", function _tempDirCreated(err, extractDir) {
-            if (err) {
-                callback(err, null);
-                return;
-            }
-            extractAndValidateFiles(path, extractDir, options, callback);
-        });
+  options = options || {};
+  fs.exists(path, function(doesExist) {
+    if (!doesExist) {
+      callback(null, {
+        errors: [[Errors.NOT_FOUND_ERR, path]]
+      });
+      return;
+    }
+    temp.mkdir("bracketsPackage_", function _tempDirCreated(err, extractDir) {
+      if (err) {
+        callback(err, null);
+        return;
+      }
+      extractAndValidateFiles(path, extractDir, options, callback);
     });
+  });
 }
 
 // exported for unit testing

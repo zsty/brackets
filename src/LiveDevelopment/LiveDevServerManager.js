@@ -39,43 +39,42 @@
  * A Live Development server must implement the BaseServer API. See
  * LiveDevelopment/Servers/BaseServer base class.
  */
-define(function (require, exports, module) {
-    "use strict";
+define(function(require, exports, module) {
+  "use strict";
+  var _serverProviders = [];
 
-    var _serverProviders   = [];
-
-    /**
+  /**
      * @private
      * Comparator to sort providers based on their priority
      * @param {number} a
      * @param {number} b
      */
-    function _providerSort(a, b) {
-        return b.priority - a.priority;
-    }
+  function _providerSort(a, b) {
+    return b.priority - a.priority;
+  }
 
-    /**
+  /**
      * Determines which provider can serve a file with a local path.
      *
      * @param {string} localPath A local path to file being served.
      * @return {?BaseServer} A server no null if no servers can serve the file
      */
-    function getServer(localPath) {
-        var provider, server, i;
+  function getServer(localPath) {
+    var provider, server, i;
 
-        for (i = 0; i < _serverProviders.length; i++) {
-            provider = _serverProviders[i];
-            server = provider.create();
+    for (i = 0; i < _serverProviders.length; i++) {
+      provider = _serverProviders[i];
+      server = provider.create();
 
-            if (server.canServe(localPath)) {
-                return server;
-            }
-        }
-
-        return null;
+      if (server.canServe(localPath)) {
+        return server;
+      }
     }
 
-    /**
+    return null;
+  }
+
+  /**
      * The method by which a server registers itself. It returns an
      * object handler that can be used to remove that server from the list.
      *
@@ -88,43 +87,43 @@ define(function (require, exports, module) {
      *  lower priority. The higher the number, the higher the priority.
      * @return {{object}}
      */
-    function registerServer(provider, priority) {
-        if (!provider.create) {
-            console.error("Incompatible live development server provider");
-            return;
-        }
-
-        var providerObj = {};
-
-        providerObj.create = provider.create;
-        providerObj.priority = priority || 0;
-
-        _serverProviders.push(providerObj);
-        _serverProviders.sort(_providerSort);
-
-        return providerObj;
+  function registerServer(provider, priority) {
+    if (!provider.create) {
+      console.error("Incompatible live development server provider");
+      return;
     }
 
-    /**
+    var providerObj = {};
+
+    providerObj.create = provider.create;
+    providerObj.priority = priority || 0;
+
+    _serverProviders.push(providerObj);
+    _serverProviders.sort(_providerSort);
+
+    return providerObj;
+  }
+
+  /**
      * Remove a server from the list of the registered providers.
      *
      * @param {{object}} provider The provider to be removed.
      */
-    function removeServer(provider) {
-        var i;
-        for (i = 0; i < _serverProviders.length; i++) {
-            if (provider === _serverProviders[i]) {
-                _serverProviders.splice(i, 1);
-            }
-        }
+  function removeServer(provider) {
+    var i;
+    for (i = 0; i < _serverProviders.length; i++) {
+      if (provider === _serverProviders[i]) {
+        _serverProviders.splice(i, 1);
+      }
     }
+  }
 
-    // Backwards compatibility
-    exports.getProvider         = getServer;
-    exports.registerProvider    = registerServer;
+  // Backwards compatibility
+  exports.getProvider = getServer;
+  exports.registerProvider = registerServer;
 
-    // Define public API
-    exports.getServer           = getServer;
-    exports.registerServer      = registerServer;
-    exports.removeServer        = removeServer;
+  // Define public API
+  exports.getServer = getServer;
+  exports.registerServer = registerServer;
+  exports.removeServer = removeServer;
 });

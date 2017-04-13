@@ -40,24 +40,20 @@
  *
  */
 
-define(function (require, exports, module) {
-    "use strict";
+define(function(require, exports, module) {
+  "use strict";
+  // Brackets modules
+  var EditorManager = brackets.getModule("editor/EditorManager"),
+    ExtensionUtils = brackets.getModule("utils/ExtensionUtils"),
+    Strings = brackets.getModule("strings"),
+    Mustache = brackets.getModule("thirdparty/mustache/mustache"),
+    InlineTimingFunctionEditor = require("InlineTimingFunctionEditor").InlineTimingFunctionEditor,
+    TimingFunctionUtils = require("TimingFunctionUtils"),
+    Localized = require("text!Localized.css");
 
-    // Brackets modules
-    var EditorManager       = brackets.getModule("editor/EditorManager"),
-        ExtensionUtils      = brackets.getModule("utils/ExtensionUtils"),
-        Strings             = brackets.getModule("strings"),
-        Mustache            = brackets.getModule("thirdparty/mustache/mustache"),
+  // Functions
 
-        InlineTimingFunctionEditor = require("InlineTimingFunctionEditor").InlineTimingFunctionEditor,
-        TimingFunctionUtils        = require("TimingFunctionUtils"),
-        Localized                  = require("text!Localized.css");
-
-
-    // Functions
-
-
-    /**
+  /**
      * Prepare hostEditor for an InlineTimingFunctionEditor at pos if possible.
      * Return editor context if so; otherwise null.
      *
@@ -65,63 +61,79 @@ define(function (require, exports, module) {
      * @param {{line:Number, ch:Number}} pos
      * @return {timingFunction:{?string}, reason:{?string}, start:{?TextMarker}, end:{?TextMarker}}
      */
-    function prepareEditorForProvider(hostEditor, pos) {
-        var cursorLine, sel, startPos, endPos, startBookmark, endBookmark, currentMatch,
-            cm = hostEditor._codeMirror;
+  function prepareEditorForProvider(hostEditor, pos) {
+    var cursorLine,
+      sel,
+      startPos,
+      endPos,
+      startBookmark,
+      endBookmark,
+      currentMatch,
+      cm = hostEditor._codeMirror;
 
-        sel = hostEditor.getSelection();
-        if (sel.start.line !== sel.end.line) {
-            return {timingFunction: null, reason: null};
-        }
-
-        cursorLine = hostEditor.document.getLine(pos.line);
-
-        // code runs several matches complicated patterns, multiple times, so
-        // first do a quick, simple check to see make sure we may have a match
-        if (!cursorLine.match(/cubic-bezier|linear|ease|step/)) {
-            return {timingFunction: null, reason: null};
-        }
-
-        currentMatch = TimingFunctionUtils.timingFunctionMatch(cursorLine, false);
-        if (!currentMatch) {
-            return {timingFunction: null, reason: Strings.ERROR_TIMINGQUICKEDIT_INVALIDSYNTAX};
-        }
-
-        // check for subsequent matches, and use first match after pos
-        var lineOffset = 0,
-            matchLength = ((currentMatch.originalString && currentMatch.originalString.length) || currentMatch[0].length);
-        while (pos.ch > (currentMatch.index + matchLength + lineOffset)) {
-            var restOfLine = cursorLine.substring(currentMatch.index + matchLength + lineOffset),
-                newMatch = TimingFunctionUtils.timingFunctionMatch(restOfLine, false);
-
-            if (newMatch) {
-                lineOffset += (currentMatch.index + matchLength);
-                currentMatch = $.extend(true, [], newMatch);
-            } else {
-                break;
-            }
-        }
-
-        currentMatch.lineOffset = lineOffset;
-
-        startPos = {line: pos.line, ch: lineOffset + currentMatch.index};
-        endPos   = {line: pos.line, ch: lineOffset + currentMatch.index + matchLength};
-
-        startBookmark = cm.setBookmark(startPos);
-        endBookmark   = cm.setBookmark(endPos);
-
-        // Adjust selection to the match so that the inline editor won't
-        // get dismissed while we're updating the timing function.
-        hostEditor.setSelection(startPos, endPos);
-
-        return {
-            timingFunction: currentMatch,
-            start: startBookmark,
-            end: endBookmark
-        };
+    sel = hostEditor.getSelection();
+    if (sel.start.line !== sel.end.line) {
+      return { timingFunction: null, reason: null };
     }
 
-    /**
+    cursorLine = hostEditor.document.getLine(pos.line);
+
+    // code runs several matches complicated patterns, multiple times, so
+    // first do a quick, simple check to see make sure we may have a match
+    if (!cursorLine.match(/cubic-bezier|linear|ease|step/)) {
+      return { timingFunction: null, reason: null };
+    }
+
+    currentMatch = TimingFunctionUtils.timingFunctionMatch(cursorLine, false);
+    if (!currentMatch) {
+      return {
+        timingFunction: null,
+        reason: Strings.ERROR_TIMINGQUICKEDIT_INVALIDSYNTAX
+      };
+    }
+
+    // check for subsequent matches, and use first match after pos
+    var lineOffset = 0,
+      matchLength = (currentMatch.originalString &&
+        currentMatch.originalString.length) ||
+        currentMatch[0].length;
+    while (pos.ch > currentMatch.index + matchLength + lineOffset) {
+      var restOfLine = cursorLine.substring(
+        currentMatch.index + matchLength + lineOffset
+      ),
+        newMatch = TimingFunctionUtils.timingFunctionMatch(restOfLine, false);
+
+      if (newMatch) {
+        lineOffset += currentMatch.index + matchLength;
+        currentMatch = $.extend(true, [], newMatch);
+      } else {
+        break;
+      }
+    }
+
+    currentMatch.lineOffset = lineOffset;
+
+    startPos = { line: pos.line, ch: lineOffset + currentMatch.index };
+    endPos = {
+      line: pos.line,
+      ch: lineOffset + currentMatch.index + matchLength
+    };
+
+    startBookmark = cm.setBookmark(startPos);
+    endBookmark = cm.setBookmark(endPos);
+
+    // Adjust selection to the match so that the inline editor won't
+    // get dismissed while we're updating the timing function.
+    hostEditor.setSelection(startPos, endPos);
+
+    return {
+      timingFunction: currentMatch,
+      start: startBookmark,
+      end: endBookmark
+    };
+  }
+
+  /**
      * Registered as an inline editor provider: creates an InlineTimingFunctionEditor
      * when the cursor is on a timing function value.
      *
@@ -131,37 +143,42 @@ define(function (require, exports, module) {
      *         {string} if timing function with invalid syntax is detected at pos, or
      *         null if there's no timing function at pos.
      */
-    function inlineTimingFunctionEditorProvider(hostEditor, pos) {
-        var context = prepareEditorForProvider(hostEditor, pos),
-            inlineTimingFunctionEditor,
-            result;
+  function inlineTimingFunctionEditorProvider(hostEditor, pos) {
+    var context = prepareEditorForProvider(hostEditor, pos),
+      inlineTimingFunctionEditor,
+      result;
 
-        if (!context.timingFunction) {
-            return context.reason || null;
-        } else {
-            inlineTimingFunctionEditor = new InlineTimingFunctionEditor(context.timingFunction, context.start, context.end);
-            inlineTimingFunctionEditor.load(hostEditor);
+    if (!context.timingFunction) {
+      return context.reason || null;
+    } else {
+      inlineTimingFunctionEditor = new InlineTimingFunctionEditor(
+        context.timingFunction,
+        context.start,
+        context.end
+      );
+      inlineTimingFunctionEditor.load(hostEditor);
 
-            result = new $.Deferred();
-            result.resolve(inlineTimingFunctionEditor);
-            return result.promise();
-        }
+      result = new $.Deferred();
+      result.resolve(inlineTimingFunctionEditor);
+      return result.promise();
     }
+  }
 
-    /**
+  /**
      * Initialization code
      */
-    function init() {
-        // Load our stylesheet
-        ExtensionUtils.loadStyleSheet(module, "main.less");
-        ExtensionUtils.addEmbeddedStyleSheet(Mustache.render(Localized, Strings));
+  function init() {
+    // Load our stylesheet
+    ExtensionUtils.loadStyleSheet(module, "main.less");
+    ExtensionUtils.addEmbeddedStyleSheet(Mustache.render(Localized, Strings));
 
-        EditorManager.registerInlineEditProvider(inlineTimingFunctionEditorProvider);
-    }
+    EditorManager.registerInlineEditProvider(
+      inlineTimingFunctionEditorProvider
+    );
+  }
 
-    init();
+  init();
 
-
-    // for unit tests only
-    exports.inlineTimingFunctionEditorProvider = inlineTimingFunctionEditorProvider;
+  // for unit tests only
+  exports.inlineTimingFunctionEditorProvider = inlineTimingFunctionEditorProvider;
 });

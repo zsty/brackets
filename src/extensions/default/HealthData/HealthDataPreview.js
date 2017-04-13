@@ -21,56 +21,59 @@
  *
  */
 
-define(function (require, exports, module) {
-    "use strict";
+define(function(require, exports, module) {
+  "use strict";
+  var _ = brackets.getModule("thirdparty/lodash"),
+    Mustache = brackets.getModule("thirdparty/mustache/mustache"),
+    PreferencesManager = brackets.getModule("preferences/PreferencesManager"),
+    Strings = brackets.getModule("strings"),
+    Dialogs = brackets.getModule("widgets/Dialogs"),
+    ExtensionUtils = brackets.getModule("utils/ExtensionUtils"),
+    HealthDataPreviewDialog = require("text!htmlContent/healthdata-preview-dialog.html"),
+    HealthDataManager = require("HealthDataManager");
 
-    var _                       = brackets.getModule("thirdparty/lodash"),
-        Mustache                = brackets.getModule("thirdparty/mustache/mustache"),
-        PreferencesManager      = brackets.getModule("preferences/PreferencesManager"),
-        Strings                 = brackets.getModule("strings"),
-        Dialogs                 = brackets.getModule("widgets/Dialogs"),
-        ExtensionUtils          = brackets.getModule("utils/ExtensionUtils"),
+  var prefs = PreferencesManager.getExtensionPrefs("healthData");
 
-        HealthDataPreviewDialog = require("text!htmlContent/healthdata-preview-dialog.html"),
-        HealthDataManager       = require("HealthDataManager");
+  ExtensionUtils.loadStyleSheet(module, "styles.css");
 
-    var prefs = PreferencesManager.getExtensionPrefs("healthData");
-
-    ExtensionUtils.loadStyleSheet(module, "styles.css");
-
-    /**
+  /**
      * Show the dialog for previewing the Health Data that will be sent.
      */
-    function previewHealthData() {
-        var result = new $.Deferred();
+  function previewHealthData() {
+    var result = new $.Deferred();
 
-        HealthDataManager.getHealthData().done(function (healthDataObject) {
-            var content = JSON.stringify(healthDataObject, null, 4);
-            content = _.escape(content);
-            content = content.replace(/ /g, "&nbsp;");
-            content = content.replace(/(?:\r\n|\r|\n)/g, "<br />");
+    HealthDataManager.getHealthData().done(function(healthDataObject) {
+      var content = JSON.stringify(healthDataObject, null, 4);
+      content = _.escape(content);
+      content = content.replace(/ /g, "&nbsp;");
+      content = content.replace(/(?:\r\n|\r|\n)/g, "<br />");
 
-            var hdPref   = prefs.get("healthDataTracking"),
-                template = Mustache.render(HealthDataPreviewDialog, {Strings: Strings, content: content, hdPref: hdPref}),
-                $template = $(template);
+      var hdPref = prefs.get("healthDataTracking"),
+        template = Mustache.render(HealthDataPreviewDialog, {
+          Strings: Strings,
+          content: content,
+          hdPref: hdPref
+        }),
+        $template = $(template);
 
-            Dialogs.addLinkTooltips($template);
+      Dialogs.addLinkTooltips($template);
 
-            Dialogs.showModalDialogUsingTemplate($template).done(function (id) {
+      Dialogs.showModalDialogUsingTemplate($template).done(function(id) {
+        if (id === "save") {
+          var newHDPref = $template
+            .find("[data-target]:checkbox")
+            .is(":checked");
+          if (hdPref !== newHDPref) {
+            prefs.set("healthDataTracking", newHDPref);
+          }
+        }
+      });
 
-                if (id === "save") {
-                    var newHDPref = $template.find("[data-target]:checkbox").is(":checked");
-                    if (hdPref !== newHDPref) {
-                        prefs.set("healthDataTracking", newHDPref);
-                    }
-                }
-            });
+      return result.resolve();
+    });
 
-            return result.resolve();
-        });
+    return result.promise();
+  }
 
-        return result.promise();
-    }
-
-    exports.previewHealthData = previewHealthData;
+  exports.previewHealthData = previewHealthData;
 });

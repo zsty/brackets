@@ -24,97 +24,118 @@
 /**
  * The FileSystemStats represents a particular FileSystemEntry's stats.
  */
-define(function (require, exports, module) {
-    "use strict";
-
-    /**
+define(function(require, exports, module) {
+  "use strict";
+  /**
      * @constructor
      * @param {{isFile: boolean, mtime: Date, size: Number, realPath: ?string, hash: object}} options
      */
-    function FileSystemStats(options) {
-        var isFile = options.isFile;
+  function FileSystemStats(options) {
+    var isFile = options.isFile;
 
-        this._isFile = isFile;
-        this._isDirectory = !isFile;
-        // in case of stats transferred over a node-domain,
-        // mtime will have JSON-ified value which needs to be restored
-        this._mtime = options.mtime instanceof Date ? options.mtime : new Date(options.mtime);
-        this._size = options.size;
-        // hash is a property introduced by brackets and it's calculated
-        // as a valueOf modification time -> calculate here if it's not present
-        this._hash = options.hash || this._mtime.valueOf();
+    this._isFile = isFile;
+    this._isDirectory = !isFile;
+    // in case of stats transferred over a node-domain,
+    // mtime will have JSON-ified value which needs to be restored
+    this._mtime = options.mtime instanceof Date
+      ? options.mtime
+      : new Date(options.mtime);
+    this._size = options.size;
+    // hash is a property introduced by brackets and it's calculated
+    // as a valueOf modification time -> calculate here if it's not present
+    this._hash = options.hash || this._mtime.valueOf();
 
-        var realPath = options.realPath;
-        if (realPath) {
-            if (!isFile && realPath[realPath.length - 1] !== "/") {
-                realPath += "/";
-            }
+    var realPath = options.realPath;
+    if (realPath) {
+      if (!isFile && realPath[realPath.length - 1] !== "/") {
+        realPath += "/";
+      }
 
-            this._realPath = realPath;
-        }
+      this._realPath = realPath;
     }
+  }
 
-    // Add "isFile", "isDirectory", "mtime" and "size" getters
-    Object.defineProperties(FileSystemStats.prototype, {
-        "isFile": {
-            get: function () { return this._isFile; },
-            set: function () { throw new Error("Cannot set isFile"); }
-        },
-        "isDirectory": {
-            get: function () { return this._isDirectory; },
-            set: function () { throw new Error("Cannot set isDirectory"); }
-        },
-        "mtime": {
-            get: function () { return this._mtime; },
-            set: function () { throw new Error("Cannot set mtime"); }
-        },
-        "size": {
-            get: function () { return this._size; },
-            set: function () { throw new Error("Cannot set size"); }
-        },
-        "realPath": {
-            get: function () { return this._realPath; },
-            set: function () { throw new Error("Cannot set realPath"); }
-        }
-    });
+  // Add "isFile", "isDirectory", "mtime" and "size" getters
+  Object.defineProperties(FileSystemStats.prototype, {
+    isFile: {
+      get: function() {
+        return this._isFile;
+      },
+      set: function() {
+        throw new Error("Cannot set isFile");
+      }
+    },
+    isDirectory: {
+      get: function() {
+        return this._isDirectory;
+      },
+      set: function() {
+        throw new Error("Cannot set isDirectory");
+      }
+    },
+    mtime: {
+      get: function() {
+        return this._mtime;
+      },
+      set: function() {
+        throw new Error("Cannot set mtime");
+      }
+    },
+    size: {
+      get: function() {
+        return this._size;
+      },
+      set: function() {
+        throw new Error("Cannot set size");
+      }
+    },
+    realPath: {
+      get: function() {
+        return this._realPath;
+      },
+      set: function() {
+        throw new Error("Cannot set realPath");
+      }
+    }
+  });
 
-    /**
+  /**
      * Whether or not this is a stats object for a file
      * @type {boolean}
      */
-    FileSystemStats.prototype._isFile = false;
+  FileSystemStats.prototype._isFile = false;
 
-    /**
+  /**
      * Whether or not this is a stats object for a directory
      * @type {boolean}
      */
-    FileSystemStats.prototype._isDirectory = false;
+  FileSystemStats.prototype._isDirectory = false;
 
-    /**
+  /**
      * Modification time for a file
      * @type {Date}
      */
-    FileSystemStats.prototype._mtime = null;
+  FileSystemStats.prototype._mtime = null;
 
-    /**
+  /**
      * Size in bytes of a file
      * @type {Number}
      */
-    FileSystemStats.prototype._size = null;
+  FileSystemStats.prototype._size = null;
 
-    /**
+  /**
      * Consistency hash for a file
      * @type {object}
      */
-    FileSystemStats.prototype._hash = null;
+  FileSystemStats.prototype._hash = null;
 
-    /**
+  /**
      * The canonical path of this file or directory ONLY if it is a symbolic link,
      * and null otherwise.
      *
      * @type {?string}
      */
-    FileSystemStats.prototype._realPath = null;
+  FileSystemStats.prototype._realPath = null;
 
-    module.exports = FileSystemStats;
+  module.exports = FileSystemStats;
 });

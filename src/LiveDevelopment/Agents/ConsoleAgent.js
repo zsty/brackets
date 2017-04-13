@@ -26,74 +26,76 @@
  * local console.
  */
 define(function ConsoleAgent(require, exports, module) {
-    "use strict";
+  "use strict";
+  var Inspector = require("LiveDevelopment/Inspector/Inspector");
 
-    var Inspector = require("LiveDevelopment/Inspector/Inspector");
+  var _lastMessage; // {Console.ConsoleMessage} the last received message
 
-    var _lastMessage; // {Console.ConsoleMessage} the last received message
-
-    /** Log a remote message to the local console
+  /** Log a remote message to the local console
      * @param {Console.ConsoleMessage} message
      */
-    function _log(message) {
-        var level = message.level;
-        if (level === "warning") {
-            level = "warn";
-        }
-        var text = "ConsoleAgent: " + message.text;
-        if (message.url) {
-            text += " (url: " + message.url + ")";
-        }
-        if (message.stackTrace) {
-            var callFrame = message.stackTrace[0];
-            text += " in " + callFrame.functionName + ":" + callFrame.columnNumber;
-        }
-        console[level](text);
+  function _log(message) {
+    var level = message.level;
+    if (level === "warning") {
+      level = "warn";
     }
-
-    // WebInspector Event: Console.messageAdded
-    function _onMessageAdded(event, res) {
-        // res = {message}
-        _lastMessage = res.message;
-        _log(_lastMessage);
+    var text = "ConsoleAgent: " + message.text;
+    if (message.url) {
+      text += " (url: " + message.url + ")";
     }
-
-    // WebInspector Event: Console.messageRepeatCountUpdated
-    function _onMessageRepeatCountUpdated(event, res) {
-        // res = {count}
-        if (_lastMessage) {
-            _log(_lastMessage);
-        }
+    if (message.stackTrace) {
+      var callFrame = message.stackTrace[0];
+      text += " in " + callFrame.functionName + ":" + callFrame.columnNumber;
     }
+    console[level](text);
+  }
 
-    // WebInspector Event: Console.messagesCleared
-    function _onMessagesCleared(event, res) {
-        // res = {}
+  // WebInspector Event: Console.messageAdded
+  function _onMessageAdded(event, res) {
+    // res = {message}
+    _lastMessage = res.message;
+    _log(_lastMessage);
+  }
+
+  // WebInspector Event: Console.messageRepeatCountUpdated
+  function _onMessageRepeatCountUpdated(event, res) {
+    // res = {count}
+    if (_lastMessage) {
+      _log(_lastMessage);
     }
+  }
 
-    /**
+  // WebInspector Event: Console.messagesCleared
+  function _onMessagesCleared(event, res) {
+    // res = {}
+  }
+
+  /**
      * Enable the inspector Console domain
      * @return {jQuery.Promise} A promise resolved when the Console.enable() command is successful.
      */
-    function enable() {
-        return Inspector.Console.enable();
-    }
+  function enable() {
+    return Inspector.Console.enable();
+  }
 
-    /** Initialize the agent */
-    function load() {
-        Inspector.Console
-            .on("messageAdded.ConsoleAgent", _onMessageAdded)
-            .on("messageRepeatCountUpdated.ConsoleAgent", _onMessageRepeatCountUpdated)
-            .on("messagesCleared.ConsoleAgent", _onMessagesCleared);
-    }
+  /** Initialize the agent */
+  function load() {
+    Inspector.Console
+      .on("messageAdded.ConsoleAgent", _onMessageAdded)
+      .on(
+        "messageRepeatCountUpdated.ConsoleAgent",
+        _onMessageRepeatCountUpdated
+      )
+      .on("messagesCleared.ConsoleAgent", _onMessagesCleared);
+  }
 
-    /** Clean up */
-    function unload() {
-        Inspector.Console.off(".ConsoleAgent");
-    }
+  /** Clean up */
+  function unload() {
+    Inspector.Console.off(".ConsoleAgent");
+  }
 
-    // Export public functions
-    exports.enable = enable;
-    exports.load = load;
-    exports.unload = unload;
+  // Export public functions
+  exports.enable = enable;
+  exports.load = load;
+  exports.unload = unload;
 });

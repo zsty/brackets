@@ -23,91 +23,122 @@
 
 /*global describe, beforeEach, afterEach, it, expect */
 
-define(function (require, exports, module) {
-    'use strict';
+define(function(require, exports, module) {
+  "use strict";
+  // Load dependent modules
+  var CommandManager = require("command/CommandManager");
 
-    // Load dependent modules
-    var CommandManager = require("command/CommandManager");
+  describe("CommandManager", function() {
+    var commandID = "commandID";
 
-    describe("CommandManager", function () {
+    var executed;
+    var testCommandFn = function() {
+      executed = true;
+    };
 
-        var commandID = "commandID";
-
-        var executed;
-        var testCommandFn = function () { executed = true; };
-
-        beforeEach(function () {
-            executed = false;
-            CommandManager._testReset();
-        });
-
-        afterEach(function () {
-            CommandManager._testRestore();
-        });
-
-        it("register and get a command and validate parameters", function () {
-            var command = CommandManager.register("test command", commandID, testCommandFn);
-            expect(command).toBeTruthy();
-            expect(command.getName()).toBe("test command");
-            expect(command.getID()).toBe(commandID);
-            expect(command.getEnabled()).toBeTruthy();
-            expect(command.getChecked()).toBe(undefined);
-            expect(command._commandFn).toBe(testCommandFn);
-
-            // duplicate command
-            expect(CommandManager.register("test command", commandID, testCommandFn)).toBeFalsy();
-
-            // missing arguments
-            expect(CommandManager.register(null, "test-command-id2", testCommandFn)).toBe(null);
-            expect(CommandManager.register("test command", null, testCommandFn)).toBe(null);
-            expect(CommandManager.register("test command", "test-command-id2", null)).toBe(null);
-
-        });
-
-        it("execute a command", function () {
-            var command = CommandManager.register("test command", commandID, testCommandFn);
-            command.execute();
-            expect(executed).toBeTruthy();
-        });
-
-        it("not execute a disabled command", function () {
-            var command = CommandManager.register("test command", commandID, testCommandFn);
-            command.setEnabled(false);
-            command.execute();
-            expect(executed).toBeFalsy();
-        });
-
-        it("set enabled state and trigger enabledStateChange", function () {
-            var eventTriggered = false;
-            var command = CommandManager.register("test command", commandID, testCommandFn);
-            command.on("enabledStateChange", function () {
-                eventTriggered = true;
-            });
-            command.setEnabled(false);
-            expect(eventTriggered).toBeTruthy();
-            expect(command.getEnabled()).toBeFalsy();
-        });
-
-        it("set checked state and trigger checkedStateChange", function () {
-            var eventTriggered = false;
-            var command = CommandManager.register("test command", commandID, testCommandFn);
-            command.on("checkedStateChange", function () {
-                eventTriggered = true;
-            });
-            command.setChecked(true);
-            expect(eventTriggered).toBeTruthy();
-            expect(command.getChecked()).toBeTruthy();
-        });
-
-        it("rename command trigger nameChange", function () {
-            var eventTriggered = false;
-            var command = CommandManager.register("test command", commandID, testCommandFn);
-            command.on("nameChange", function () {
-                eventTriggered = true;
-            });
-            command.setName("newName");
-            expect(eventTriggered).toBeTruthy();
-            expect(command.getName()).toBe("newName");
-        });
+    beforeEach(function() {
+      executed = false;
+      CommandManager._testReset();
     });
+
+    afterEach(function() {
+      CommandManager._testRestore();
+    });
+
+    it("register and get a command and validate parameters", function() {
+      var command = CommandManager.register(
+        "test command",
+        commandID,
+        testCommandFn
+      );
+      expect(command).toBeTruthy();
+      expect(command.getName()).toBe("test command");
+      expect(command.getID()).toBe(commandID);
+      expect(command.getEnabled()).toBeTruthy();
+      expect(command.getChecked()).toBe(undefined);
+      expect(command._commandFn).toBe(testCommandFn);
+
+      // duplicate command
+      expect(
+        CommandManager.register("test command", commandID, testCommandFn)
+      ).toBeFalsy();
+
+      // missing arguments
+      expect(
+        CommandManager.register(null, "test-command-id2", testCommandFn)
+      ).toBe(null);
+      expect(CommandManager.register("test command", null, testCommandFn)).toBe(
+        null
+      );
+      expect(
+        CommandManager.register("test command", "test-command-id2", null)
+      ).toBe(null);
+    });
+
+    it("execute a command", function() {
+      var command = CommandManager.register(
+        "test command",
+        commandID,
+        testCommandFn
+      );
+      command.execute();
+      expect(executed).toBeTruthy();
+    });
+
+    it("not execute a disabled command", function() {
+      var command = CommandManager.register(
+        "test command",
+        commandID,
+        testCommandFn
+      );
+      command.setEnabled(false);
+      command.execute();
+      expect(executed).toBeFalsy();
+    });
+
+    it("set enabled state and trigger enabledStateChange", function() {
+      var eventTriggered = false;
+      var command = CommandManager.register(
+        "test command",
+        commandID,
+        testCommandFn
+      );
+      command.on("enabledStateChange", function() {
+        eventTriggered = true;
+      });
+      command.setEnabled(false);
+      expect(eventTriggered).toBeTruthy();
+      expect(command.getEnabled()).toBeFalsy();
+    });
+
+    it("set checked state and trigger checkedStateChange", function() {
+      var eventTriggered = false;
+      var command = CommandManager.register(
+        "test command",
+        commandID,
+        testCommandFn
+      );
+      command.on("checkedStateChange", function() {
+        eventTriggered = true;
+      });
+      command.setChecked(true);
+      expect(eventTriggered).toBeTruthy();
+      expect(command.getChecked()).toBeTruthy();
+    });
+
+    it("rename command trigger nameChange", function() {
+      var eventTriggered = false;
+      var command = CommandManager.register(
+        "test command",
+        commandID,
+        testCommandFn
+      );
+      command.on("nameChange", function() {
+        eventTriggered = true;
+      });
+      command.setName("newName");
+      expect(eventTriggered).toBeTruthy();
+      expect(command.getName()).toBe("newName");
+    });
+  });
 });

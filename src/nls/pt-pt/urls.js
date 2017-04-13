@@ -22,6 +22,6 @@
  */
 
 define({
-    // Relative to the samples folder
-    "GETTING_STARTED"   : "pt-pt/Primeiros Passos"
+  // Relative to the samples folder
+  GETTING_STARTED: "pt-pt/Primeiros Passos"
 });

@@ -24,38 +24,36 @@
 /**
  * Utilities for dealing with animations in the UI.
  */
-define(function (require, exports, module) {
-    "use strict";
+define(function(require, exports, module) {
+  "use strict";
+  var _ = require("thirdparty/lodash"), Async = require("utils/Async");
 
-    var _     = require("thirdparty/lodash"),
-        Async = require("utils/Async");
-
-    /**
+  /**
      * @private
      * Detect the browser's supported transitionend event.
      * @return {string} The supported transitionend event name.
      */
-    function _detectTransitionEvent() {
-        var event, el = window.document.createElement("fakeelement");
+  function _detectTransitionEvent() {
+    var event, el = window.document.createElement("fakeelement");
 
-        var transitions = {
-            "OTransition"     : "oTransitionEnd",
-            "MozTransition"   : "transitionend",
-            "WebkitTransition": "webkitTransitionEnd",
-            "transition"      : "transitionend",
-        };
+    var transitions = {
+      OTransition: "oTransitionEnd",
+      MozTransition: "transitionend",
+      WebkitTransition: "webkitTransitionEnd",
+      transition: "transitionend"
+    };
 
-        _.forEach(transitions, function (value, key) {
-            if (el.style[key] !== undefined) {
-                event = value;
-            }
-        });
-        return event;
-    }
+    _.forEach(transitions, function(value, key) {
+      if (el.style[key] !== undefined) {
+        event = value;
+      }
+    });
+    return event;
+  }
 
-    var _transitionEvent = _detectTransitionEvent();
+  var _transitionEvent = _detectTransitionEvent();
 
-    /**
+  /**
      * Start an animation by adding the given class to the given target. When the
      * animation is complete, removes the class, clears the event handler we attach
      * to watch for the animation to finish, and resolves the returned promise.
@@ -65,40 +63,36 @@ define(function (require, exports, module) {
      * @param {number=} timeoutDuration Time to wait in ms before rejecting promise. Default is 400.
      * @return {$.Promise} A promise that is resolved when the animation completes. Never rejected.
      */
-    function animateUsingClass(target, animClass, timeoutDuration) {
-        var result  = new $.Deferred(),
-            $target = $(target);
+  function animateUsingClass(target, animClass, timeoutDuration) {
+    var result = new $.Deferred(), $target = $(target);
 
-        timeoutDuration = timeoutDuration || 400;
+    timeoutDuration = timeoutDuration || 400;
 
-        function finish(e) {
-            if (e.target === target) {
-                result.resolve();
-            }
-        }
-
-        function cleanup() {
-            $target
-                .removeClass(animClass)
-                .off(_transitionEvent, finish);
-        }
-
-        if ($target.is(":hidden")) {
-            // Don't do anything if the element is hidden because transitionEnd wouldn't fire
-            result.resolve();
-        } else {
-            // Note that we can't just use $.one() here because we only want to remove
-            // the handler when we get the transition end event for the correct target (not
-            // a child).
-            $target
-                .addClass(animClass)
-                .on(_transitionEvent, finish);
-        }
-
-        // Use timeout in case transition end event is not sent
-        return Async.withTimeout(result.promise(), timeoutDuration, true)
-            .done(cleanup);
+    function finish(e) {
+      if (e.target === target) {
+        result.resolve();
+      }
     }
 
-    exports.animateUsingClass = animateUsingClass;
+    function cleanup() {
+      $target.removeClass(animClass).off(_transitionEvent, finish);
+    }
+
+    if ($target.is(":hidden")) {
+      // Don't do anything if the element is hidden because transitionEnd wouldn't fire
+      result.resolve();
+    } else {
+      // Note that we can't just use $.one() here because we only want to remove
+      // the handler when we get the transition end event for the correct target (not
+      // a child).
+      $target.addClass(animClass).on(_transitionEvent, finish);
+    }
+
+    // Use timeout in case transition end event is not sent
+    return Async.withTimeout(result.promise(), timeoutDuration, true).done(
+      cleanup
+    );
+  }
+
+  exports.animateUsingClass = animateUsingClass;
 });

@@ -25,8 +25,7 @@
 /*jslint node: true */
 "use strict";
 
-var WebSocketServer = require("ws").Server,
-    _ = require("lodash");
+var WebSocketServer = require("ws").Server, _ = require("lodash");
 
 /**
  * @private
@@ -67,9 +66,9 @@ var SOCKET_PORT = 8123;
  * @return {?{id: number, url: string, socket: WebSocket}}
  */
 function _clientForSocket(ws) {
-    return _.find(_clients, function (client) {
-        return (client.socket === ws);
-    });
+  return _.find(_clients, function(client) {
+    return client.socket === ws;
+  });
 }
 
 /**
@@ -77,64 +76,95 @@ function _clientForSocket(ws) {
  * Creates the WebSocketServer and handles incoming connections.
  */
 function _createServer() {
-    if (!_wsServer) {
-        // TODO: make port configurable, or use random port
-        _wsServer = new WebSocketServer({port: SOCKET_PORT});
-        _wsServer.on("connection", function (ws) {
-            ws.on("message", function (msg) {
-                console.log("WebSocketServer - received - " + msg);
-                var msgObj;
-                try {
-                    msgObj = JSON.parse(msg);
-                } catch (e) {
-                    console.error("nodeSocketTransport: Error parsing message: " + msg);
-                    return;
-                }
+  if (!_wsServer) {
+    // TODO: make port configurable, or use random port
+    _wsServer = new WebSocketServer({ port: SOCKET_PORT });
+    _wsServer
+      .on("connection", function(ws) {
+        ws
+          .on("message", function(msg) {
+            console.log("WebSocketServer - received - " + msg);
+            var msgObj;
+            try {
+              msgObj = JSON.parse(msg);
+            } catch (e) {
+              console.error(
+                "nodeSocketTransport: Error parsing message: " + msg
+              );
+              return;
+            }
 
-                // See the comment in NodeSocketTransportRemote.connect() for why we have an extra
-                // layer of transport-layer message objects surrounding the protocol messaging.
+            // See the comment in NodeSocketTransportRemote.connect() for why we have an extra
+            // layer of transport-layer message objects surrounding the protocol messaging.
 
-                if (msgObj.type === "connect") {
-                    if (!msgObj.url) {
-                        console.error("nodeSocketTransport: Malformed connect message: " + msg);
-                        return;
-                    }
-                    var clientId = _nextClientId++;
-                    _clients[clientId] = {
-                        id: clientId,
-                        url: msgObj.url,
-                        socket: ws
-                    };
-                    console.log("emitting connect event");
-                    _domainManager.emitEvent("nodeSocketTransport", "connect", [clientId, msgObj.url]);
-                } else if (msgObj.type === "message") {
-                    var client = _clientForSocket(ws);
-                    if (client) {
-                        _domainManager.emitEvent("nodeSocketTransport", "message", [client.id, msgObj.message]);
-                    } else {
-                        console.error("nodeSocketTransport: Couldn't locate client for message: " + msg);
-                    }
-                } else {
-                    console.error("nodeSocketTransport: Got bad socket message type: " + msg);
-                }
-            }).on("error", function (e) {
-                // TODO: emit error event
-                var client = _clientForSocket(ws);
-                console.error("nodeSocketTransport: Error on socket for client " + JSON.stringify(client) + ": " + e);
-            }).on("close", function () {
-                var client = _clientForSocket(ws);
-                if (client) {
-                    _domainManager.emitEvent("nodeSocketTransport", "close", [client.id]);
-                    delete _clients[client.id];
-                } else {
-                    console.error("nodeSocketTransport: Socket closed, but couldn't locate client");
-                }
-            });
-        }).on("error", function (e) {
+            if (msgObj.type === "connect") {
+              if (!msgObj.url) {
+                console.error(
+                  "nodeSocketTransport: Malformed connect message: " + msg
+                );
+                return;
+              }
+              var clientId = _nextClientId++;
+              _clients[clientId] = {
+                id: clientId,
+                url: msgObj.url,
+                socket: ws
+              };
+              console.log("emitting connect event");
+              _domainManager.emitEvent("nodeSocketTransport", "connect", [
+                clientId,
+                msgObj.url
+              ]);
+            } else if (msgObj.type === "message") {
+              var client = _clientForSocket(ws);
+              if (client) {
+                _domainManager.emitEvent("nodeSocketTransport", "message", [
+                  client.id,
+                  msgObj.message
+                ]);
+              } else {
+                console.error(
+                  "nodeSocketTransport: Couldn't locate client for message: " +
+                    msg
+                );
+              }
+            } else {
+              console.error(
+                "nodeSocketTransport: Got bad socket message type: " + msg
+              );
+            }
+          })
+          .on("error", function(e) {
             // TODO: emit error event
-            console.error("nodeSocketTransport: Error on live preview server creation: " + e);
-        });
-    }
+            var client = _clientForSocket(ws);
+            console.error(
+              "nodeSocketTransport: Error on socket for client " +
+                JSON.stringify(client) +
+                ": " +
+                e
+            );
+          })
+          .on("close", function() {
+            var client = _clientForSocket(ws);
+            if (client) {
+              _domainManager.emitEvent("nodeSocketTransport", "close", [
+                client.id
+              ]);
+              delete _clients[client.id];
+            } else {
+              console.error(
+                "nodeSocketTransport: Socket closed, but couldn't locate client"
+              );
+            }
+          });
+      })
+      .on("error", function(e) {
+        // TODO: emit error event
+        console.error(
+          "nodeSocketTransport: Error on live preview server creation: " + e
+        );
+      });
+  }
 }
 
 /**
@@ -142,7 +172,7 @@ function _createServer() {
  * @param {string} url
  */
 function _cmdStart(url) {
-    _createServer();
+  _createServer();
 }
 
 /**
@@ -151,17 +181,17 @@ function _cmdStart(url) {
  * @param {string} msgStr The message to send as a JSON string.
  */
 function _cmdSend(idOrArray, msgStr) {
-    if (!Array.isArray(idOrArray)) {
-        idOrArray = [idOrArray];
+  if (!Array.isArray(idOrArray)) {
+    idOrArray = [idOrArray];
+  }
+  idOrArray.forEach(function(id) {
+    var client = _clients[id];
+    if (!client) {
+      console.error("nodeSocketTransport: Couldn't find client ID: " + id);
+    } else {
+      client.socket.send(msgStr);
     }
-    idOrArray.forEach(function (id) {
-        var client = _clients[id];
-        if (!client) {
-            console.error("nodeSocketTransport: Couldn't find client ID: " + id);
-        } else {
-            client.socket.send(msgStr);
-        }
-    });
+  });
 }
 
 /**
@@ -169,11 +199,11 @@ function _cmdSend(idOrArray, msgStr) {
  * @param {number} clientId
  */
 function _cmdClose(clientId) {
-    var client = _clients[clientId];
-    if (client) {
-        client.socket.close();
-        delete _clients[clientId];
-    }
+  var client = _clients[clientId];
+  if (client) {
+    client.socket.close();
+    delete _clients[clientId];
+  }
 }
 
 /**
@@ -181,64 +211,74 @@ function _cmdClose(clientId) {
  * @param {DomainManager} domainManager The DomainManager for the server
  */
 function init(domainManager) {
-    _domainManager = domainManager;
-    if (!domainManager.hasDomain("nodeSocketTransport")) {
-        domainManager.registerDomain("nodeSocketTransport", {major: 0, minor: 1});
+  _domainManager = domainManager;
+  if (!domainManager.hasDomain("nodeSocketTransport")) {
+    domainManager.registerDomain("nodeSocketTransport", { major: 0, minor: 1 });
+  }
+  domainManager.registerCommand(
+    "nodeSocketTransport", // domain name
+    "start", // command name
+    _cmdStart, // command handler function
+    false, // this command is synchronous in Node
+    "Creates the WS server",
+    []
+  );
+  domainManager.registerCommand(
+    "nodeSocketTransport", // domain name
+    "send", // command name
+    _cmdSend, // command handler function
+    false, // this command is synchronous in Node
+    "Sends a message to a given client or list of clients",
+    [
+      {
+        name: "idOrArray",
+        type: "number|Array.<number>",
+        description: "id or array of ids to send the message to"
+      },
+      { name: "message", type: "string", description: "JSON message to send" }
+    ],
+    []
+  );
+  domainManager.registerCommand(
+    "nodeSocketTransport", // domain name
+    "close", // command name
+    _cmdClose, // command handler function
+    false, // this command is synchronous in Node
+    "Closes the connection to a given client",
+    [{ name: "id", type: "number", description: "id of connection to close" }],
+    []
+  );
+  domainManager.registerEvent("nodeSocketTransport", "connect", [
+    {
+      name: "clientID",
+      type: "number",
+      description: "ID of live preview page connecting to live development"
+    },
+    {
+      name: "url",
+      type: "string",
+      description: "URL of page that live preview is connecting from"
     }
-    domainManager.registerCommand(
-        "nodeSocketTransport",      // domain name
-        "start",       // command name
-        _cmdStart,     // command handler function
-        false,          // this command is synchronous in Node
-        "Creates the WS server",
-        []
-    );
-    domainManager.registerCommand(
-        "nodeSocketTransport",      // domain name
-        "send",         // command name
-        _cmdSend,       // command handler function
-        false,          // this command is synchronous in Node
-        "Sends a message to a given client or list of clients",
-        [
-            {name: "idOrArray", type: "number|Array.<number>", description: "id or array of ids to send the message to"},
-            {name: "message", type: "string", description: "JSON message to send"}
-        ],
-        []
-    );
-    domainManager.registerCommand(
-        "nodeSocketTransport",      // domain name
-        "close",         // command name
-        _cmdClose,       // command handler function
-        false,          // this command is synchronous in Node
-        "Closes the connection to a given client",
-        [
-            {name: "id", type: "number", description: "id of connection to close"}
-        ],
-        []
-    );
-    domainManager.registerEvent(
-        "nodeSocketTransport",
-        "connect",
-        [
-            {name: "clientID", type: "number", description: "ID of live preview page connecting to live development"},
-            {name: "url", type: "string", description: "URL of page that live preview is connecting from"}
-        ]
-    );
-    domainManager.registerEvent(
-        "nodeSocketTransport",
-        "message",
-        [
-            {name: "clientID", type: "number", description: "ID of live preview page sending message"},
-            {name: "msg", type: "string", description: "JSON message from client page"}
-        ]
-    );
-    domainManager.registerEvent(
-        "nodeSocketTransport",
-        "close",
-        [
-            {name: "clientID", type: "number", description: "ID of live preview page being closed"}
-        ]
-    );
+  ]);
+  domainManager.registerEvent("nodeSocketTransport", "message", [
+    {
+      name: "clientID",
+      type: "number",
+      description: "ID of live preview page sending message"
+    },
+    {
+      name: "msg",
+      type: "string",
+      description: "JSON message from client page"
+    }
+  ]);
+  domainManager.registerEvent("nodeSocketTransport", "close", [
+    {
+      name: "clientID",
+      type: "number",
+      description: "ID of live preview page being closed"
+    }
+  ]);
 }
 
 exports.init = init;

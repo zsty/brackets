@@ -21,37 +21,36 @@
  *
  */
 
-define(function (require, exports, module) {
-    "use strict";
+define(function(require, exports, module) {
+  "use strict";
+  var AppInit = brackets.getModule("utils/AppInit"),
+    PreferencesManager = brackets.getModule("preferences/PreferencesManager"),
+    UrlParams = brackets.getModule("utils/UrlParams").UrlParams,
+    HealthDataPreview = require("HealthDataPreview"),
+    HealthDataPopup = require("HealthDataPopup");
 
-    var AppInit                      = brackets.getModule("utils/AppInit"),
-        PreferencesManager           = brackets.getModule("preferences/PreferencesManager"),
-        UrlParams                    = brackets.getModule("utils/UrlParams").UrlParams,
-        HealthDataPreview            = require("HealthDataPreview"),
-        HealthDataPopup              = require("HealthDataPopup");
+  // Parse URL params
+  var params = new UrlParams();
 
-    // Parse URL params
-    var params = new UrlParams();
+  function handleHealthDataStatistics() {
+    HealthDataPreview.previewHealthData();
+  }
 
-    function handleHealthDataStatistics() {
-        HealthDataPreview.previewHealthData();
+  AppInit.appReady(function() {
+    params.parse();
+    // Check whether the notification dialog should be shown. It will be shown one time. Does not check in testing environment.
+    if (!params.get("testEnvironment")) {
+      var alreadyShown = PreferencesManager.getViewState(
+        "healthDataNotificationShown"
+      );
+      var prefs = PreferencesManager.getExtensionPrefs("healthData");
+      if (!alreadyShown && prefs.get("healthDataTracking")) {
+        HealthDataPopup.showFirstLaunchTooltip().done(function() {
+          PreferencesManager.setViewState("healthDataNotificationShown", true);
+        });
+      }
     }
+  });
 
-    AppInit.appReady(function () {
-        params.parse();
-        // Check whether the notification dialog should be shown. It will be shown one time. Does not check in testing environment.
-        if (!params.get("testEnvironment")) {
-            var alreadyShown = PreferencesManager.getViewState("healthDataNotificationShown");
-            var prefs = PreferencesManager.getExtensionPrefs("healthData");
-            if (!alreadyShown && prefs.get("healthDataTracking")) {
-                HealthDataPopup.showFirstLaunchTooltip()
-                    .done(function () {
-                        PreferencesManager.setViewState("healthDataNotificationShown", true);
-                    });
-            }
-        }
-    });
-
-
-    exports.handleHealthDataStatistics       = handleHealthDataStatistics;
+  exports.handleHealthDataStatistics = handleHealthDataStatistics;
 });

@@ -23,38 +23,32 @@
 
 /*global describe, it, expect */
 
-define(function (require, exports, module) {
-    'use strict';
+define(function(require, exports, module) {
+  "use strict";
+  var StringUtils = require("utils/StringUtils"),
+    kilobyte = 1024,
+    megabyte = kilobyte * 1024,
+    gigabyte = megabyte * 1024,
+    terabyte = gigabyte * 1024;
 
-    var StringUtils = require("utils/StringUtils"),
-        kilobyte = 1024,
-        megabyte = kilobyte * 1024,
-        gigabyte = megabyte * 1024,
-        terabyte = gigabyte * 1024;
+  describe("StringUtils", function() {
+    describe("prettyPrintBytes", function() {
+      it("should convert a number of bytes into a human readable string", function() {
+        var prettyBytes = StringUtils.prettyPrintBytes(1);
+        expect(prettyBytes).toBe("1 B");
 
-    describe("StringUtils", function () {
+        prettyBytes = StringUtils.prettyPrintBytes(kilobyte);
+        expect(prettyBytes).toBe("1 KB");
 
+        prettyBytes = StringUtils.prettyPrintBytes(megabyte);
+        expect(prettyBytes).toBe("1 MB");
 
-        describe("prettyPrintBytes", function () {
-            it("should convert a number of bytes into a human readable string", function () {
+        prettyBytes = StringUtils.prettyPrintBytes(gigabyte);
+        expect(prettyBytes).toBe("1 GB");
 
-                var prettyBytes = StringUtils.prettyPrintBytes(1);
-                expect(prettyBytes).toBe("1 B");
-
-                prettyBytes = StringUtils.prettyPrintBytes(kilobyte);
-                expect(prettyBytes).toBe("1 KB");
-
-                prettyBytes = StringUtils.prettyPrintBytes(megabyte);
-                expect(prettyBytes).toBe("1 MB");
-
-                prettyBytes = StringUtils.prettyPrintBytes(gigabyte);
-                expect(prettyBytes).toBe("1 GB");
-
-                prettyBytes = StringUtils.prettyPrintBytes(terabyte);
-                expect(prettyBytes).toBe("1 TB");
-            });
-        });
-
-
+        prettyBytes = StringUtils.prettyPrintBytes(terabyte);
+        expect(prettyBytes).toBe("1 TB");
+      });
     });
+  });
 });

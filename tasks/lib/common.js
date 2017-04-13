@@ -25,36 +25,34 @@
 /*jslint node: true */
 "use strict";
 
-module.exports = function (grunt) {
-    var common      = {},
-        path        = require("path"),
-        _platform;
+module.exports = function(grunt) {
+  var common = {}, path = require("path"), _platform;
 
-    function writeJSON(grunt, path, obj) {
-        grunt.file.write(path, JSON.stringify(obj, null, "    "));
+  function writeJSON(grunt, path, obj) {
+    grunt.file.write(path, JSON.stringify(obj, null, "    "));
+  }
+
+  function resolve(relPath) {
+    return path.resolve(process.cwd(), relPath);
+  }
+
+  function platform() {
+    if (!_platform) {
+      if (process.platform === "darwin") {
+        _platform = "mac";
+      } else if (process.platform === "win32") {
+        _platform = "win";
+      } else {
+        _platform = "linux";
+      }
     }
 
-    function resolve(relPath) {
-        return path.resolve(process.cwd(), relPath);
-    }
+    return _platform;
+  }
 
-    function platform() {
-        if (!_platform) {
-            if (process.platform === "darwin") {
-                _platform = "mac";
-            } else if (process.platform === "win32") {
-                _platform = "win";
-            } else {
-                _platform = "linux";
-            }
-        }
+  common.writeJSON = writeJSON;
+  common.resolve = resolve;
+  common.platform = platform;
 
-        return _platform;
-    }
-
-    common.writeJSON    = writeJSON;
-    common.resolve      = resolve;
-    common.platform     = platform;
-
-    return common;
+  return common;
 };
