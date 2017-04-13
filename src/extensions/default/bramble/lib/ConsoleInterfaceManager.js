@@ -33,11 +33,11 @@ define(function (require, exports, module) {
         ExtensionUtils = brackets.getModule("utils/ExtensionUtils"),
         PreferencesManager = brackets.getModule("preferences/PreferencesManager");
 
-    var panel
-        , icon = null
-        , panelHTML = require("text!htmlContent/console.html");
+    var panel,
+        icon = null,
+        panelHTML = require("text!htmlContent/console.html");
 
-    icon = $("<button class=\"editor-console-icon-indicator\" title=\"Click to toggle the JavaScript Console \">Console</button>");
+    icon = $("<button class=\"editor-console-icon-indicator\">Console</button>");
     icon.attr("title", "Console");
     icon.appendTo($("#editor-holder"));
 
@@ -49,8 +49,8 @@ define(function (require, exports, module) {
 
 
     function count(data, type) {
-        var i = 0
-            , result = 0;
+        var i = 0,
+            result = 0;
 
         for (i = 0; i < data.length; i++) {
             if (data[i].type === type && (!livePreviewOnly)) {
@@ -77,11 +77,11 @@ define(function (require, exports, module) {
     }
 
 	function render() {
-        var $console = panel.$panel.find(".console")
-            , $element = ""
-            , countBtns = panel.$panel.find(".badge")
-            , data = logData
-            , i = 0;
+        var $console = panel.$panel.find(".console"),
+            $element = "", 
+            countBtns = panel.$panel.find(".badge"), 
+            data = logData, 
+            i = 0;
 
         clear();
 
@@ -98,16 +98,14 @@ define(function (require, exports, module) {
         $(countBtns[2]).html(count(logData, 'log'));
     }
 
-    /**
-    * Logs a message to console.
-    * @param msg
-    */
-    function add(msg, type) {
+    function add(type, args) {
         // Display the console when user code triggers console.* functions
         if(!panel.isVisible() && !wasClosedByUser) {
             panel.show();
         }
-        var texts = msg.toString().split('\n'), i = 0;
+        
+        var texts = args.toString().split('\n'), 
+            i = 0;
 
         for (i = 0; i < texts.length; i++) {
             logData.push({type: type, text: texts[i]});

@@ -18,8 +18,21 @@ define(function (require, exports, module) {
         var type = data.type || "log";
 
         if (type === "error-handler") {
+            var regex = new RegExp('(blob:.+):([^:]+):(.+)', 'gm'),
+                endingRegex = new RegExp(':([0-9]+):([0-9]+)$', 'gm'),
+                stackTrace = args["stack"].split("@"),
+                newArgs = [];
+            
+            // Handle Blob URLs
+            for(var i = 1; i < stackTrace.length; i++){
+                var stackItem = stackTrace[i].match(regex);
+                stackItem = (BlobUtils.getFilename(stackItem[0].replace(endingRegex, ''))).split('/');
+                newArgs.push('Function Line:' + stackItem[1] + ' File:' + stackItem[stackItem.length -1 ]);
+            }
+            
+            newArgs.splice(0, 0, args["messsage"]);
+            args = newArgs;
             type = "error";
-			args[0] = args["Stack"];
         }
 
         if (type === "time" || type === "timeEnd"){
@@ -27,7 +40,7 @@ define(function (require, exports, module) {
         }
 
         console[type].apply(console, args);
-        ConsoleInterfaceManager.add(args, type);
+        ConsoleInterfaceManager.add(type, args);
     }
 
     exports.getRemoteScript = getRemoteScript;

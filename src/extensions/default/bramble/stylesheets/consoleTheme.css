@@ -16,12 +16,12 @@
     width: 100%;
     margin: 5px 10px;
     background: none;
-    border: 0px;
+    border: 0;
     outline: none;
     box-shadow:none;
     display:block;
-	font-size: inherit;
-	font-family: monospace;
+    font-size: inherit;
+    font-family: monospace;
 }
 
 #editor-console .console .log {
@@ -57,19 +57,19 @@
 
 #editor-console #filterBtns .btn {
     border-radius: 0;
-	background: #222;
-	border: none;
-	box-shadow: none;
-	padding: 10px 15px;
+    background: #222;
+    border: none;
+    box-shadow: none;
+    padding: 10px 15px;
 }
 
 button.editor-console-icon-indicator {
     position: absolute;
     width:120px;
     background: #eee;
-	bottom: 2px;
-	right: 20px;
-	color: #222;
-	padding: 10px;
-	border: 0px;
+    bottom: 2px;
+    right: 20px;
+    color: #222;
+    padding: 10px;
+    border: 0;
 }

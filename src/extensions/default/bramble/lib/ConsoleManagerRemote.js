@@ -25,9 +25,9 @@
     // Implements error handling
     window.addEventListener("error", function(messageOrEvents) {
         var args = {
-            "Message": messageOrEvents["message"],
-            "Line": messageOrEvents["error"]["lineNumber"],
-            "Stack": messageOrEvents["error"]["stack"]
+            "message": messageOrEvents["message"],
+            "line": messageOrEvents["error"]["lineNumber"],
+            "stack": messageOrEvents["error"]["stack"]
         };
 
         transportSend("error-handler", args);

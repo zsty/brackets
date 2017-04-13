@@ -33,7 +33,7 @@ define(function (require, exports, module) {
         Theme                = require("lib/Theme"),
         RemoteCommandHandler = require("lib/RemoteCommandHandler"),
         RemoteEvents         = require("lib/RemoteEvents"),
-		ConsoleInterface     = require("lib/ConsoleInterfaceManager");
+        ConsoleInterface     = require("lib/ConsoleInterfaceManager");
 
     ExtensionUtils.loadStyleSheet(module, "stylesheets/style.css");
     ExtensionUtils.loadStyleSheet(module, "stylesheets/sidebarTheme.css");
