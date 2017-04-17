@@ -4,6 +4,7 @@ define(function (require, exports, module) {
     var ConsoleManagerRemote = require("text!lib/ConsoleManagerRemote.js");
     var ConsoleInterfaceManager = require("lib/ConsoleInterfaceManager");
     var BlobUtils = brackets.getModule("filesystem/impls/filer/BlobUtils");
+    var Path = brackets.getModule("filesystem/impls/filer/BracketsFiler").Path;
 
     function getRemoteScript() {
         return "<script>\n" + ConsoleManagerRemote + "</script>\n";
@@ -22,14 +23,14 @@ define(function (require, exports, module) {
                 endingRegex = new RegExp(':([0-9]+):([0-9]+)$', 'gm'),
                 stackTrace = args["stack"].split("@"),
                 newArgs = [];
-            
+
             // Handle Blob URLs
             for(var i = 1; i < stackTrace.length; i++){
                 var stackItem = stackTrace[i].match(regex);
-                stackItem = (BlobUtils.getFilename(stackItem[0].replace(endingRegex, ''))).split('/');
-                newArgs.push('Function Line:' + stackItem[1] + ' File:' + stackItem[stackItem.length -1 ]);
+                stackItem = Path.basename(BlobUtils.getFilename(stackItem[0].replace(endingRegex, '')));
+                newArgs.push(stackItem);
             }
-            
+
             newArgs.splice(0, 0, args["messsage"]);
             args = newArgs;
             type = "error";
@@ -39,7 +40,6 @@ define(function (require, exports, module) {
             args[0] = type + ": " + args[0];
         }
 
-        console[type].apply(console, args);
         ConsoleInterfaceManager.add(type, args);
     }
 
