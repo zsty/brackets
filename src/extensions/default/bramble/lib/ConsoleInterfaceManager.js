@@ -47,7 +47,6 @@ define(function (require, exports, module) {
 
     var wasClosedByUser = false;
 
-
     function count(data, type) {
         var i = 0,
             result = 0;
@@ -76,7 +75,7 @@ define(function (require, exports, module) {
         $(countBtns[2]).html(count(logData, 'log'));
     }
 
-	function render() {
+    function render() {
         var $console = panel.$panel.find(".console"),
             $element = "", 
             countBtns = panel.$panel.find(".badge"), 
@@ -120,6 +119,7 @@ define(function (require, exports, module) {
             icon.removeClass("on");
         } else {
             panel.show();
+            wasClosedByUser = false;
             icon.addClass("on");
         }
     }
@@ -129,7 +129,6 @@ define(function (require, exports, module) {
         ExtensionUtils.loadStyleSheet(module, "../stylesheets/consoleTheme.css");
 
         panel = WorkspaceManager.createBottomPanel("console.panel", $(panelHTML));
-        panel.show();
 
         panel.$panel.find("#btnClear").on("click", function () {
             clear();

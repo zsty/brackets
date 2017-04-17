@@ -24,10 +24,15 @@
 
     // Implements error handling
     window.addEventListener("error", function(messageOrEvents) {
+        var message = messageOrEvents.message;
+        var error = messageOrEvents.error || {};
+        var line = error.lineNumber || 0;
+        var stack = error.stack || "Error Interpretting Stack";
+        
         var args = {
-            "message": messageOrEvents["message"],
-            "line": messageOrEvents["error"]["lineNumber"],
-            "stack": messageOrEvents["error"]["stack"]
+            "message": message,
+            "line": line,
+            "stack": stack
         };
 
         transportSend("error-handler", args);
