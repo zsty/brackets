@@ -4,6 +4,7 @@
 
 #editor-console .margin-left-small {
     margin-left: 5px;
+    background: inherit;
 }
 
 #editor-console .console {
@@ -57,7 +58,7 @@
 
 #editor-console #filterBtns .btn {
     border-radius: 0;
-    background: #222;
+    background: inherit;
     border: none;
     box-shadow: none;
     padding: 10px 15px;

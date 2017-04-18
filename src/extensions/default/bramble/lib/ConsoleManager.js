@@ -28,7 +28,7 @@ define(function (require, exports, module) {
             for(var i = 1; i < stackTrace.length; i++){
                 var stackItem = stackTrace[i].match(regex);
                 stackItem = Path.basename(BlobUtils.getFilename(stackItem[0].replace(endingRegex, '')));
-                newArgs.push(stackItem);
+                newArgs.push(stackItem + "\n");
             }
 
             newArgs.splice(0, 0, args["messsage"]);
