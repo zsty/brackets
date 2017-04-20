@@ -42,7 +42,6 @@ define(function (require, exports, module) {
     icon.appendTo($("#editor-holder"));
 
     var logData = [],
-        filters = {error: true, log: true, warn: false},
         livePreviewOnly = false;
 
     var wasClosedByUser = false;
@@ -69,10 +68,6 @@ define(function (require, exports, module) {
         var countBtns = panel.$panel.find(".badge");
 
         logData = [];
-
-        $(countBtns[0]).html(count(logData, 'error'));
-        $(countBtns[1]).html(count(logData, 'warn'));
-        $(countBtns[2]).html(count(logData, 'log'));
     }
 
     function render() {
@@ -91,10 +86,6 @@ define(function (require, exports, module) {
         }
 
         $console.animate({ scrollTop: $console[0].scrollHeight }, 10);
-
-        $(countBtns[0]).html(count(logData, 'error'));
-        $(countBtns[1]).html(count(logData, 'warn'));
-        $(countBtns[2]).html(count(logData, 'log'));
     }
 
     function add(type, args) {
