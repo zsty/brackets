@@ -36,6 +36,7 @@ define(function (require, exports, module) {
         ThemeSettings      = require("view/ThemeSettings"),
         ThemeView          = require("view/ThemeView"),
         PreferencesManager = require("preferences/PreferencesManager"),
+        Path               = require("filesystem/impls/filer/FilerUtils").Path,
         prefs              = PreferencesManager.getExtensionPrefs("themes");
 
     var loadedThemes    = {},
@@ -233,20 +234,26 @@ define(function (require, exports, module) {
         var theme = getCurrentTheme();
         var pending = new $.Deferred();
 
+        function processCSS(css) {
+            var result = extractScrollbars(css);
+            var content = result.content;
+            theme.scrollbar = result.scrollbar;
+
+            $("body").toggleClass("dark", theme.dark);
+            styleNode.text(content);
+            $("body").attr('data-theme',theme.name);
+            pending.resolve(theme);
+        }
+
         if (theme) {
-            require(['text!' + theme.file._path], function(lessContent) {
-                lessifyTheme(lessContent.replace(commentRegex, ""), theme)
-                .then(function (content) {
-                    var result = extractScrollbars(content);
-                    theme.scrollbar = result.scrollbar;
-                    return result.content;
-                })
-                .then(function (cssContent) {
-                    $("body").toggleClass("dark", theme.dark);
-                    styleNode.text(cssContent);
-                    $("body").attr('data-theme',theme.name);
-                    pending.resolve(theme);
-                });
+            require(['text!' + theme.file._path], function(content) {
+                // If we already have CSS, don't bother with LESS.
+                if(Path.extname(theme.file._path) === ".css") {
+                    return processCSS(content);
+                }
+
+                lessifyTheme(content.replace(commentRegex, ""), theme)
+                .then(processCSS);
             });
         }
 
