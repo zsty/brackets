@@ -31,14 +31,18 @@ define(function (require, exports, module) {
     var AppInit = brackets.getModule("utils/AppInit"),
         WorkspaceManager = brackets.getModule("view/WorkspaceManager"),
         ExtensionUtils = brackets.getModule("utils/ExtensionUtils"),
-        PreferencesManager = brackets.getModule("preferences/PreferencesManager");
+        PreferencesManager = brackets.getModule("preferences/PreferencesManager"),
+        Mustache = brackets.getModule("thirdparty/mustache/mustache"),
+        Strings = brackets.getModule("strings");
 
     var panel,
         icon = null,
         panelHTML = require("text!htmlContent/console.html");
+    
+    // panelHTML = Mustache.parse(panelHTML, {"Strings": Strings});
 
-    icon = $("<button class=\"editor-console-icon-indicator\">Console</button>");
-    icon.attr("title", "Console");
+    icon = $("<button class=\"editor-console-icon-indicator\" title='{{CONSOLE_TOOLTIP}}'>{{CONSOLE_TITLE}}</button>");
+    // icon = Mustache.parse(icon, {"Strings": Strings});
     icon.appendTo($("#editor-holder"));
 
     var logData = [],
@@ -55,7 +59,6 @@ define(function (require, exports, module) {
                 result++;
             }
         }
-
         return result;
     }
 
@@ -64,16 +67,9 @@ define(function (require, exports, module) {
         $console.html("");
     }
 
-    function flush() {
-        var countBtns = panel.$panel.find(".badge");
-
-        logData = [];
-    }
-
     function render() {
         var $console = panel.$panel.find(".console"),
             $element = "", 
-            countBtns = panel.$panel.find(".badge"), 
             data = logData, 
             i = 0;
 
@@ -123,7 +119,6 @@ define(function (require, exports, module) {
 
         panel.$panel.find("#btnClear").on("click", function () {
             clear();
-            flush();
         });
 
         panel.$panel.find(".close").on("click", function () {
@@ -134,7 +129,9 @@ define(function (require, exports, module) {
 
         icon.on("click", togglePanel);
 
+        // Localization
+        panelHTML = Mustache.render(panelHTML, {"Strings": Strings});
+        icon = Mustache.render(icon, {"Strings": Strings});
     });
-
     exports.add = add;
 });

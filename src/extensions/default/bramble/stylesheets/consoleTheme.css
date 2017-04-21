@@ -23,10 +23,10 @@
     display:block;
     font-size: inherit;
     font-family: monospace;
-    user-select: text;
     -moz-user-select: text;
     -webkit-user-select: text;
     -ms-user-select: text;
+    user-select: text;
 }
 
 #editor-console .console .error {
