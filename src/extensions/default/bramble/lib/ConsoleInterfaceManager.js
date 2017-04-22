@@ -33,16 +33,13 @@ define(function (require, exports, module) {
         ExtensionUtils = brackets.getModule("utils/ExtensionUtils"),
         PreferencesManager = brackets.getModule("preferences/PreferencesManager"),
         Mustache = brackets.getModule("thirdparty/mustache/mustache"),
-        Strings = brackets.getModule("strings");
+        Strings = brackets.getModule("Strings");
 
     var panel,
         icon = null,
         panelHTML = require("text!htmlContent/console.html");
     
-    // panelHTML = Mustache.parse(panelHTML, {"Strings": Strings});
-
     icon = $("<button class=\"editor-console-icon-indicator\" title='{{CONSOLE_TOOLTIP}}'>{{CONSOLE_TITLE}}</button>");
-    // icon = Mustache.parse(icon, {"Strings": Strings});
     icon.appendTo($("#editor-holder"));
 
     var logData = [],
@@ -103,11 +100,9 @@ define(function (require, exports, module) {
     function togglePanel() {
         if (panel.isVisible()) {
             panel.hide();
-            icon.removeClass("on");
         } else {
             panel.show();
             wasClosedByUser = false;
-            icon.addClass("on");
         }
     }
 
@@ -115,6 +110,8 @@ define(function (require, exports, module) {
 
         ExtensionUtils.loadStyleSheet(module, "../stylesheets/consoleTheme.css");
 
+        // Localization 
+        panelHTML = Mustache.render(panelHTML, {"Strings": Strings});
         panel = WorkspaceManager.createBottomPanel("console.panel", $(panelHTML));
 
         panel.$panel.find("#btnClear").on("click", function () {
@@ -123,15 +120,12 @@ define(function (require, exports, module) {
 
         panel.$panel.find(".close").on("click", function () {
             panel.hide();
-            icon.removeClass("on");
             wasClosedByUser = true;
         });
 
         icon.on("click", togglePanel);
+        icon.innerHTML = String.CONSOLE_TITLE;
 
-        // Localization
-        panelHTML = Mustache.render(panelHTML, {"Strings": Strings});
-        icon = Mustache.render(icon, {"Strings": Strings});
     });
     exports.add = add;
 });

@@ -16,8 +16,20 @@
      "clear",
      "time",
      "timeEnd"].forEach(function(type) {
-        console[type] = function() {
-            var args = Array.from(arguments).slice();
+        console[type] = function() {            
+            var values = [];
+            var args = Array.prototype.slice.call(arguments); 
+
+            // Handle Object Arguments
+            for(var i = 0; i < args.length; i++) {
+                if(args[i] instanceof Error) {
+                    for (var key in args[i]) {
+                        values.push(args[i][key]);
+                    }
+                    args[i] = values;
+                    values = [];
+                } 
+            }
             transportSend(type, args);
         };
     });

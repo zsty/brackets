@@ -40,7 +40,9 @@ define(function (require, exports, module) {
             args[0] = type + ": " + args[0];
         }
 
-        ConsoleInterfaceManager.add(type, args);
+        if (args !== undefined){
+            ConsoleInterfaceManager.add(type, args);
+        }
     }
 
     exports.getRemoteScript = getRemoteScript;
