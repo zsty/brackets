@@ -51,7 +51,7 @@
     }, false);
 
     console.assert = function() {
-        var args = Array.from(arguments).slice();
+        var args = Array.prototype.slice.call(arguments);
         var expr = args.shift();
         if (!expr) {
             args[0] = "Assertion Failed: " + args[0];

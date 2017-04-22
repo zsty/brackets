@@ -16,6 +16,7 @@ define(function (require, exports, module) {
     var _                  = brackets.getModule("thirdparty/lodash");
     var ArchiveUtils       = brackets.getModule("filesystem/impls/filer/ArchiveUtils");
 
+    var SVGUtils = require("lib/SVGUtils");
     var MouseManager = require("lib/MouseManager");
     var PostMessageTransport = require("lib/PostMessageTransport");
     var Tutorial = require("lib/Tutorial");
@@ -102,6 +103,19 @@ define(function (require, exports, module) {
         case "BRAMBLE_ENABLE_INSPECTOR":
             MouseManager.enableInspector();
             break;
+        case "BRAMBLE_ENABLE_AUTOCOMPLETE":
+            PreferencesManager.set("codehint.TagHints", true);
+            PreferencesManager.set("codehint.AttrHints", true);
+            PreferencesManager.set("codehint.JSHints", true);
+            PreferencesManager.set("codehint.CssPropHints", true);
+            break;
+        case "BRAMBLE_DISABLE_AUTOCOMPLETE":
+            PreferencesManager.set("codehint.TagHints", false);
+            PreferencesManager.set("codehint.AttrHints", false);
+            PreferencesManager.set("codehint.JSHints", false);
+            PreferencesManager.set("codehint.CssPropHints", false);
+            break;
+
         case "BRAMBLE_DISABLE_INSPECTOR":
             // Disable the inspector, and clear any marks in the preview/editor
             MouseManager.disableInspector(true);
@@ -132,6 +146,14 @@ define(function (require, exports, module) {
             break;
         case "BRAMBLE_CONFIGURE_AUTO_CLOSE_TAGS":
             PreferencesManager.set("closeTags", args[0]);
+            break;
+        case "BRAMBLE_OPEN_SVG_AS_XML":
+            skipCallback = true;
+            SVGUtils.showXML(callback);
+            break;
+        case "BRAMBLE_OPEN_SVG_AS_IMAGE":
+            skipCallback = true;
+            SVGUtils.showImage(callback);
             break;
         case "BRAMBLE_SHOW_TUTORIAL":
             Tutorial.setOverride(true);
