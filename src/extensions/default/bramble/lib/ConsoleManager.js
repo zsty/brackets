@@ -40,7 +40,7 @@ define(function (require, exports, module) {
             args[0] = type + ": " + args[0];
         }
 
-        if (args !== undefined){
+        if (args){
             ConsoleInterfaceManager.add(type, args);
         }
     }

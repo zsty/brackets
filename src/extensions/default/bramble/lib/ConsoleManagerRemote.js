@@ -42,9 +42,9 @@
         var stack = error.stack || "Error Interpretting Stack";
         
         var args = {
-            "message": message,
-            "line": line,
-            "stack": stack
+            message: message,
+            line: line,
+            stack: stack
         };
 
         transportSend("error-handler", args);
