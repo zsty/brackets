@@ -38,9 +38,6 @@ define(function (require, exports, module) {
     var panel,
         icon = null,
         panelHTML = require("text!htmlContent/console.html");
-    
-    icon = $("<button class=\"editor-console-icon-indicator\" title='{{CONSOLE_TOOLTIP}}'>{{CONSOLE_TITLE}}</button>");
-    icon.appendTo($("#editor-holder"));
 
     var logData = [],
         livePreviewOnly = false;
@@ -107,12 +104,15 @@ define(function (require, exports, module) {
     }
 
     AppInit.htmlReady(function () {
-
         ExtensionUtils.loadStyleSheet(module, "../stylesheets/consoleTheme.css");
 
-        // Localization 
+        // Localization & Creation of HTMl Elements 
         panelHTML = Mustache.render(panelHTML, {"Strings": Strings});
         panel = WorkspaceManager.createBottomPanel("console.panel", $(panelHTML));
+    
+        var iconString = "<button class=\"editor-console-icon-indicator\" title='{{CONSOLE_TOOLTIP}}'>{{CONSOLE_TITLE}}</button>";
+	icon = $(Mustache.render(iconString, {"Strings": Strings}));
+        icon.appendTo($("#editor-holder"));
 
         panel.$panel.find("#btnClear").on("click", function () {
             clear();
@@ -124,7 +124,6 @@ define(function (require, exports, module) {
         });
 
         icon.on("click", togglePanel);
-        icon.innerHTML = String.CONSOLE_TITLE;
 
     });
     exports.add = add;
