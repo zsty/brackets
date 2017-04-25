@@ -111,7 +111,7 @@ define(function (require, exports, module) {
         panel = WorkspaceManager.createBottomPanel("console.panel", $(panelHTML));
     
         var iconString = "<button class=\"editor-console-icon-indicator\" title='{{CONSOLE_TOOLTIP}}'>{{CONSOLE_TITLE}}</button>";
-	icon = $(Mustache.render(iconString, {"Strings": Strings}));
+        icon = $(Mustache.render(iconString, {"Strings": Strings}));
         icon.appendTo($("#editor-holder"));
 
         panel.$panel.find("#btnClear").on("click", function () {
