@@ -157,11 +157,53 @@ define(function (require, exports, module) {
             });
         });
 
+        // Listen for changes to TagHints
+        PreferencesManager.on("change", "codehint.TagHints", function () {
+            sendEvent({
+                type: "bramble:autocompleteChange",
+                value: PreferencesManager.get("codehint.TagHints")
+            });
+        });
+
+        // Listen for changes to AttrHints
+        PreferencesManager.on("change", "codehint.AttrHints", function () {
+            sendEvent({
+                type: "bramble:autocompleteChange",
+                value: PreferencesManager.get("codehint.AttrHints")
+            });
+        });
+
+
+        // Listen for changes to JSHints
+        PreferencesManager.on("change", "codehint.JSHints", function () {
+            sendEvent({
+                type: "bramble:autocompleteChange",
+                value: PreferencesManager.get("codehint.JSHints")
+            });
+        });
+
+
+        // Listen for changes to CssPropHints
+        PreferencesManager.on("change", "codehint.CssPropHints", function () {
+            sendEvent({
+                type: "bramble:autocompleteChange",
+                value: PreferencesManager.get("codehint.CssPropHints")
+            });
+        });
+
         //Listen for changes to auto update
         PreferencesManager.on("change", "autoUpdate", function () {
             sendEvent({
                 type: "bramble:autoUpdateChange",
                 autoUpdate: PreferencesManager.get("autoUpdate")
+            });
+        });
+
+        // Listen for changes to open SVG as XML
+        PreferencesManager.on("change", "openSVGasXML", function () {
+            sendEvent({
+                type: "bramble:openSVGasXMLChange",
+                openSVGasXML: PreferencesManager.get("openSVGasXML")
             });
         });
     }
@@ -196,9 +238,10 @@ define(function (require, exports, module) {
             fontSize: ViewCommandHandlers.getFontSize(),
             theme: Theme.getTheme(),
             wordWrap: PreferencesManager.get("wordWrap"),
-            allowJavaScript: PreferencesManager.get("allowJavaScript"),
             autoCloseTags: PreferencesManager.get("closeTags"),
-            autoUpdate: PreferencesManager.get("autoUpdate")
+            autoUpdate: PreferencesManager.get("autoUpdate"),
+            openSVGasXML: PreferencesManager.get("openSVGasXML"),
+            allowJavaScript: PreferencesManager.get("allowJavaScript")
         });
     }
 

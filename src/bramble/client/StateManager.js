@@ -139,9 +139,17 @@ define(function() {
                 get: function()  { return getBool(storage, "allowJavaScript"); },
                 set: function(v) { storage.setItem(prefix("allowJavaScript"), v); }
             },
+            allowAutocomplete: {
+                get: function()  { return getBool(storage, "allowAutocomplete"); },
+                set: function(v) { storage.setItem(prefix("allowAutocomplete"), v); }
+            },
             autoUpdate: {
                 get: function()  { return getBool(storage, "autoUpdate"); },
                 set: function(v) { storage.setItem(prefix("autoUpdate"), v); }
+            },
+            openSVGasXML: {
+                get: function()  { return getBool(storage, "openSVGasXML"); },
+                set: function(v) { storage.setItem(prefix("openSVGasXML"), v); }
             }
         });
     }

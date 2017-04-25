@@ -93,9 +93,22 @@ define(function (require, exports, module) {
         var autoCloseTags = BrambleStartupState.ui("autoCloseTags") || { whenOpening: true, whenClosing: true, indentTags: [] };
         PreferencesManager.set("closeTags", autoCloseTags);
 
+        var openSVGasXML = BrambleStartupState.ui("openSVGasXML");
+        if(typeof openSVGasXML === "boolean") {
+            PreferencesManager.set("openSVGasXML", openSVGasXML);
+        }
+
         var allowJavaScript = BrambleStartupState.ui("allowJavaScript");
         if(typeof allowJavaScript === "boolean") {
             PreferencesManager.set("allowJavaScript", allowJavaScript);
+        }
+
+        var allowAutocomplete = BrambleStartupState.ui("allowAutocomplete");
+        if(typeof allowAutocomplete === "boolean") {
+            PreferencesManager.set("codehint.AttrHints", allowAutocomplete);
+            PreferencesManager.set("codehint.TagHints", allowAutocomplete);
+            PreferencesManager.set("codehint.JSHints", allowAutocomplete);
+            PreferencesManager.set("codehint.CssPropHints", allowAutocomplete);
         }
 
         var autoUpdate = BrambleStartupState.ui("autoUpdate");
