@@ -1,10 +1,10 @@
 define(function (require, exports, module) {
     "use strict";
 
-    var ConsoleManagerRemote = require("text!lib/ConsoleManagerRemote.js");
-    var ConsoleInterfaceManager = require("lib/ConsoleInterfaceManager");
-    var BlobUtils = brackets.getModule("filesystem/impls/filer/BlobUtils");
-    var Path = brackets.getModule("filesystem/impls/filer/BracketsFiler").Path;
+    var ConsoleInterfaceManager = require("lib/ConsoleInterfaceManager"),
+        BlobUtils = brackets.getModule("filesystem/impls/filer/BlobUtils"),
+        Path = brackets.getModule("filesystem/impls/filer/BracketsFiler").Path,
+        ConsoleManagerRemote = require("text!lib/ConsoleManagerRemote.js");
 
     function getRemoteScript() {
         return "<script>\n" + ConsoleManagerRemote + "</script>\n";

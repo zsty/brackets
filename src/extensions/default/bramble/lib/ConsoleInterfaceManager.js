@@ -32,17 +32,15 @@ define(function (require, exports, module) {
         WorkspaceManager = brackets.getModule("view/WorkspaceManager"),
         ExtensionUtils = brackets.getModule("utils/ExtensionUtils"),
         PreferencesManager = brackets.getModule("preferences/PreferencesManager"),
+        panelHTML = require("text!htmlContent/console.html"),
         Mustache = brackets.getModule("thirdparty/mustache/mustache"),
-        Strings = brackets.getModule("Strings");
+        Strings = brackets.getModule("strings");
 
     var panel,
         icon = null,
-        panelHTML = require("text!htmlContent/console.html");
-
-    var logData = [],
-        livePreviewOnly = false;
-
-    var wasClosedByUser = false;
+        logData = [],
+        livePreviewOnly = false,
+        wasClosedByUser = false;
 
     function count(data, type) {
         var i = 0,
@@ -84,10 +82,9 @@ define(function (require, exports, module) {
             panel.show();
         }
         
-        var texts = args.toString().split('\n'), 
-            i = 0;
+        var texts = args.toString().split('\n');
 
-        for (i = 0; i < texts.length; i++) {
+        for (var i = 0; i < texts.length; i++) {
             logData.push({type: type, text: texts[i]});
         }
 
@@ -106,16 +103,17 @@ define(function (require, exports, module) {
     AppInit.htmlReady(function () {
         ExtensionUtils.loadStyleSheet(module, "../stylesheets/consoleTheme.css");
 
-        // Localization & Creation of HTMl Elements 
+        // Localization & Creation of HTMl Elements
         panelHTML = Mustache.render(panelHTML, {"Strings": Strings});
         panel = WorkspaceManager.createBottomPanel("console.panel", $(panelHTML));
-    
+
         var iconString = "<button class=\"editor-console-icon-indicator\" title='{{CONSOLE_TOOLTIP}}'>{{CONSOLE_TITLE}}</button>";
         icon = $(Mustache.render(iconString, {"Strings": Strings}));
         icon.appendTo($("#editor-holder"));
 
         panel.$panel.find("#btnClear").on("click", function () {
             clear();
+            logData = [];
         });
 
         panel.$panel.find(".close").on("click", function () {
