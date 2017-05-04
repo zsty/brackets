@@ -1,3 +1,8 @@
+#editor-console {
+/*  position: relative;*/
+  -webkit-font-smoothing: subpixel-antialiased;
+}
+
 #editor-console .margin-left {
     margin-left: 15px;
 }
@@ -15,18 +20,37 @@
 
 #editor-console .console > div {
     width: 100%;
-    margin: 5px 10px;
+    padding: 3px 10px;
     background: none;
     border: 0;
     outline: none;
-    box-shadow:none;
-    display:block;
-    font-size: inherit;
-    font-family: monospace;
+    box-shadow: none;
+    display: block;
+    font-size: 15px;
+    font-family: 'Menlo Regular', Consolas, Inconsolata, 'Vera Sans', 'Lucida Console', Courier, monospace, fixed;
     -moz-user-select: text;
     -webkit-user-select: text;
     -ms-user-select: text;
     user-select: text;
+    color: white;
+    opacity: .5;
+}
+
+
+#editor-console .console > div:last-child {
+  opacity: .8;
+  animation: shine 1s ease-out;
+}
+
+@keyframes shine {
+  0% {
+    opacity: 1;
+    background: rgba(255,255,255,.1);
+  }
+  100% {
+    opacity: .8;
+    background: rgba(255,255,255,0);
+  }
 }
 
 #editor-console .console .error {
@@ -44,13 +68,15 @@
     color: #A0779F;
 }
 
-#editor-console .console .debug { 
+#editor-console .console .debug {
     color: #8ACDEA;
 }
 
 #editor-console .title {
-    padding: 2px;
-    font-weight: bold;
+    font-weight: 600;
+    font-family: "Open Sans", "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    color: rgba(255,255,255,.4);
 }
 
 #editor-console .badge {
@@ -77,4 +103,61 @@ button.editor-console-icon-indicator {
     color: #222;
     padding: 10px;
     border: 0;
+}
+
+
+.bottom-panel .toolbar {
+  padding: 10px;
+  border: none;
+
+}
+
+.dark .bottom-panel {
+  background: #222;
+  border-top: none;
+}
+
+.dark .bottom-panel .toolbar {
+  border: none;
+  background: #3F3F3F;
+}
+
+.bottom-panel .toolbar,
+.dark .bottom-panel .toolbar {
+   box-shadow: none;
+
+}
+
+
+.dark #editor-console .vert-resizer {
+  height: 12px;
+/*  top: -12px;*/
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.dark #editor-console .vert-resizer:hover,
+.dark #editor-console .vert-resizer.active {
+  opacity: 1;
+}
+
+#editor-console .clear-button {
+  font-family: "Open Sans", sans-serif;
+  margin: 0 0 0 12px;
+  outline: none;
+  padding: 3px 8px;
+  background: rgba(255,255,255,.2);
+  color: rgba(255,255,255,.7);
+  border: none;
+  background: #222;
+  color: rgba(255,255,255,.5);
+  font-weight: 600;
+  border-radius: 12px;
+}
+
+#editor-console .clear-button:hover {
+  color: rgba(255,255,255,.8);
+}
+
+#editor-console .clear-button:active {
+  background: #1b1b1b;
 }
