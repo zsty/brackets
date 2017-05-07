@@ -37,10 +37,12 @@ define(function (require, exports, module) {
         Strings = brackets.getModule("strings");
 
     var panel,
-        icon = null,
-        logData = [],
+        showConsoleTab = null,
         livePreviewOnly = false,
-        wasClosedByUser = false;
+        wasClosedByUser = false,
+        unreadCount = 0,
+        consoleEl = null,
+        maxLogs = 30;
 
     function count(data, type) {
         var i = 0,
@@ -55,47 +57,75 @@ define(function (require, exports, module) {
     }
 
     function clear() {
-        var $console = panel.$panel.find(".console");
-        $console.html("");
+        consoleEl.html("");
+        unreadCount = 0;
     }
 
-    function render() {
-        var $console = panel.$panel.find(".console"),
-            $element = "", 
-            data = logData, 
-            i = 0;
+    function showPanel(){
+      unreadCount = 0;
+      panel.show();
+      showConsoleTab.removeClass("has-unseen-logs");
+      $("#editor-holder").addClass("console-open");
+      panel.$panel.find(".console").animate({ scrollTop: consoleEl[0].scrollHeight }, 10);
+    }
 
-        clear();
-
-        // This creates the individual messages
-        for (i = 0; i < data.length; i++) {
-            $element = $("<div class='" + data[i].type + "'>" + data[i].text +"</div>");
-            $console.append($element);
-        }
-
-        $console.animate({ scrollTop: $console[0].scrollHeight }, 10);
+    function hidePanel(){
+      panel.hide();
+      $("#editor-holder").removeClass("console-open");
+      panel.$panel.find(".console div").removeClass("new-log");
     }
 
     function add(type, args) {
-        // Display the console when user code triggers console.* functions
+
+        // Display the console when user code triggers console.* functions,
+        // but only if the console was not already closed by the user.
         if(!panel.isVisible() && !wasClosedByUser) {
-            panel.show();
-        }
-        
-        var texts = args.toString().split('\n');
-
-        for (var i = 0; i < texts.length; i++) {
-            logData.push({type: type, text: texts[i]});
+            showPanel();
         }
 
-        render();
+        if(!panel.isVisible()) {
+          unreadCount++;
+        }
+
+        if(unreadCount > 0) {
+          showConsoleTab.removeClass("has-unseen-logs").width(showConsoleTab.width());
+          showConsoleTab.addClass("has-unseen-logs");
+        }
+
+        var logContent = args[0];
+
+        if(typeof logContent === "object") {
+          logContent = JSON.stringify(logContent);
+        }
+
+        var $element = $("<div class='log-entry " + type + "'></div>");
+
+        if(logContent.length === 0){
+          logContent = Strings.CONSOLE_EMPTY_STRING;
+          $element.addClass("empty-string");
+        }
+
+        $element.text(logContent);
+
+        if(panel.isVisible()) {
+          $element.addClass("new-log");
+        }
+
+        consoleEl.append($element);
+
+        var logCount = consoleEl.find("div").length;
+        if(logCount > maxLogs) {
+          consoleEl.find(":first-child").remove();
+        }
+
+        consoleEl.animate({ scrollTop: consoleEl[0].scrollHeight }, 10);
     }
 
     function togglePanel() {
         if (panel.isVisible()) {
-            panel.hide();
+            hidePanel();
         } else {
-            panel.show();
+            showPanel();
             wasClosedByUser = false;
         }
     }
@@ -104,25 +134,26 @@ define(function (require, exports, module) {
         ExtensionUtils.loadStyleSheet(module, "../stylesheets/consoleTheme.css");
 
         // Localization & Creation of HTMl Elements
-        panelHTML = Mustache.render(panelHTML, {"Strings": Strings});
+        panelHTML = Mustache.render(panelHTML, Strings);
         panel = WorkspaceManager.createBottomPanel("console.panel", $(panelHTML));
 
-        var iconString = "<button class=\"editor-console-icon-indicator\" title='{{CONSOLE_TOOLTIP}}'>{{CONSOLE_TITLE}}</button>";
-        icon = $(Mustache.render(iconString, {"Strings": Strings}));
-        icon.appendTo($("#editor-holder"));
+        var iconString = "<div class=\"show-console-tab\" title='{{CONSOLE_TOOLTIP}}'></div>";
+        showConsoleTab = $(Mustache.render(iconString, Strings));
+        showConsoleTab.appendTo($("#editor-holder"));
 
-        panel.$panel.find("#btnClear").on("click", function () {
+        consoleEl = panel.$panel.find(".console");
+
+        panel.$panel.find("#clearConsole").on("click", function () {
             clear();
-            logData = [];
         });
 
         panel.$panel.find(".close").on("click", function () {
-            panel.hide();
+            hidePanel();
             wasClosedByUser = true;
         });
 
-        icon.on("click", togglePanel);
-
+        showConsoleTab.on("click", togglePanel);
     });
+
     exports.add = add;
 });
