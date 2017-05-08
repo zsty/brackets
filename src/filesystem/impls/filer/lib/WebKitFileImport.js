@@ -292,7 +292,7 @@ define(function (require, exports, module) {
         }
     };
 
-    exports.create = function(byteLimit) {
-        return new WebKitFileImport(byteLimit);
+    exports.create = function(options) {
+        return new WebKitFileImport(options);
     };
 });

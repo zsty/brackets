@@ -10,6 +10,13 @@ define(function (require, exports, module) {
         FileSystemCache     = require("filesystem/impls/filer/FileSystemCache"),
         BrambleStartupState = brackets.getModule("bramble/StartupState");
 
+    // 3MB size limit for imported files. If you change this, also change the
+    // error message we generate in rejectImport() below!
+    var byteLimit = 3145728;
+
+    // 5MB size limit for imported archives (zip & tar)
+    var archiveByteLimit = 5242880;
+
     /**
      * XXXBramble: the Drag and Drop and File APIs are a mess of incompatible
      * standards and implementations.  This tries to deal with the fact that some
@@ -27,21 +34,25 @@ define(function (require, exports, module) {
      *  - https://developer.mozilla.org/en-US/docs/Web/API/DataTransferItem
      *  - https://developer.mozilla.org/en-US/docs/Web/API/DataTransferItem/webkitGetAsEntry
      */
-    var _create = (function() {
-        if(window.DataTransferItem                            &&
-           window.DataTransferItem.prototype.webkitGetAsEntry &&
-           window.DataTransferItemList) {
-               return WebKitFileImport.create;
+    function chooseImportStrategy(source) {
+        var options = {
+            byteLimit: byteLimit,
+            archiveByteLimit: archiveByteLimit
+        };
+
+        if(source instanceof FileList) {
+            return LegacyFileImport.create(options);
         }
-        return LegacyFileImport.create;
-    }());
 
-    // 3MB size limit for imported files. If you change this, also change the
-    // error message we generate in rejectImport() below!
-    var byteLimit = 3145728;
-
-    // 5MB size limit for imported archives (zip & tar)
-    var archiveByteLimit = 5242880;
+        if(source instanceof DataTransfer) {
+            if(window.DataTransferItem                            &&
+               window.DataTransferItem.prototype.webkitGetAsEntry &&
+               window.DataTransferItemList) {
+                return WebKitFileImport.create(options);
+            }
+            return LegacyFileImport.create(options);
+        }
+    }
 
     // Support passing a DataTransfer object, or a FileList
     exports.import = function(source, parentPath, callback) {
@@ -50,11 +61,7 @@ define(function (require, exports, module) {
             return;
         }
 
-        var options = {
-            byteLimit: byteLimit,
-            archiveByteLimit: archiveByteLimit
-        };
-        var strategy = _create(options);
+        var strategy = chooseImportStrategy(source);
 
         // If we are given a sub-dir within the project, use that.  Otherwise use project root.
         parentPath = parentPath || BrambleStartupState.project("root");

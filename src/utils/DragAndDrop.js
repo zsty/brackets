@@ -82,7 +82,7 @@ define(function (require, exports, module) {
         var files = event.dataTransfer.files;
         var types = event.dataTransfer.types;
 
-        if ((!files || !files.length) && types) { // We only want to check if a string of text was dragged into the editor
+        if ( !(files && files.length) && types ) { // We only want to check if a string of text was dragged into the editor
             types.forEach(function (value) {
                 //Draging text externally (dragging text from another file): types has "text/plain" and "text/html"
                 //Draging text internally (dragging text to another line): types has just "text/plain"
@@ -350,6 +350,7 @@ define(function (require, exports, module) {
     CommandManager.register(Strings.CMD_OPEN_DROPPED_FILES, Commands.FILE_OPEN_DROPPED_FILES, openDroppedFiles);
 
     // Export public API
+    exports.processFiles        = processFiles;
     exports.attachHandlers      = attachHandlers;
     exports.isValidDrop         = isValidDrop;
     exports.openDroppedFiles    = openDroppedFiles;

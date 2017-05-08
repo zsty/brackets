@@ -244,7 +244,7 @@ define(function (require, exports, module) {
             });
     };
 
-    exports.create = function(byteLimit) {
-        return new LegacyFileImport(byteLimit);
+    exports.create = function(options) {
+        return new LegacyFileImport(options);
     };
 });
