@@ -95,6 +95,24 @@ define(function (require, exports, module) {
             PreferencesManager.set("allowJavaScript", allowJavaScript);
         }
 
+        var allowWhiteSpace = BrambleStartupState.ui("allowWhiteSpace");
+        if(typeof allowWhiteSpace === "boolean") {
+            PreferencesManager.getExtensionPrefs("denniskehrig.ShowWhitespace").set("enabled", allowWhiteSpace);
+        }
+
+        var allowAutocomplete = BrambleStartupState.ui("allowAutocomplete");
+        if(typeof allowAutocomplete === "boolean") {
+            PreferencesManager.set("codehint.AttrHints", allowAutocomplete);
+            PreferencesManager.set("codehint.TagHints", allowAutocomplete);
+            PreferencesManager.set("codehint.JSHints", allowAutocomplete);
+            PreferencesManager.set("codehint.CssPropHints", allowAutocomplete);
+        }
+
+        var autoUpdate = BrambleStartupState.ui("autoUpdate");
+        if(typeof autoUpdate === "boolean") {
+            PreferencesManager.set("autoUpdate", autoUpdate);
+        }
+
         var sidebarWidth = BrambleStartupState.ui("sidebarWidth");
         if(sidebarWidth) {
             SidebarView.resize(sidebarWidth);
