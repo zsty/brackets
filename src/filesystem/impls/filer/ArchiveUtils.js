@@ -71,7 +71,7 @@ define(function (require, exports, module) {
             return;
         }
 
-        var root = StartupState.project("root");
+        var root = options.root || StartupState.project("root");
         var destination = Path.resolve(options.destination || root);
 
         function _unzip(data){
@@ -206,9 +206,16 @@ define(function (require, exports, module) {
         });
     }
 
-    function untar(tarArchive, callback) {
+    function untar(tarArchive, options, callback) {
+        if(typeof options === 'function') {
+            callback = options;
+            options = {};
+        }
+        options = options || {};
+        callback = callback || function(){};
+
         var untarWorker = new Worker("thirdparty/bitjs/bitjs-untar.min.js");
-        var root = StartupState.project("root");
+        var root = options.root || StartupState.project("root");
         var pending = null;
 
         function extract(path, data, callback) {

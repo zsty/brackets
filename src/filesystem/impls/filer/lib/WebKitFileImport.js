@@ -153,7 +153,7 @@ define(function (require, exports, module) {
         function handleZipFile(deferred, file, filename, buffer, encoding) {
             var basename = Path.basename(filename);
 
-            ArchiveUtils.unzip(buffer, function(err) {
+            ArchiveUtils.unzip(buffer, { root: parentPath }, function(err) {
                 if (err) {
                     onError(deferred, filename, new Error(Strings.DND_ERROR_UNZIP));
                     return;
@@ -166,7 +166,7 @@ define(function (require, exports, module) {
         function handleTarFile(deferred, file, filename, buffer, encoding) {
             var basename = Path.basename(filename);
 
-            ArchiveUtils.untar(buffer, function(err) {
+            ArchiveUtils.untar(buffer, { root: parentPath }, function(err) {
                 if (err) {
                     onError(deferred, filename, new Error(Strings.DND_ERROR_UNTAR));
                     return;
