@@ -44,18 +44,6 @@ define(function (require, exports, module) {
         consoleEl = null,
         maxLogs = 30;
 
-    function count(data, type) {
-        var i = 0,
-            result = 0;
-
-        for (i = 0; i < data.length; i++) {
-            if (data[i].type === type && (!livePreviewOnly)) {
-                result++;
-            }
-        }
-        return result;
-    }
-
     function clear() {
         consoleEl.html("");
         unreadCount = 0;
@@ -75,37 +63,22 @@ define(function (require, exports, module) {
       panel.$panel.find(".console div").removeClass("new-log");
     }
 
-    function add(type, args) {
-
-        // Display the console when user code triggers console.* functions,
-        // but only if the console was not already closed by the user.
-        if(!panel.isVisible() && !wasClosedByUser) {
-            showPanel();
-        }
-
-        if(!panel.isVisible()) {
-          unreadCount++;
-        }
-
-        if(unreadCount > 0) {
-          showConsoleTab.removeClass("has-unseen-logs").width(showConsoleTab.width());
-          showConsoleTab.addClass("has-unseen-logs");
-        }
-
-        var logContent = args[0];
-
-        if(typeof logContent === "object") {
-          logContent = JSON.stringify(logContent);
-        }
-
+    function addLine(type, item) {
         var $element = $("<div class='log-entry " + type + "'></div>");
 
-        if(logContent.length === 0){
-          logContent = Strings.CONSOLE_EMPTY_STRING;
+        if(typeof item === "object") {
+          item = JSON.stringify(item);
+        } else {
+            // Force non-strings to show as string.
+            item = "" + item;
+        }
+
+        if(!item.length) {
+          item = Strings.CONSOLE_EMPTY_STRING;
           $element.addClass("empty-string");
         }
 
-        $element.text(logContent);
+        $element.text(item);
 
         if(panel.isVisible()) {
           $element.addClass("new-log");
@@ -121,6 +94,27 @@ define(function (require, exports, module) {
         consoleEl.animate({ scrollTop: consoleEl[0].scrollHeight }, 10);
     }
 
+    function add(type, args) {
+        // Display the console when user code triggers console.* functions,
+        // but only if the console was not already closed by the user.
+        if(!panel.isVisible() && !wasClosedByUser) {
+            showPanel();
+        }
+
+        if(!panel.isVisible()) {
+          unreadCount++;
+        }
+
+        if(unreadCount > 0) {
+          showConsoleTab.removeClass("has-unseen-logs").width(showConsoleTab.width());
+          showConsoleTab.addClass("has-unseen-logs");
+        }
+
+        args.forEach(function(arg) {
+            addLine(type, arg);
+        });
+    }
+
     function togglePanel() {
         if (panel.isVisible()) {
             hidePanel();
@@ -131,7 +125,7 @@ define(function (require, exports, module) {
     }
 
     AppInit.htmlReady(function () {
-        ExtensionUtils.loadStyleSheet(module, "../stylesheets/consoleTheme.css");
+        ExtensionUtils.loadStyleSheet(module, "../stylesheets/consoleTheme.less");
 
         // Localization & Creation of HTMl Elements
         panelHTML = Mustache.render(panelHTML, Strings);
