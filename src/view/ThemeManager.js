@@ -169,7 +169,8 @@ define(function (require, exports, module) {
     function lessifyTheme(content, theme) {
         var deferred = new $.Deferred();
 
-        less.render("#editor-holder {" + content + "\n}", {
+        // XXXBramble: we pre-wrap our themes in #editor-holder {...} vs. here.
+        less.render(content, {
             rootpath: fixPath(stylesPath),
             filename: fixPath(theme.file._path)
         }, function (err, tree) {
@@ -247,13 +248,15 @@ define(function (require, exports, module) {
 
         if (theme) {
             require(['text!' + theme.file._path], function(content) {
+                content = content.replace(commentRegex, "");
+
                 // If we already have CSS, don't bother with LESS.
                 if(Path.extname(theme.file._path) === ".css") {
-                    return processCSS(content);
+                    processCSS(content);
+                } else {
+                    lessifyTheme(content, theme)
+                    .then(processCSS);
                 }
-
-                lessifyTheme(content.replace(commentRegex, ""), theme)
-                .then(processCSS);
             });
         }
 
