@@ -1602,7 +1602,7 @@ define(function (require, exports, module) {
         ProjectManager.showInTree(MainViewManager.getCurrentlyViewedFile(MainViewManager.ACTIVE_PANE));
     }
 
-    /** 
+    /**
      * Show error dialog
      * @param {string} err Error message to be displayed to the user
      * @param {callback} callback
@@ -1612,7 +1612,7 @@ define(function (require, exports, module) {
             DefaultDialogs.DIALOG_ID_ERROR,
             Strings.ERROR_DIALOG_HEADER,
             StringUtils.format(
-                Strings.UNEXPECTED_ERROR,
+                Strings.GENERIC_ERROR,
                 err),
             [{
                 className : Dialogs.DIALOG_BTN_CLASS_PRIMARY,
@@ -1635,7 +1635,7 @@ define(function (require, exports, module) {
             if (stats.type === "DIRECTORY") {
                 return ArchiveUtils.archive(path);
             }
-            
+
             // Prepare file for download
             fs.readFile(path, {encoding: null}, function(err, data){
                 if (err) {
