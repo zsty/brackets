@@ -57,10 +57,6 @@
              */
             outline: 1px solid transparent;
         }
-        #iframe-warning {
-            visibility: hidden;
-            padding: 20px;
-        }
 
         @-webkit-keyframes sk-rotatePlane {
             0% {
@@ -100,6 +96,12 @@
             height: 100vh;
             visibility: hidden;
         }
+
+        #iframe-warning {
+            display: none;
+            padding: 20px;
+            font-size: 16px;
+        }
     </style>
 
     <!-- NOTE: All scripts must be external for Chrome App support: http://developer.chrome.com/apps/app_csp.html -->
@@ -119,9 +121,9 @@
     <div id="spinner-container">
         <div class="sk-spinner sk-spinner-rotating-plane"></div>
         <div id="iframe-warning">
-            <h1>Bramble must be hosted</h1> 
+            <h1>Bramble must be hosted</h1>
             <p>Oops! Bramble was loaded directly, outside of an iframe. For security it must be hosted in an iframe.</p>
-            <p>For local development, you can run Bramble in an iframe by using <a href="hosted.html">hosted.html</a> instead of <a href="index.html">index.html</a>.</p>
+            <p>For local development, you can run Bramble in an iframe by using <a href="hosted.html">hosted.html</a> instead of <strong>index.html<strong>.</p>
         </div>
     </div>
 
