@@ -71,8 +71,7 @@
         "test": "grunt test && grunt build-browser-compressed",
         "server": "http-server -p 8000 --cors",
         "prestart": "npm run localize",
-        "start": "npm run server",
-        "poststart": "npm run unlocalize"
+        "start": "npm run server && npm run unlocalize"
     },
     "license": "MIT"
 }
