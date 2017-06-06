@@ -178,9 +178,7 @@ define(function (require, exports, module) {
 
                         return deferred.promise();
                     }, false)
-                    .done(function() {
-                        callback();
-                    })
+                    .done(callback)
                     .fail(function() {
                         callback(new Error("unable to find image paths"));
                     });
