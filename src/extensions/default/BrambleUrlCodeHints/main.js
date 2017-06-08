@@ -39,7 +39,6 @@ define(function (require, exports, module) {
         ExtensionUtils  = brackets.getModule("utils/ExtensionUtils"),
         EditorManager   = brackets.getModule("editor/EditorManager"),
         Path            = brackets.getModule("filesystem/impls/filer/FilerUtils").Path,
-        Content         = brackets.getModule("filesystem/impls/filer/lib/content"),
         StartupState    = brackets.getModule("bramble/StartupState"),
         Camera          = require("camera/index"),
         Selfie          = require("selfie"),
@@ -157,8 +156,7 @@ define(function (require, exports, module) {
                         var filename;
 
                         if (!entry._isDirectory) {
-                            if (ProjectManager.shouldShow(entry) &&
-                                Content.isImage(Path.extname(entry._name))) {
+                            if (ProjectManager.shouldShow(entry)) {
                                 // code hints show the unencoded string so the
                                 // choices are easier to read.  The encoded string
                                 // will still be inserted into the editor.
