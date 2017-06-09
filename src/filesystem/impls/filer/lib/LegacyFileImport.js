@@ -42,11 +42,13 @@ define(function (require, exports, module) {
         LanguageManager = require("language/LanguageManager"),
         StartupState    = require("bramble/StartupState"),
         ArchiveUtils    = require("filesystem/impls/filer/ArchiveUtils"),
-        FilerUtils      = require("filesystem/impls/filer/FilerUtils");
+        FilerUtils      = require("filesystem/impls/filer/FilerUtils"),
+        ImageResizer    = require("filesystem/impls/filer/lib/ImageResizer");
 
     function LegacyFileImport(options) {
         this.byteLimit = options.byteLimit;
         this.archiveByteLimit = options.archiveByteLimit;
+        this.resizableImageLimit = options.resizableImageLimit;
     }
 
     // We want event.dataTransfer.files for legacy browsers.
@@ -131,7 +133,15 @@ define(function (require, exports, module) {
         function rejectImport(item) {
             var ext = Path.extname(item.name);
             var isArchive = Content.isArchive(ext);
-            var sizeLimit =  isArchive ? archiveByteLimit : byteLimit;
+
+            var sizeLimit
+            if(Content.isResizableImage(ext)) {
+                sizeLimit = resizableImageLimit;
+            } else if(isArchive) {
+                sizeLimit = archiveByteLimit;
+            } else {
+                sizeLimit = byteLimit;
+            }
             var sizeLimitMb = (sizeLimit / (1024 * 1024)).toString();
 
             if (item.size > sizeLimit) {

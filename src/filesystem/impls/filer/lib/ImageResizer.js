@@ -8,7 +8,7 @@ define(function (require, exports, module) {
     var Content = require("filesystem/impls/filer/lib/content");
     var Path = require("filesystem/impls/filer/FilerUtils").Path;
     var decodePath = require("filesystem/impls/filer/FilerUtils").decodePath;
-    var base64ToBuffer = require("filesystem/impls/filer/FilerUtils").base64ToBuffer
+    var base64ToBuffer = require("filesystem/impls/filer/FilerUtils").base64ToBuffer;
 
     function ImageResizer(path, data) {
         this.path = decodePath(path);

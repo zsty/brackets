@@ -42,11 +42,13 @@ define(function (require, exports, module) {
         LanguageManager = require("language/LanguageManager"),
         StartupState    = require("bramble/StartupState"),
         ArchiveUtils    = require("filesystem/impls/filer/ArchiveUtils"),
-        FilerUtils      = require("filesystem/impls/filer/FilerUtils");
+        FilerUtils      = require("filesystem/impls/filer/FilerUtils"),
+        ImageResizer    = require("filesystem/impls/filer/lib/ImageResizer");
 
     function WebKitFileImport(options) {
         this.byteLimit = options.byteLimit;
         this.archiveByteLimit = options.archiveByteLimit;
+        this.resizableImageLimit = options.resizableImageLimit;
     }
 
     // We want event.dataTransfer.items for WebKit style browsers
@@ -54,6 +56,7 @@ define(function (require, exports, module) {
         var items = source instanceof DataTransfer ? source.items : source;
         var byteLimit = this.byteLimit;
         var archiveByteLimit = this.archiveByteLimit;
+        var resizableImageLimit = this.resizableImageLimit;
         var pathList = [];
         var errorList = [];
         var started = 0;
@@ -184,7 +187,15 @@ define(function (require, exports, module) {
             var ext = Path.extname(filename);
             var mime = Content.mimeFromExt(ext);
             var isArchive = Content.isArchive(ext);
-            var sizeLimit =  isArchive ? archiveByteLimit : byteLimit;
+
+            var sizeLimit
+            if(Content.isResizableImage(ext)) {
+                sizeLimit = resizableImageLimit;
+            } else if(isArchive) {
+                sizeLimit = archiveByteLimit;
+            } else {
+                sizeLimit = byteLimit;
+            }
             var sizeLimitMb = (sizeLimit / (1024 * 1024)).toString();
 
             if (size > sizeLimit) {

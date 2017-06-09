@@ -10,12 +10,18 @@ define(function (require, exports, module) {
         FileSystemCache     = require("filesystem/impls/filer/FileSystemCache"),
         BrambleStartupState = brackets.getModule("bramble/StartupState");
 
+    // 1 MB
+    var MB = 1024 * 1024;
+
     // 3MB size limit for imported files. If you change this, also change the
     // error message we generate in rejectImport() below!
-    var byteLimit = 3145728;
+    var byteLimit = 3 * MB;
 
     // 5MB size limit for imported archives (zip & tar)
-    var archiveByteLimit = 5242880;
+    var archiveByteLimit = 5 * MB;
+
+    // 12MB size limit for imported image files that can be auto-resized (png, jpg)
+    var resizableImageLimit = 12 * MB;
 
     /**
      * XXXBramble: the Drag and Drop and File APIs are a mess of incompatible
@@ -37,7 +43,8 @@ define(function (require, exports, module) {
     function chooseImportStrategy(source) {
         var options = {
             byteLimit: byteLimit,
-            archiveByteLimit: archiveByteLimit
+            archiveByteLimit: archiveByteLimit,
+            resizableImageLimit: resizableImageLimit
         };
 
         if(source instanceof FileList) {
