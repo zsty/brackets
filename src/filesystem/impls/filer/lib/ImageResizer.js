@@ -13,6 +13,7 @@ define(function (require, exports, module) {
     function ImageResizer(path, data) {
         this.path = decodePath(path);
         this.type = Content.mimeFromExt(Path.extname(this.path));
+        this.size = data.length;
         this.blob = new Blob([data], {type: this.type});
         this.url = URL.createObjectURL(this.blob);
         this.canvas = document.createElement('canvas');
@@ -23,12 +24,14 @@ define(function (require, exports, module) {
     ImageResizer.prototype.resize = function(callback) {
         var self = this;
         var buffer;
-        var scale = 1; // initial scale factor of 1 to deal with "only huge because huge dpi" images
-        var step = scale / 2;
+
         var target = 250 * 1024;
         var errorThreshold = 20 * 2014;
         var passes = 0;
         var maxPasses = 5;
+        // do a "best guess" initial scale
+        var scale = Math.sqrt(target/self.size);
+        var step = scale / 2;
 
         function finish(err, buffer) {
             self.cleanup();
@@ -36,7 +39,7 @@ define(function (require, exports, module) {
         }
 
         function resizePass() {
-            console.log("resizePass", passes, scale);
+            console.log("resizePass", passes, "scale", scale);
 
             if(passes++ > maxPasses) {
                 finish(null, buffer);
