@@ -19,6 +19,11 @@ define(function (require, exports, module) {
             return id === "image" || id === "svg";
         },
 
+        isResizableImage: function(ext) {
+            ext = FilerUtils.normalizeExtension(ext);
+            return ext === '.png' || ext === '.jpg' || ext === '.jpeg';
+        },
+
         isHTML: function(ext) {
             var id = _getLanguageId(ext);
             return id === "html";
