@@ -188,7 +188,7 @@ define(function (require, exports, module) {
             var mime = Content.mimeFromExt(ext);
             var isArchive = Content.isArchive(ext);
 
-            var sizeLimit
+            var sizeLimit;
             if(Content.isResizableImage(ext)) {
                 sizeLimit = resizableImageLimit;
             } else if(isArchive) {

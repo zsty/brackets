@@ -56,6 +56,7 @@ define(function (require, exports, module) {
         var files = source instanceof DataTransfer ? source.files : source;
         var byteLimit = this.byteLimit;
         var archiveByteLimit = this.archiveByteLimit;
+        var resizableImageLimit = this.resizableImageLimit;
         var pathList = [];
         var errorList = [];
 
@@ -134,7 +135,7 @@ define(function (require, exports, module) {
             var ext = Path.extname(item.name);
             var isArchive = Content.isArchive(ext);
 
-            var sizeLimit
+            var sizeLimit;
             if(Content.isResizableImage(ext)) {
                 sizeLimit = resizableImageLimit;
             } else if(isArchive) {
