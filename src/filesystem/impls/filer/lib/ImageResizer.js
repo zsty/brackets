@@ -22,9 +22,13 @@ define(function (require, exports, module) {
     };
     ImageResizer.prototype.resize = function(callback) {
         var self = this;
-        var scalingFactor = 0.75;
         var buffer;
+        var scale = 1; // initial scale factor of 1 to deal with "only huge because huge dpi" images
+        var step = scale / 2;
+        var target = 250 * 1024;
+        var errorThreshold = 20 * 2014;
         var passes = 0;
+        var maxPasses = 5;
 
         function finish(err, buffer) {
             self.cleanup();
@@ -32,14 +36,14 @@ define(function (require, exports, module) {
         }
 
         function resizePass() {
-            console.log("resizePass", passes, scalingFactor);
+            console.log("resizePass", passes, scale);
 
-            if(passes++ > 5) {
+            if(passes++ > maxPasses) {
                 finish(null, buffer);
             }
 
-            self.canvas.width = img.width * scalingFactor;
-            self.canvas.height = img.height * scalingFactor;
+            self.canvas.width = img.width * scale;
+            self.canvas.height = img.height * scale;
 
             console.log("width", self.canvas.width, "height", self.canvas.height);
 
@@ -48,14 +52,22 @@ define(function (require, exports, module) {
                 var base64Str = self.canvas.toDataURL(self.type).split(',')[1];
                 buffer = base64ToBuffer(base64Str);
 
-                console.log("result", buffer.length);
-
-                if(isImageTooLarge(buffer.length)) {
-                    scalingFactor /= 1.25;
-                    return resizePass();
+                // Too big?
+                if(buffer.length > target + errorThreshold) {
+                    console.log("Resized image too big", buffer.length);
+                    scale = scale - step;
+                    step /= 2;
+                    resizePass();
                 }
-
-                finish(null, buffer);
+                // Smaller than necessary?
+                else if(buffer.length < target - errorThreshold) {
+                    console.log("Resized image too small", buffer.length);
+                    scale = scale + step;
+                    step /= 2;
+                    resizePass();
+                } else {
+                    finish(null, buffer);
+                }
             })
             .catch(finish);
         }
