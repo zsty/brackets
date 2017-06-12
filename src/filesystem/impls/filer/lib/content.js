@@ -5,11 +5,11 @@ define(function (require, exports, module) {
     "use strict";
 
     var LanguageManager = require('language/LanguageManager');
-    var FilerUtils = require('filesystem/impls/filer/FilerUtils');
     var Sizes = require("filesystem/impls/filer/lib/Sizes");
     var Strings = require("strings");
     var StringUtils = require("utils/StringUtils");
-
+    var FilerUtils = require('filesystem/impls/filer/FilerUtils');
+    var Path = FilerUtils.Path;
 
     function _getLanguageId(ext) {
         ext = FilerUtils.normalizeExtension(ext, true);
