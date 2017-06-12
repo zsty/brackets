@@ -8,15 +8,10 @@ define(function (require, exports, module) {
     var Buffer = require("filesystem/impls/filer/FilerUtils").Buffer;
     var decodePath = require("filesystem/impls/filer/FilerUtils").decodePath;
     var base64ToBuffer = require("filesystem/impls/filer/FilerUtils").base64ToBuffer;
+    var Sizes = require("filesystem/impls/filer/lib/Sizes");
 
     var pica = require("Pica")();
 
-    // 1KB
-    var KB = 1024;
-    // Ideal size for images
-    var TARGET_SIZE_KB = 250 * KB;
-    // Resize error tolerance
-    var TOLERANCE_KB = 20 * KB;
     // Max number of resize passes we allow
     var MAX_RESIZE_PASSES = 5;
 
@@ -40,6 +35,7 @@ define(function (require, exports, module) {
             canvas.toBlob(function(blob) {
                 var fileReader = new FileReader();
                 fileReader.onload = function() {
+                    delete fileReader.onload;
                     var buffer = new Buffer(this.result);
                     callback(null, buffer);
                 };
@@ -61,10 +57,12 @@ define(function (require, exports, module) {
         var buffer;
         var passes = 0;
         // do a "best guess" initial scale
-        var scale = Math.sqrt(TARGET_SIZE_KB / self.size);
+        var scale = Math.sqrt(Sizes.RESIZED_IMAGE_TARGET_SIZE_KB / self.size);
         var step = scale / 2;
 
         function finish(err, buffer) {
+            delete img.onload;
+            delete img.onerror;
             self.cleanup();
             callback(err, buffer);
         }
@@ -92,14 +90,14 @@ define(function (require, exports, module) {
                     buffer = resizedBuffer;
 
                     // Too big?
-                    if(buffer.length > TARGET_SIZE_KB + TOLERANCE_KB) {
+                    if(buffer.length > Sizes.RESIZED_IMAGE_TARGET_SIZE_KB + Sizes.IMAGE_RESIZE_TOLERANCE_KB) {
                         console.log("Resized image too big", buffer.length);
                         scale = scale - step;
                         step /= 2;
                         resizePass();
                     }
                     // Smaller than necessary?
-                    else if(buffer.length < TARGET_SIZE_KB - TOLERANCE_KB) {
+                    else if(buffer.length < Sizes.RESIZED_IMAGE_TARGET_SIZE_KB - Sizes.IMAGE_RESIZE_TOLERANCE_KB) {
                         console.log("Resized image too small", buffer.length);
                         scale = scale + step;
                         step /= 2;
@@ -128,13 +126,5 @@ define(function (require, exports, module) {
         resizer.resize(callback);
     }
 
-    /**
-     * Test if image data size is too big (250K)
-     */
-    function isImageTooLarge(size) {
-        return size > TARGET_SIZE_KB;
-    }
-
     exports.resize = resize;
-    exports.isImageTooLarge = isImageTooLarge;
 });
