@@ -83,10 +83,13 @@ define(function (require, exports, module) {
 
             pica.resize(img, self.canvas)
             .then(function() {
-                self.resizedToBuffer(function(err, buffer) {
+                self.resizedToBuffer(function(err, resizedBuffer) {
                     if(err) {
                         return finish(err);
                     }
+
+                    // Retain this buffer, in case it's the best we can do.
+                    buffer = resizedBuffer;
 
                     // Too big?
                     if(buffer.length > TARGET_SIZE_KB + TOLERANCE_KB) {
