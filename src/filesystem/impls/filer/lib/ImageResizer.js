@@ -56,9 +56,40 @@ define(function (require, exports, module) {
         var self = this;
         var buffer;
         var passes = 0;
+
         // do a "best guess" initial scale
-        var scale = Math.sqrt(Sizes.RESIZED_IMAGE_TARGET_SIZE_KB / self.size);
+        var TARGET_SIZE = Sizes.RESIZED_IMAGE_TARGET_SIZE_KB;
+        var scale = Math.sqrt(TARGET_SIZE / self.size);
         var step = scale / 2;
+
+        function unexpectedInitialGuess(bufferSize) {
+            // As we're using a binary search, we know that our initial guess
+            // "cannot" be below target/2 and 3*target/2. If it is, we guessed
+            // wrong and should redo our initial guess.
+            if (bufferSize < TARGET_SIZE * 0.5) {
+                console.log("wrong initial scale: resulting image is too large")
+                return true;
+            }
+            if (bufferSize > TARGET_SIZE * 0.66) {
+                console.log("wrong initial scale: resulting image is too small")
+                return true;
+            }
+            return false;
+        }
+
+        function redoInitialGuess(currentScale, bufferSize) {
+            // Given the current scale and size, what would the original
+            // image size be if it had run through our image resizer?
+            var csSquared = currentScale * currentScale;
+            var DERIVED_ORIGINAL_SIZE = bufferSize / csSquared;
+
+            // Given that original size, what would be a better scale
+            // at which to likely hit our target filesize?
+            scale = Math.sqrt(TARGET_SIZE / DERIVED_ORIGINAL_SIZE);
+            step = scale / 2;
+
+             console.log("recomputed initial guess:", scale)
+        }
 
         function finish(err, buffer) {
             delete img.onload;
@@ -88,21 +119,37 @@ define(function (require, exports, module) {
 
                     // Retain this buffer, in case it's the best we can do.
                     buffer = resizedBuffer;
+                    var bufferSize = buffer.length;
 
                     // Too big?
-                    if(buffer.length > Sizes.RESIZED_IMAGE_TARGET_SIZE_KB + Sizes.IMAGE_RESIZE_TOLERANCE_KB) {
-                        console.log("Resized image too big", buffer.length);
-                        scale = scale - step;
-                        step /= 2;
+                    if(bufferSize > TARGET_SIZE + Sizes.IMAGE_RESIZE_TOLERANCE_KB) {
+                        console.log("Resized image too big", bufferSize);
+
+                        if (passes===1 && unexpectedInitialGuess(bufferSize)) {
+                            redoInitialGuess(scale, bufferSize);
+                        } else {
+                            scale = scale - step;
+                            step /= 2;
+                        }
+
                         resizePass();
                     }
+
                     // Smaller than necessary?
-                    else if(buffer.length < Sizes.RESIZED_IMAGE_TARGET_SIZE_KB - Sizes.IMAGE_RESIZE_TOLERANCE_KB) {
-                        console.log("Resized image too small", buffer.length);
-                        scale = scale + step;
-                        step /= 2;
+                    else if(bufferSize < TARGET_SIZE - Sizes.IMAGE_RESIZE_TOLERANCE_KB) {
+                        console.log("Resized image too small", bufferSize);
+
+                        if (passes===1 && unexpectedInitialGuess(bufferSize)) {
+                            redoInitialGuess(scale, bufferSize);
+                        } else {
+                            scale = scale + step;
+                            step /= 2;
+                        }
+
                         resizePass();
-                    } else {
+                    }
+
+                    else {
                         finish(null, buffer);
                     }
                 });
