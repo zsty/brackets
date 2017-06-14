@@ -67,11 +67,9 @@ define(function (require, exports, module) {
             // "cannot" be below target/2 and 3*target/2. If it is, we guessed
             // wrong and should redo our initial guess.
             if (bufferSize < TARGET_SIZE * 0.5) {
-                console.log("wrong initial scale: resulting image is too large")
                 return true;
             }
             if (bufferSize > TARGET_SIZE * 0.66) {
-                console.log("wrong initial scale: resulting image is too small")
                 return true;
             }
             return false;
@@ -87,8 +85,6 @@ define(function (require, exports, module) {
             // at which to likely hit our target filesize?
             scale = Math.sqrt(TARGET_SIZE / DERIVED_ORIGINAL_SIZE);
             step = scale / 2;
-
-             console.log("recomputed initial guess:", scale)
         }
 
         function finish(err, buffer) {
@@ -99,16 +95,12 @@ define(function (require, exports, module) {
         }
 
         function resizePass() {
-            console.log("resizePass", passes, "scale", scale);
-
             if(passes++ > MAX_RESIZE_PASSES) {
                 return finish(null, buffer);
             }
 
             self.canvas.width = img.width * scale;
             self.canvas.height = img.height * scale;
-
-            console.log("width", self.canvas.width, "height", self.canvas.height);
 
             pica.resize(img, self.canvas)
             .then(function() {
@@ -123,8 +115,6 @@ define(function (require, exports, module) {
 
                     // Too big?
                     if(bufferSize > TARGET_SIZE + Sizes.IMAGE_RESIZE_TOLERANCE_KB) {
-                        console.log("Resized image too big", bufferSize);
-
                         if (passes===1 && unexpectedInitialGuess(bufferSize)) {
                             redoInitialGuess(scale, bufferSize);
                         } else {
@@ -137,8 +127,6 @@ define(function (require, exports, module) {
 
                     // Smaller than necessary?
                     else if(bufferSize < TARGET_SIZE - Sizes.IMAGE_RESIZE_TOLERANCE_KB) {
-                        console.log("Resized image too small", bufferSize);
-
                         if (passes===1 && unexpectedInitialGuess(bufferSize)) {
                             redoInitialGuess(scale, bufferSize);
                         } else {
@@ -149,6 +137,7 @@ define(function (require, exports, module) {
                         resizePass();
                     }
 
+                    // We're done, use this one
                     else {
                         finish(null, buffer);
                     }
