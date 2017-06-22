@@ -49,14 +49,13 @@ define(function (require, exports, module) {
         return BlobUtils.getUrl(file.fullPath);
     }
 
-
     /**
      * Whether or not this is an image, or an SVG image (vs SVG XML file).
      */
     function isVideo(fullPath) {
         var lang = LanguageManager.getLanguageForPath(fullPath);
         var id = lang.getId();
-        return (fullPath.indexOf(".mp4") > -1);
+        return id === "video";
     }
 
     /**
@@ -82,27 +81,22 @@ define(function (require, exports, module) {
         setTimeout(function(){
             console.log("After timeout");
             console.log(_getImageUrl(file));
-            that.$imagePreview.attr("src", _getImageUrl(that.file));
+            that.$videoEl.attr("src", _getImageUrl(that.file));
         }, 1000);
-
 
         $container.append(this.$el);
 
         this._naturalWidth = 0;
         this._naturalHeight = 0;
-        this._scale = 100;           // 100%
-        this._scaleDivInfo = null;   // coordinates of hidden scale sticker
 
         this.relPath = ProjectManager.makeProjectRelativeIfPossible(this.file.fullPath);
 
-        this.$imagePath = this.$el.find(".image-path");
-        this.$imagePreview = this.$el.find("video");
-        this.$imageData = this.$el.find(".image-data");
+        // this.$imagePath = this.$el.find(".image-path");
+        this.$videoEl = this.$el.find("video");
+        this.$videoData = this.$el.find(".video-data");
 
-        this.$image = this.$el.find(".image");
-        this.$imageScale = this.$el.find(".image-scale");
-        this.$imagePreview.on("load", _.bind(this._onImageLoaded, this));
-        this.$imagePreview.on("error", _.bind(console.error, console));
+        this.$videoEl.on("canplay", _.bind(this._onVideoLoaded, this));
+        this.$videoEl.on("error", _.bind(console.error, console));
 
         _viewers[file.fullPath] = this;
     }
@@ -127,138 +121,23 @@ define(function (require, exports, module) {
     };
 
     /**
-     * <img>.on("load") handler - updates content of the image view
-     *                            initializes computed values
+     * <video>.on("canplay") handler - updates content of the image view
+     *                             initializes computed values
      *                            installs event handlers
      * @param {Event} e - event
      * @private
      */
-    VideoView.prototype._onImageLoaded = function (e) {
-        console.log("video loaded");
-        this._naturalWidth = e.currentTarget.naturalWidth;
-        this._naturalHeight = e.currentTarget.naturalHeight;
+    VideoView.prototype._onVideoLoaded = function (e) {
+        this._naturalWidth = e.target.videoWidth;
+        this._naturalHeight = e.target.videoHeight;
 
         var extension = FileUtils.getFileExtension(this.file.fullPath);
-
         var stringFormat = Strings.IMAGE_DIMENSIONS;
         var dimensionString = StringUtils.format(stringFormat, this._naturalWidth, this._naturalHeight);
 
-        if (extension === "ico") {
-            dimensionString += " (" + Strings.IMAGE_VIEWER_LARGEST_ICON + ")";
-        }
+        this.$videoData.html(dimensionString);
 
-        // get image size
-        var self = this;
-
-        this.file.stat(function (err, stat) {
-            if (err) {
-                self.$imageData.html(dimensionString);
-            } else {
-                var sizeString = "";
-                if (stat.size) {
-                    sizeString = " &mdash; " + StringUtils.prettyPrintBytes(stat.size, 2);
-                }
-                var dimensionAndSize = dimensionString + sizeString;
-                self.$imageData.html(dimensionAndSize)
-                .attr("title", dimensionAndSize.replace("&mdash;", "-"));
-            }
-        });
-
-        // make sure we always show the right file name
         DocumentManager.on("fileNameChange.VideoView", _.bind(this._onFilenameChange, this));
-
-        // For regular images, we allow image filters and colour extraction.
-        // For SVG, we only do colour extraction.
-        if(!isSVGImage(this.file.fullPath)) {
-            // Image.load(e.currentTarget, this.file.fullPath, function(img) {
-                // _extractColors(self.$el, img);
-            // });
-        }
-        // _extractColors(this.$el, e.currentTarget);
-    };
-
-    /**
-     * Update the scale element
-     * @private
-     */
-    VideoView.prototype._updateScale = function () {
-        var currentWidth = this.$imagePreview.width();
-
-        if (currentWidth && currentWidth < this._naturalWidth) {
-            this._scale = currentWidth / this._naturalWidth * 100;
-            this.$imageScale.text(Math.floor(this._scale) + "%")
-                // Keep the position of the image scale div relative to the image.
-                .css("left", this.$imagePreview.position().left + 5)
-                .show();
-        } else {
-            // Reset everything related to the image scale sticker before hiding it.
-            this._scale = 100;
-            this._scaleDivInfo = null;
-            this.$imageScale.text("").hide();
-        }
-    };
-
-    /**
-     * Check mouse entering/exiting the scale sticker.
-     * Hide it when entering and show it again when exiting.
-     *
-     * @param {number} offsetX mouse offset from the left of the previewing image
-     * @param {number} offsetY mouseoffset from the top of the previewing image
-     * @private
-     */
-    VideoView.prototype._handleMouseEnterOrExitScaleSticker = function (offsetX, offsetY) {
-        var imagePos       = this.$imagePreview.position(),
-            scaleDivPos    = this.$imageScale.position(),
-            imgWidth       = this.$imagePreview.width(),
-            imgHeight      = this.$imagePreview.height(),
-            scaleDivLeft,
-            scaleDivTop,
-            scaleDivRight,
-            scaleDivBottom;
-
-        if (this._scaleDivInfo) {
-            scaleDivLeft   = this._scaleDivInfo.left;
-            scaleDivTop    = this._scaleDivInfo.top;
-            scaleDivRight  = this._scaleDivInfo.right;
-            scaleDivBottom = this._scaleDivInfo.bottom;
-
-            if ((imgWidth + imagePos.left) < scaleDivRight) {
-                scaleDivRight = imgWidth + imagePos.left;
-            }
-
-            if ((imgHeight + imagePos.top) < scaleDivBottom) {
-                scaleDivBottom = imgHeight + imagePos.top;
-            }
-
-        } else {
-            scaleDivLeft   = scaleDivPos.left;
-            scaleDivTop    = scaleDivPos.top;
-            scaleDivRight  = this.$imageScale.width() + scaleDivLeft;
-            scaleDivBottom = this.$imageScale.height() + scaleDivTop;
-        }
-
-        if (this._scaleDivInfo) {
-            // See whether the cursor is no longer inside the hidden scale div.
-            // If so, show it again.
-            if ((offsetX < scaleDivLeft || offsetX > scaleDivRight) ||
-                    (offsetY < scaleDivTop || offsetY > scaleDivBottom)) {
-                this._scaleDivInfo = null;
-                this.$imageScale.show();
-            }
-        } else if ((offsetX >= scaleDivLeft && offsetX <= scaleDivRight) &&
-                (offsetY >= scaleDivTop && offsetY <= scaleDivBottom)) {
-            // Handle mouse inside image scale div.
-            // But hide it only if the pixel under mouse is also in the image.
-            if (offsetX < (imagePos.left + imgWidth) &&
-                    offsetY < (imagePos.top + imgHeight)) {
-                // Remember image scale div coordinates before hiding it.
-                this._scaleDivInfo = {left: scaleDivPos.left,
-                                 top: scaleDivPos.top,
-                                 right: scaleDivRight,
-                                 bottom: scaleDivBottom};
-                this.$imageScale.hide();
-            }
-        }
     };
 
     /**
@@ -277,21 +156,7 @@ define(function (require, exports, module) {
      * Updates the layout of the view
      */
     VideoView.prototype.updateLayout = function () {
-        var $container = this.$el.parent();
-
-        var pos = $container.position(),
-            iWidth = $container.innerWidth(),
-            iHeight = $container.innerHeight(),
-            oWidth = $container.outerWidth(),
-            oHeight = $container.outerHeight();
-
-        // $view is "position:absolute" so
-        //  we have to update the height, width and position
-        this.$el.css({top: pos.top + ((oHeight - iHeight) / 2),
-                        left: pos.left + ((oWidth - iWidth) / 2),
-                        width: iWidth,
-                        height: iHeight});
-        this._updateScale();
+        return;
     };
 
     /*
@@ -309,7 +174,7 @@ define(function (require, exports, module) {
      */
     VideoView.prototype.refresh = function () {
         // Update the DOM node with the src URL
-        this.$imagePreview.attr("src", _getImageUrl(this.file));
+        this.$videoEl.attr("src", _getImageUrl(this.file));
     };
 
     /*
