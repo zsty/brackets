@@ -36,8 +36,8 @@ define(function (require, exports, module) {
         BlobUtils           = require("filesystem/impls/filer/BlobUtils"),
         FileUtils           = require("file/FileUtils"),
         _                   = require("thirdparty/lodash"),
-        Mustache            = require("thirdparty/mustache/mustache"),
-        Image               = require("editor/Image");
+        Mustache            = require("thirdparty/mustache/mustache");
+
 
 
     var _viewers = {};
@@ -48,7 +48,7 @@ define(function (require, exports, module) {
     }
 
     /**
-     * Whether or not this is an image, or an SVG image (vs SVG XML file).
+     * Check if it's a video file TODO: refactor
      */
     function isVideo(fullPath) {
         var lang = LanguageManager.getLanguageForPath(fullPath);
@@ -57,12 +57,12 @@ define(function (require, exports, module) {
     }
 
     /**
-     * ImageView objects are constructed when an image is opened
-     * @see {@link Pane} for more information about where ImageViews are rendered
+     * VideoView objects are constructed when a video is opened
+     * @see {@link Pane} for more information about where VideoViews are rendered
      *
      * @constructor
-     * @param {!File} file - The image file object to render
-     * @param {!jQuery} container - The container to render the image view in
+     * @param {!File} file - The video file object to render
+     * @param {!jQuery} container - The container to render the video view in
      */
     function VideoView(file, $container) {
         this.file = file;
@@ -89,7 +89,6 @@ define(function (require, exports, module) {
 
         this.relPath = ProjectManager.makeProjectRelativeIfPossible(this.file.fullPath);
 
-        // this.$imagePath = this.$el.find(".image-path");
         this.$videoEl = this.$el.find("video");
         this.$videoData = this.$el.find(".video-data");
 
@@ -100,7 +99,7 @@ define(function (require, exports, module) {
     }
 
     /**
-     * DocumentManger.fileNameChange handler - when an image is renamed, we must
+     * DocumentManger.fileNameChange handler - when an video is renamed, we must
      * update the view
      *
      * @param {jQuery.Event} e - event
@@ -111,7 +110,7 @@ define(function (require, exports, module) {
     VideoView.prototype._onFilenameChange = function (e, oldPath, newPath) {
         /*
          * File objects are already updated when the event is triggered
-         * so we just need to see if the file has the same path as our image
+         * so we just need to see if the file has the same path as our video
          */
         if (this.file.fullPath === newPath) {
             this.relPath = ProjectManager.makeProjectRelativeIfPossible(newPath);
@@ -119,8 +118,8 @@ define(function (require, exports, module) {
     };
 
     /**
-     * <video>.on("canplay") handler - updates content of the image view
-     *                             initializes computed values
+     * <video>.on("canplay") handler - updates content of the video view
+     *                            initializes computed values
      *                            installs event handlers
      * @param {Event} e - event
      * @private
@@ -130,6 +129,7 @@ define(function (require, exports, module) {
         this._naturalHeight = e.target.videoHeight;
 
         var extension = FileUtils.getFileExtension(this.file.fullPath);
+        // TODO: Make a VIDEO_DETAILS string and also add video filesize & length
         var stringFormat = Strings.IMAGE_DIMENSIONS;
         var dimensionString = StringUtils.format(stringFormat, this._naturalWidth, this._naturalHeight);
 
@@ -162,13 +162,13 @@ define(function (require, exports, module) {
      */
     VideoView.prototype.destroy = function () {
         delete _viewers[this.file.fullPath];
-        DocumentManager.off(".ImageView");
-        this.$image.off(".ImageView");
+        DocumentManager.off(".VideoView");
+        this.$videoEl.off(".VideoView");
         this.$el.remove();
     };
 
     /*
-     * Refreshes the image preview with what's on disk
+     * Refreshes the video preview with what's on disk
      */
     VideoView.prototype.refresh = function () {
         // Update the DOM node with the src URL
@@ -176,8 +176,8 @@ define(function (require, exports, module) {
     };
 
     /*
-     * Creates an image view object and adds it to the specified pane
-     * @param {!File} file - the file to create an image of
+     * Creates a video view object and adds it to the specified pane
+     * @param {!File} file - the file to create an video of
      * @param {!Pane} pane - the pane in which to host the view
      * @return {jQuery.Promise}
      */
@@ -195,7 +195,7 @@ define(function (require, exports, module) {
 
     /**
      * Handles file system change events so we can refresh
-     *  image viewers for the files that changed on disk due to external editors
+     *  video viewers for the files that changed on disk due to external editors
      * @param {jQuery.event} event - event object
      * @param {?File} file - file object that changed
      * @param {Array.<FileSystemEntry>=} added If entry is a Directory, contains zero or more added children
@@ -219,7 +219,7 @@ define(function (require, exports, module) {
 
     /*
      * Install an event listener to receive all file system change events
-     * so we can refresh the view when changes are made to the image in an external editor
+     * so we can refresh the view when changes are made to the video in an external editor
      */
     FileSystem.on("change", _handleFileSystemChange);
 
