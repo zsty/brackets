@@ -42,10 +42,8 @@ define(function (require, exports, module) {
 
     var _viewers = {};
 
-    var _slice = Function.prototype.call.bind(Array.prototype.slice);
-
     // Get a Blob URL out of the cache
-    function _getImageUrl(file) {
+    function _getVideoUrl(file) {
         return BlobUtils.getUrl(file.fullPath);
     }
 
@@ -70,18 +68,18 @@ define(function (require, exports, module) {
         this.file = file;
 
         this.$el = $(Mustache.render(VideoViewTemplate, {
-            videoUrl: _getImageUrl(file),
+            videoUrl: _getVideoUrl(file),
             Strings: Strings
         }));
 
         console.log("Before timeout");
-        console.log(_getImageUrl(file));
+        console.log(_getVideoUrl(file));
         var that = this;
 
         setTimeout(function(){
             console.log("After timeout");
-            console.log(_getImageUrl(file));
-            that.$videoEl.attr("src", _getImageUrl(that.file));
+            console.log(_getVideoUrl(file));
+            that.$videoEl.attr("src", _getVideoUrl(that.file));
         }, 1000);
 
         $container.append(this.$el);
