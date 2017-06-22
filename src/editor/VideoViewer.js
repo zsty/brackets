@@ -172,7 +172,7 @@ define(function (require, exports, module) {
      */
     VideoView.prototype.refresh = function () {
         // Update the DOM node with the src URL
-        this.$videoEl.attr("src", _getImageUrl(this.file));
+        this.$videoEl.attr("src", _getVideoUrl(this.file));
     };
 
     /*
