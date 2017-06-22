@@ -23,6 +23,11 @@ define(function (require, exports, module) {
             return id === "image" || id === "svg";
         },
 
+        isVideo: function(ext) {
+            ext = FilerUtils.normalizeExtension(ext);
+            return ext === ".ogg" || ext === ".mp4" || ext == ".webm";
+        },
+
         isResizableImage: function(ext) {
             ext = FilerUtils.normalizeExtension(ext);
             return ext === '.png' || ext === '.jpg' || ext === '.jpeg';
@@ -49,7 +54,7 @@ define(function (require, exports, module) {
 
         isArchive: function(ext) {
             ext = FilerUtils.normalizeExtension(ext);
-            return ext === '.zip' || ext === '.tar'; 
+            return ext === '.zip' || ext === '.tar';
         },
 
         mimeFromExt: function(ext) {
@@ -63,7 +68,7 @@ define(function (require, exports, module) {
             case '.htm':
             // fallsthrough
             case '.htx':
-            // fallsthrough            
+            // fallsthrough
             case '.md':
             // fallsthrough
             case '.markdown':

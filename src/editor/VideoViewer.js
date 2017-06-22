@@ -31,10 +31,13 @@ define(function (require, exports, module) {
         LanguageManager     = require("language/LanguageManager"),
         MainViewFactory     = require("view/MainViewFactory"),
         Strings             = require("strings"),
+        Filer               = require("filesystem/impls/filer/BracketsFiler"),
+        Path                = Filer.Path,
         StringUtils         = require("utils/StringUtils"),
         FileSystem          = require("filesystem/FileSystem"),
         BlobUtils           = require("filesystem/impls/filer/BlobUtils"),
         FileUtils           = require("file/FileUtils"),
+        Content             = require("filesystem/impls/filer/lib/Content"),
         _                   = require("thirdparty/lodash"),
         Mustache            = require("thirdparty/mustache/mustache");
 
@@ -51,9 +54,7 @@ define(function (require, exports, module) {
      * Check if it's a video file TODO: refactor
      */
     function isVideo(fullPath) {
-        var lang = LanguageManager.getLanguageForPath(fullPath);
-        var id = lang.getId();
-        return id === "video";
+        return Content.isVideo(Path.extname(fullPath));
     }
 
     /**
