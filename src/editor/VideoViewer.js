@@ -35,7 +35,7 @@ define(function (require, exports, module) {
         Path                = Filer.Path,
         StringUtils         = require("utils/StringUtils"),
         FileSystem          = require("filesystem/FileSystem"),
-        BlobUtils           = require("filesystem/impls/filer/BlobUtils"),
+        UrlCache            = require("filesystem/impls/filer/UrlCache"),
         FileUtils           = require("file/FileUtils"),
         Content             = require("filesystem/impls/filer/lib/Content"),
         _                   = require("thirdparty/lodash"),
@@ -47,7 +47,7 @@ define(function (require, exports, module) {
 
     // Get a Blob URL out of the cache
     function _getVideoUrl(file) {
-        return BlobUtils.getUrl(file.fullPath);
+        return UrlCache.getUrl(file.fullPath);
     }
 
     /**
