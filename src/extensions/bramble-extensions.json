@@ -154,5 +154,13 @@
                 "src/extensions/default/brackets-show-whitespace/styles/main.css"
             ]
         }
+    },
+    {
+        "path": "extensions/default/PDFView",
+        "less": {
+            "dist/extensions/default/PDFView/styles/styles.css": [
+                "src/extensions/default/PDFView/styles/styles.less"
+            ]
+        }
     }
 ]
