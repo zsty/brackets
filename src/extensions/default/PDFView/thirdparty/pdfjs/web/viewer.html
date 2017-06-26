@@ -46,7 +46,7 @@ See https://github.com/adobe-type-tools/cmap-resources
       * https://github.com/mozilla/pdf.js/blob/593dec1bb7aec1802abf8268137b0f7adab2ae32/web/ui_utils.js#L211
     -->
     <script>
-      (function(hash) {
+      (function(qs) {
 
         function parseQueryString(query) {
           var parts = query.split('&');
@@ -60,11 +60,12 @@ See https://github.com/adobe-type-tools/cmap-resources
           return params;
         }
 
-        var hashParams = parseQueryString(hash);
-        if ('locale' in hashParams) {
-          PDFJS.locale = hashParams['locale'];
+        var params = parseQueryString(qs);
+        if ('locale' in params) {
+          PDFJS.locale = params['locale'];
         }
-      }(document.location.hash.substring(1)))
+
+      }(document.location.search.substring(1)))
     </script>
 
     <script src="viewer.js"></script>
