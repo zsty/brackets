@@ -35,11 +35,9 @@ define(function (require, exports, module) {
         Mustache            = brackets.getModule("thirdparty/mustache/mustache"),
         PDFViewTemplate     = require("text!htmlContent/pdf-view.html");
 
-    var _viewers = {};
-
     // Get a URL out of the cache
-    function _getPDFUrl(file) {
-        return encodeURIComponent(UrlCache.getUrl(file.fullPath));
+    function _getPDFUrl(path) {
+        return encodeURIComponent(UrlCache.getUrl(path));
     }
 
     /**
@@ -52,13 +50,15 @@ define(function (require, exports, module) {
      */
     function PDFView(file, $container) {
         this.file = file;
+        var fullPath = file.fullPath;
+        this.relPath = ProjectManager.makeProjectRelativeIfPossible(fullPath);
+
+        this.$container = $container;
         this.$el = $(Mustache.render(PDFViewTemplate, {
-            pdfUrl: _getPDFUrl(file)
+            pdfUrl: _getPDFUrl(fullPath),
+            locale: brackets.getLocale()
         }));
-
         $container.append(this.$el);
-
-        this.relPath = ProjectManager.makeProjectRelativeIfPossible(this.file.fullPath);
 
 //        this.$imagePath = this.$el.find(".image-path");
 //        this.$imagePreview = this.$el.find(".image-preview");
@@ -68,8 +68,6 @@ define(function (require, exports, module) {
 //        this.$imageScale = this.$el.find(".image-scale");
 //        this.$imagePreview.on("load", _.bind(this._onImageLoaded, this));
 //        this.$imagePreview.on("error", _.bind(console.error, console));
-
-        _viewers[file.fullPath] = this;
     }
 
     /**
@@ -121,7 +119,7 @@ define(function (require, exports, module) {
      * Updates the layout of the view
      */
     PDFView.prototype.updateLayout = function () {
-        var $container = this.$el.parent();
+        var $container = this.$container;
 
         var pos = $container.position(),
             iWidth = $container.innerWidth(),
@@ -143,8 +141,6 @@ define(function (require, exports, module) {
      * Destroys the view
      */
     PDFView.prototype.destroy = function () {
-//        delete _viewers[this.file.fullPath];
-//        DocumentManager.off(".PDFView");
         this.$el.remove();
     };
 
@@ -152,6 +148,7 @@ define(function (require, exports, module) {
      * Refreshes the image preview with what's on disk
      */
     PDFView.prototype.refresh = function () {
+        console.log("refresh");
         // Update the DOM node with the src URL
         // TODO
         //this.$imagePreview.attr("src", _getPDFUrl(this.file));
@@ -165,14 +162,16 @@ define(function (require, exports, module) {
      */
     function create(file, pane) {
         var view = pane.getViewForPath(file.fullPath);
-debugger;
         if (view) {
+            console.log("found view, showing", file);
             pane.showView(view);
         } else {
+            console.log("no view found, creating", file);
             view = new PDFView(file, pane.$content);
             pane.addView(view, true);
         }
-        return new $.Deferred().resolve().promise();
+
+        return new $.Deferred().resolve(view.getFile()).promise();
     }
 
     /**
