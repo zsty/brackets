@@ -163,7 +163,8 @@
             ]
         },
         "copy": [
-            "extensions/extra/PDFView/thirdparty/**/*"
+            "extensions/extra/PDFView/thirdparty/**/*",
+            "extensions/extra/PDFView/htmlContent/viewer.html"
         ]
     }
 ]
