@@ -156,11 +156,14 @@
         }
     },
     {
-        "path": "extensions/default/PDFView",
+        "path": "extensions/extra/PDFView",
         "less": {
-            "dist/extensions/default/PDFView/styles/styles.css": [
-                "src/extensions/default/PDFView/styles/styles.less"
+            "dist/extensions/extra/PDFView/styles/styles.css": [
+                "src/extensions/extra/PDFView/styles/styles.less"
             ]
-        }
+        },
+        "copy": [
+            "extensions/extra/PDFView/thirdparty/**/*"
+        ]
     }
 ]
