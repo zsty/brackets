@@ -26,7 +26,8 @@
         PDFJS.locale = params["locale"];
     }
 
-    $(function() {
+    // Previous/Next navigation
+    window.addEventListener("DOMContentLoaded", function () {
         // TODO: need buttons for next/previous.  Maybe reuse or do something like
         // what is already in the viewer (which will get us the l10n we want for free):
 
@@ -66,6 +67,6 @@
             PDFViewerApplication.eventBus.dispatch("lastpage");
         }
 
-    });
+    }, false);
 
 }(document.location.search.substring(1), window.PDFJS, window.PDFViewerApplication));
