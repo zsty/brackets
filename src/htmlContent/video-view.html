@@ -2,20 +2,22 @@
     <div class="video-data"></div>
     <div class="video-wrapper">
         <video controls>
-          <source src="{{ videoUrl }}" type="video/mp4">
+          <source src="{{ videoUrl }}" type="video/{{ videoType }}">
         </video>
     </div>
-    <p>Embed Code</p>
-<pre>
-&lt;video controls&gt;
-  &lt;source src="{{ videoUrl }}" type="video/mp4"&gt;
-&lt;/video&gt;
-</pre>
-<h3>Some additional attributes for the video element</h3>
-<p>Might make this into a checkbox UI that modifies the snipopet automatically</p>
-<ul>
-    <li>autoplay - start video automatically</li>
-    <li>controls - show controls on video</li>
-    <li>muted - disable audio</li>
-</ul>
+
+    <h2>Video Options</h2>
+
+    <ul class="tag-options">
+        <li><label><input type="checkbox" checked setting="controls" /> <span class="attribute-name">controls</span> &mdash; Show video controls</label></li>
+        <li><label><input type="checkbox" setting="autoplay" /> <span class="attribute-name">autoplay</span> &mdash; Start playing the video automatically</label></li>
+        <li><label><input type="checkbox" setting="loop" /> <span class="attribute-name">loop</span> &mdash; Restart the video when it is over</label></li>
+        <li><label><input type="checkbox" setting="muted" /> <span class="attribute-name">muted</span> &mdash; Disable audio</label></li>
+    </ul>
+
+    <div class="code-wrapper">
+        <pre></pre>
+        <h2>Copy &amp; paste the code above to add this video to an HTML page</h2>
+    </div>
+
 </div>

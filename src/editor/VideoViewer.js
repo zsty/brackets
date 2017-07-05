@@ -37,17 +37,23 @@ define(function (require, exports, module) {
         FileSystem          = require("filesystem/FileSystem"),
         UrlCache            = require("filesystem/impls/filer/UrlCache"),
         FileUtils           = require("file/FileUtils"),
-        Content             = require("filesystem/impls/filer/lib/Content"),
+        Content             = require("filesystem/impls/filer/lib/content"),
         _                   = require("thirdparty/lodash"),
-        Mustache            = require("thirdparty/mustache/mustache");
-
-
+        Mustache            = require("thirdparty/mustache/mustache"),
+        StartupState        = require("bramble/StartupState");
 
     var _viewers = {};
 
     // Get a Blob URL out of the cache
     function _getVideoUrl(file) {
         return UrlCache.getUrl(file.fullPath);
+    }
+
+    // Get a URL out of the cache that you can use in the project HTML
+    function _getLocalVideoUrl(file) {
+        var fullUrl = UrlCache.getFilename(UrlCache.getUrl(file.fullPath));
+        var root = StartupState.project("root");
+        return fullUrl.replace(root,"").replace("/","");
     }
 
     /**
@@ -66,22 +72,27 @@ define(function (require, exports, module) {
      * @param {!jQuery} container - The container to render the video view in
      */
     function VideoView(file, $container) {
+        var that = this;
+
         this.file = file;
+        this.container = $container;
+
+        // Set defaults, and keep track of which video element attributes are enabled.
+        this.videoTagSettings = {
+            controls: true,
+            autoplay: false,
+            loop: false,
+            muted: false
+        }
+
+        // Gets the video type for sample markup
+        this.videoType = Path.extname(this.file.fullPath).replace(".","");
 
         this.$el = $(Mustache.render(VideoViewTemplate, {
             videoUrl: _getVideoUrl(file),
+            videoType: this.videoType,
             Strings: Strings
         }));
-
-        console.log("Before timeout");
-        console.log(_getVideoUrl(file));
-        var that = this;
-
-        setTimeout(function(){
-            console.log("After timeout");
-            console.log(_getVideoUrl(file));
-            that.$videoEl.attr("src", _getVideoUrl(that.file));
-        }, 1000);
 
         $container.append(this.$el);
 
@@ -91,13 +102,66 @@ define(function (require, exports, module) {
         this.relPath = ProjectManager.makeProjectRelativeIfPossible(this.file.fullPath);
 
         this.$videoEl = this.$el.find("video");
+        this.$videoWrapperEl = this.$el.find(".video-wrapper");
+        this.$videoMarkupEl = this.$el.find("pre");
         this.$videoData = this.$el.find(".video-data");
 
-        this.$videoEl.on("canplay", _.bind(this._onVideoLoaded, this));
+        this.$videoEl.attr("src", _getVideoUrl(this.file));
+        this.$videoEl.one("canplay", _.bind(this._onVideoLoaded, this));
         this.$videoEl.on("error", _.bind(console.error, console));
+
+        this.$el.find(".tag-options").on("change", "input", function(){
+            var attribute = $(this).attr("setting");
+            var isEnabled = $(this).is(":checked");
+            that.videoTagSettings[attribute] = isEnabled;
+            that.updateVideoTagMarkup(true);
+        });
+
+
+        this.updateVideoTagMarkup();
 
         _viewers[file.fullPath] = this;
     }
+
+    // Updates the markup used in the preview & the sample markup below
+    VideoView.prototype.updateVideoTagMarkup = function(reload){
+
+        var videoTagAttributesString = "";
+
+        for(var k in this.videoTagSettings) {
+            if(this.videoTagSettings[k]) {
+                videoTagAttributesString = videoTagAttributesString + " " + k;
+                this.$videoEl.attr(k,"");
+            } else {
+                this.$videoEl.removeAttr(k);
+            }
+        }
+
+        var videoTagMarkup =
+`<video`+ videoTagAttributesString +`>
+  <source src="`+ _getLocalVideoUrl(this.file) + `" type="video/mp4">
+</video>`;
+
+
+        this.$videoMarkupEl.text(videoTagMarkup);
+
+        // Reloads the video when one of the attributes is changed
+        // so that the preview reflects the changes
+        if(reload) {
+            this.$videoMarkupEl.one("animationend",function(){
+                $(this).removeClass("pop");
+            });
+
+            this.$videoMarkupEl.addClass("pop");
+
+            var videoWrapperHeight = this.$videoWrapperEl.height();
+
+            this.$videoWrapperEl.css("min-height", videoWrapperHeight);
+            this.$videoEl.one("canplay", _.bind(this._onVideoReloaded, this));
+            this.$videoEl[0].load();
+        }
+    }
+
 
     /**
      * DocumentManger.fileNameChange handler - when an video is renamed, we must
@@ -118,6 +182,13 @@ define(function (require, exports, module) {
         }
     };
 
+
+    /* Removes min-height property */
+    VideoView.prototype._onVideoReloaded = function (e) {
+        var videoWrapperEl = $(this.container).find(".video-wrapper");
+        videoWrapperEl.css("min-height", "auto");
+    };
+
     /**
      * <video>.on("canplay") handler - updates content of the video view
      *                            initializes computed values
@@ -133,6 +204,15 @@ define(function (require, exports, module) {
         // TODO: Make a VIDEO_DETAILS string and also add video filesize & length
         var stringFormat = Strings.IMAGE_DIMENSIONS;
         var dimensionString = StringUtils.format(stringFormat, this._naturalWidth, this._naturalHeight);
+
+
+        this.file.stat(function (err, stat) {
+            var sizeString = "";
+            if (stat.size) {
+                sizeString = " &mdash; " + StringUtils.prettyPrintBytes(stat.size, 2);
+                dimensionString = dimensionString + sizeString;
+            }
+        });
 
         this.$videoData.html(dimensionString);
 
