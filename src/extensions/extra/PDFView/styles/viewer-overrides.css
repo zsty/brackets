@@ -1,0 +1,15 @@
+/**
+ * Various overrides of the built viewer.css file. Keep this as a CSS file vs. LESS
+ */
+
+ #viewerContainer {
+     top: 0;
+ }
+
+div.toolbar {
+    display: none !important;
+}
+
+#sidebarContainer {
+    display: none !important;
+}
