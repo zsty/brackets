@@ -67,6 +67,15 @@
             PDFViewerApplication.eventBus.dispatch("lastpage");
         }
 
+        function print() {
+            PDFViewerApplication.eventBus.dispatch("print");
+        }
+
+        function getFileSize() {
+            var iframe = window.frameElement;
+            return iframe.dataset.fileSize;
+        }
+
     }, false);
 
 }(document.location.search.substring(1), window.PDFJS, window.PDFViewerApplication));

@@ -26,6 +26,7 @@ define(function (require, exports, module) {
 
     var UrlCache            = brackets.getModule("filesystem/impls/filer/UrlCache"),
         Mustache            = brackets.getModule("thirdparty/mustache/mustache"),
+        StringUtils         = brackets.getModule("utils/StringUtils"),
         PDFViewTemplate     = require("text!htmlContent/pdf-view.html");
 
     /**
@@ -40,11 +41,23 @@ define(function (require, exports, module) {
         this.file = file;
         this.$container = $container;
 
-        this.$el = $(Mustache.render(PDFViewTemplate, {
-            pdfUrl: encodeURIComponent(UrlCache.getUrl(file.fullPath)),
-            locale: brackets.getLocale()
-        }));
-        $container.append(this.$el);
+        var self = this;
+
+        file.stat(function(err, stats) {
+            var fileSize;
+            if(err) {
+                fileSize = "Unknown";
+            } else {
+                fileSize = StringUtils.prettyPrintBytes(stats._size, 2);
+            }
+
+            self.$el = $(Mustache.render(PDFViewTemplate, {
+                pdfUrl: encodeURIComponent(UrlCache.getUrl(file.fullPath)),
+                locale: brackets.getLocale(),
+                fileSize: fileSize
+            }));
+            $container.append(self.$el);
+        });
     }
 
     /*
