@@ -53,7 +53,8 @@ define(function (require, exports, module) {
         $splitViewMenu,
         $projectTitle,
         $projectFilesContainer,
-        $workingSetViewsContainer;
+        $workingSetViewsContainer,
+        $projectSizeIndicator;
     var _cmdSplitNone,
         _cmdSplitVertical,
         _cmdSplitHorizontal;
@@ -147,6 +148,14 @@ define(function (require, exports, module) {
         }
     }
 
+    // Updates the project size indicator UI
+    function _updateProjectSizeIndicator() {
+        var percent = Math.random() * 100;
+        console.log(Math.round(percent));
+        $projectSizeIndicator.find(".space-used-bar").css("width", percent + "%");
+        $projectSizeIndicator.find(".space-used").text((percent/100 * 3).toFixed(2));
+    }
+
     /**
      * Update state of splitview and option elements
      * @private
@@ -209,6 +218,7 @@ define(function (require, exports, module) {
         $projectTitle             = $sidebar.find("#project-title");
         $projectFilesContainer    = $sidebar.find("#project-files-container");
         $workingSetViewsContainer = $sidebar.find("#working-set-list-container");
+        $projectSizeIndicator     = $sidebar.find("#project-size-info");
 
         // init
         $sidebar.on("panelResizeStart", function (evt, width) {
@@ -265,6 +275,7 @@ define(function (require, exports, module) {
         });
 
         _updateUIStates();
+        _updateProjectSizeIndicator();
 
         // Tooltips
         $gearMenu.attr("title", Strings.GEAR_MENU_TOOLTIP);
