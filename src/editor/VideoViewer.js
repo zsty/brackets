@@ -86,7 +86,7 @@ define(function (require, exports, module) {
         }
 
         // Gets the video type for sample markup
-        this.videoType = Path.extname(this.file.fullPath).replace(".","");
+        this.videoType = Content.mimeFromExt(Path.extname(this.file.fullPath));
 
         this.$el = $(Mustache.render(VideoViewTemplate, {
             videoUrl: _getVideoUrl(file),
@@ -106,7 +106,6 @@ define(function (require, exports, module) {
         this.$videoMarkupEl = this.$el.find("pre");
         this.$videoData = this.$el.find(".video-data");
 
-        this.$videoEl.attr("src", _getVideoUrl(this.file));
         this.$videoEl.one("canplay", _.bind(this._onVideoLoaded, this));
         this.$videoEl.on("error", _.bind(console.error, console));
 
@@ -117,9 +116,8 @@ define(function (require, exports, module) {
             that.updateVideoTagMarkup(true);
         });
 
-
+        this.$videoEl.attr("src", _getVideoUrl(this.file));
         this.updateVideoTagMarkup();
-
         _viewers[file.fullPath] = this;
     }
 
@@ -138,10 +136,9 @@ define(function (require, exports, module) {
         }
 
         var videoTagMarkup =
-`<video`+ videoTagAttributesString +`>
-  <source src="`+ _getLocalVideoUrl(this.file) + `" type="video/mp4">
-</video>`;
-
+            '<video'+ videoTagAttributesString +'>\n' +
+            '  <source src="'+ _getLocalVideoUrl(this.file) + '" type="' + this.videoType + '">\n'+
+            '</video>';
 
         this.$videoMarkupEl.text(videoTagMarkup);
 
@@ -185,8 +182,7 @@ define(function (require, exports, module) {
 
     /* Removes min-height property */
     VideoView.prototype._onVideoReloaded = function (e) {
-        var videoWrapperEl = $(this.container).find(".video-wrapper");
-        videoWrapperEl.css("min-height", "auto");
+        this.$videoWrapperEl.css("min-height", "auto");
     };
 
     /**
@@ -205,6 +201,7 @@ define(function (require, exports, module) {
         var stringFormat = Strings.IMAGE_DIMENSIONS;
         var dimensionString = StringUtils.format(stringFormat, this._naturalWidth, this._naturalHeight);
 
+        var that = this;
 
         this.file.stat(function (err, stat) {
             var sizeString = "";
@@ -212,9 +209,8 @@ define(function (require, exports, module) {
                 sizeString = " &mdash; " + StringUtils.prettyPrintBytes(stat.size, 2);
                 dimensionString = dimensionString + sizeString;
             }
+            that.$videoData.html(dimensionString);
         });
-
-        this.$videoData.html(dimensionString);
 
         DocumentManager.on("fileNameChange.VideoView", _.bind(this._onFilenameChange, this));
     };
@@ -271,7 +267,7 @@ define(function (require, exports, module) {
             view = new VideoView(file, pane.$content);
             pane.addView(view, true);
         }
-        return new $.Deferred().resolve().promise();
+        return new $.Deferred().resolve(file).promise();
     }
 
     /**

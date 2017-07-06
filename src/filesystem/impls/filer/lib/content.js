@@ -25,7 +25,7 @@ define(function (require, exports, module) {
 
         isVideo: function(ext) {
             ext = FilerUtils.normalizeExtension(ext);
-            return ext === ".ogg" || ext === ".mp4" || ext === ".webm";
+            return ext === ".ogv" || ext === ".mp4" || ext === ".webm";
         },
 
         isResizableImage: function(ext) {
