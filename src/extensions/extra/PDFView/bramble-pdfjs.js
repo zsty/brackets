@@ -71,9 +71,16 @@
             PDFViewerApplication.eventBus.dispatch("print");
         }
 
+        // Size will be a string of the form "256.67 KB"
         function getFileSize() {
             var iframe = window.frameElement;
             return iframe.dataset.fileSize;
+        }
+
+        // Theme will be one of "dark-theme" or "light-theme"
+        function getTheme() {
+            var iframe = window.frameElement;
+            return iframe.dataset.theme;
         }
 
     }, false);

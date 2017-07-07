@@ -27,6 +27,7 @@ define(function (require, exports, module) {
     var UrlCache            = brackets.getModule("filesystem/impls/filer/UrlCache"),
         Mustache            = brackets.getModule("thirdparty/mustache/mustache"),
         StringUtils         = brackets.getModule("utils/StringUtils"),
+        ThemeManager        = brackets.getModule("view/ThemeManager"),
         PDFViewTemplate     = require("text!htmlContent/pdf-view.html");
 
     /**
@@ -54,7 +55,8 @@ define(function (require, exports, module) {
             self.$el = $(Mustache.render(PDFViewTemplate, {
                 pdfUrl: encodeURIComponent(UrlCache.getUrl(file.fullPath)),
                 locale: brackets.getLocale(),
-                fileSize: fileSize
+                fileSize: fileSize,
+                theme: ThemeManager.getCurrentTheme()
             }));
             $container.append(self.$el);
         });
