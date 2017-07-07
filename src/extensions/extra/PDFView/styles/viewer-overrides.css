@@ -13,3 +13,14 @@ div.toolbar {
 #sidebarContainer {
     display: none !important;
 }
+
+/** TODO: this needs some love **/
+.light-theme {
+    background-color: white;
+    color: black;
+}
+
+.dark-theme {
+    background-color: black;
+    color: white;
+}
