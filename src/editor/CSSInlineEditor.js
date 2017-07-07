@@ -363,7 +363,29 @@ define(function (require, exports, module) {
         return result.promise();
     }
 
-    EditorManager.registerInlineEditProvider(htmlToCSSProvider);
+    function cssProviderQuery(hostEditor, pos) {
+        // Only provide a CSS editor when cursor is in HTML content
+        if (hostEditor.getLanguageForSelection().getId() !== "html") {
+            return false;
+        }
+
+        // Only provide CSS editor if the selection is within a single line
+        var sel = hostEditor.getSelection();
+        if (sel.start.line !== sel.end.line) {
+            return false;
+        }
+
+        // Always use the selection start for determining selector name. The pos
+        // parameter is usually the selection end.
+        var selectorResult = _getSelectorName(hostEditor, sel.start);
+        if (selectorResult.selectorName === "") {
+            return false;
+        }
+
+        return true;
+    }
+
+    EditorManager.registerInlineEditProvider(htmlToCSSProvider, cssProviderQuery);
 
     _newRuleCmd = CommandManager.register(Strings.CMD_CSS_QUICK_EDIT_NEW_RULE, Commands.CSS_QUICK_EDIT_NEW_RULE, _handleNewRule);
     _newRuleCmd.setEnabled(false);
