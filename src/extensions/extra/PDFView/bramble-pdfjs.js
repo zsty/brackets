@@ -54,4 +54,19 @@
         window.PDFViewerApplication.eventBus.on("pagesloaded", onPagesLoaded);
     }, 100);
 
+    // Listen for changes to the theme.
+    window.onmessage = function(e) {
+        var msg = e.data;
+
+        if(msg.indexOf("theme:") !== 0) {
+            return;
+        }
+
+        var newTheme = msg.split("theme:")[1];
+        var body = document.body;
+        body.classList.remove(theme);
+        body.classList.add(newTheme);
+        theme = newTheme;
+    };
+
 }(document.location.search.substring(1), window.PDFJS));

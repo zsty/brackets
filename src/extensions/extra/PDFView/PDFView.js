@@ -27,7 +27,9 @@ define(function (require, exports, module) {
     var UrlCache            = brackets.getModule("filesystem/impls/filer/UrlCache"),
         Mustache            = brackets.getModule("thirdparty/mustache/mustache"),
         StringUtils         = brackets.getModule("utils/StringUtils"),
-        ThemeManager        = brackets.getModule("view/ThemeManager"),
+        ThemePrefs          = brackets
+                              .getModule("preferences/PreferencesManager")
+                              .getExtensionPrefs("themes"),
         PDFViewTemplate     = require("text!htmlContent/pdf-view.html");
 
     /**
@@ -56,11 +58,19 @@ define(function (require, exports, module) {
                 pdfUrl: encodeURIComponent(UrlCache.getUrl(file.fullPath)),
                 locale: brackets.getLocale(),
                 fileSize: fileSize,
-                theme: ThemeManager.getCurrentTheme()
+                theme: ThemePrefs.get("theme")
             }));
             $container.append(self.$el);
+
+            ThemePrefs.on("change", "theme", self._updateTheme.bind(self));
         });
     }
+
+    PDFView.prototype._updateTheme = function () {
+        var theme = ThemePrefs.get("theme");
+        var pdfWindow = this.$el[0].contentWindow;
+        pdfWindow.postMessage("theme:" + theme, "*");
+    };
 
     /*
      * Retrieves the file object for this view
@@ -96,6 +106,7 @@ define(function (require, exports, module) {
      * Destroys the view
      */
     PDFView.prototype.destroy = function () {
+        ThemePrefs.off("change", "theme", self._updateTheme.bind(self));
         this.$el.remove();
     };
 
