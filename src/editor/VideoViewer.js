@@ -83,7 +83,7 @@ define(function (require, exports, module) {
             autoplay: false,
             loop: false,
             muted: false
-        }
+        };
 
         // Gets the video type for sample markup
         this.videoType = Content.mimeFromExt(Path.extname(this.file.fullPath));
@@ -157,7 +157,7 @@ define(function (require, exports, module) {
             this.$videoEl.one("canplay", _.bind(this._onVideoReloaded, this));
             this.$videoEl[0].load();
         }
-    }
+    };
 
 
     /**
