@@ -42,7 +42,7 @@ body.dark-theme .meta, body.dark-theme .meta strong {
     right: 2px;
     top: 0;
     display: block;
-    background-image: url("/src/styles/images/icons/file-black.svg");
+    background-image: url("../images/file-black.svg");
     background-position: right center;
     background-size: 10px;
     width: 12px;
@@ -52,7 +52,7 @@ body.dark-theme .meta, body.dark-theme .meta strong {
 }
 
 .dark-theme #pdf-page-count:after {
-    background-image: url("/src/styles/images/icons/file-white.svg");
+    background-image: url("../images/file-white.svg");
 }
 
 body.dark-theme .pdfViewer .page {
