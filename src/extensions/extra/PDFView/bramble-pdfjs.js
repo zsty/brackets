@@ -6,8 +6,14 @@
  * https://github.com/mozilla/pdf.js/blob/36fb3686ccc5b1cd98e5f20b920bdeb7ed4d359d/web/app.js#L267
  * https://github.com/mozilla/pdf.js/blob/593dec1bb7aec1802abf8268137b0f7adab2ae32/web/ui_utils.js#L211
  **/
-(function(qs, PDFJS, PDFViewerApplication) {
+(function(qs, PDFJS) {
     "use strict";
+
+    var iframe = window.frameElement;
+    // Size will be a string of the form "256.67 KB"
+    var fileSize = iframe.dataset.fileSize;
+    // Theme will be one of "dark-theme" or "light-theme"
+    var theme = iframe.dataset.theme;
 
     function parseQueryString(query) {
         var parts = query.split("&");
@@ -26,56 +32,26 @@
         PDFJS.locale = params["locale"];
     }
 
-    // Previous/Next navigation
-    window.addEventListener("DOMContentLoaded", function () {
-        // TODO: need buttons for next/previous.  Maybe reuse or do something like
-        // what is already in the viewer (which will get us the l10n we want for free):
+    function initMeta(pagesCount) {
+        document.querySelector("body").classList.add(theme);
+        document.querySelector("#pdf-page-count").innerHTML = pagesCount;
+        document.querySelector("#pdf-file-size").innerHTML = fileSize;
+    }
 
-        //        <div class="splitToolbarButton hiddenSmallView">
-        //          <button class="toolbarButton pageUp" title="Previous Page" id="previous" tabindex="13" data-l10n-id="previous">
-        //            <span data-l10n-id="previous_label">Previous</span>
-        //          </button>
-        //          <div class="splitToolbarButtonSeparator"></div>
-        //          <button class="toolbarButton pageDown" title="Next Page" id="next" tabindex="14" data-l10n-id="next">
-        //            <span data-l10n-id="next_label">Next</span>
-        //          </button>
-        //        </div>
-
-        // TODO: wire up click events for next/previous. Here are functions to call:
-
-        function getCurrentPageNumber() {
-            return PDFViewerApplication.page;
+    // Wait for PDFViewerApplication.eventBus to get loaded and become available
+    var poll = setInterval(function pollPDFViewerApplication() {
+        if(!(window.PDFViewerApplication && window.PDFViewerApplication.eventBus)) {
+            return;
         }
 
-        function getTotalPageCount() {
-            return PDFViewerApplication.pageCount;
-        }
+        clearInterval(poll);
 
-        function goToFirstPage() {
-            PDFViewerApplication.eventBus.dispatch("firstpage");
-        }
+        // Wait until we know how many pages there are, then update our meta info
+        function onPagesLoaded(e) {
+            window.PDFViewerApplication.eventBus.off("pagesloaded", onPagesLoaded);
+            initMeta(e.pagesCount);
+        };
+        window.PDFViewerApplication.eventBus.on("pagesloaded", onPagesLoaded);
+    }, 100);
 
-        function goToNextPage() {
-            PDFViewerApplication.eventBus.dispatch("nextpage");
-        }
-
-        function goToPrevPage() {
-            PDFViewerApplication.eventBus.dispatch("previouspage");
-        }
-
-        function goToLastPage() {
-            PDFViewerApplication.eventBus.dispatch("lastpage");
-        }
-
-        function print() {
-            PDFViewerApplication.eventBus.dispatch("print");
-        }
-
-        function getFileSize() {
-            var iframe = window.frameElement;
-            return iframe.dataset.fileSize;
-        }
-
-    }, false);
-
-}(document.location.search.substring(1), window.PDFJS, window.PDFViewerApplication));
+}(document.location.search.substring(1), window.PDFJS));
