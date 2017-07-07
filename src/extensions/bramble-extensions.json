@@ -164,6 +164,7 @@
         },
         "copy": [
             "extensions/extra/PDFView/thirdparty/**/*",
+            "extensions/extra/PDFView/images/**/*",
             "extensions/extra/PDFView/htmlContent/viewer.html",
             "extensions/extra/PDFView/bramble-pdfjs.js",
             "extensions/extra/PDFView/styles/viewer-overrides.css"
