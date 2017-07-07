@@ -33,7 +33,7 @@
     }
 
     function initMeta(pagesCount) {
-        document.querySelector("#pdf-meta").classList.add(theme);
+        document.querySelector("body").classList.add(theme);
         document.querySelector("#pdf-page-count").innerHTML = pagesCount;
         document.querySelector("#pdf-file-size").innerHTML = fileSize;
     }
