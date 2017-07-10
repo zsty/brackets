@@ -28,7 +28,6 @@ define(function (require, exports, module) {
         VideoViewTemplate   = require("text!htmlContent/video-view.html"),
         ProjectManager      = require("project/ProjectManager"),
         PreferencesManager  = require("preferences/PreferencesManager"),
-        LanguageManager     = require("language/LanguageManager"),
         MainViewFactory     = require("view/MainViewFactory"),
         Strings             = require("strings"),
         Filer               = require("filesystem/impls/filer/BracketsFiler"),
@@ -44,20 +43,19 @@ define(function (require, exports, module) {
 
     var _viewers = {};
 
-    // Get a Blob URL out of the cache
+    // Get a URL out of the cache
     function _getVideoUrl(file) {
         return UrlCache.getUrl(file.fullPath);
     }
 
     // Get a URL out of the cache that you can use in the project HTML
     function _getLocalVideoUrl(file) {
-        var fullUrl = UrlCache.getFilename(UrlCache.getUrl(file.fullPath));
         var root = StartupState.project("root");
-        return fullUrl.replace(root,"").replace("/","");
+        return file.fullPath.replace(root,"").replace("/","");
     }
 
     /**
-     * Check if it's a video file TODO: refactor
+     * Check if it's a video file
      */
     function isVideo(fullPath) {
         return Content.isVideo(Path.extname(fullPath));
@@ -123,7 +121,6 @@ define(function (require, exports, module) {
 
     // Updates the markup used in the preview & the sample markup below
     VideoView.prototype.updateVideoTagMarkup = function(reload){
-
         var videoTagAttributesString = "";
 
         for(var k in this.videoTagSettings) {
@@ -197,7 +194,6 @@ define(function (require, exports, module) {
         this._naturalHeight = e.target.videoHeight;
 
         var extension = FileUtils.getFileExtension(this.file.fullPath);
-        // TODO: Make a VIDEO_DETAILS string and also add video filesize & length
         var stringFormat = Strings.IMAGE_DIMENSIONS;
         var dimensionString = StringUtils.format(stringFormat, this._naturalWidth, this._naturalHeight);
 
