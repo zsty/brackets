@@ -43,14 +43,16 @@ define(function (require, exports, module) {
     function PDFView(file, $container) {
         this.file = file;
         this.$container = $container;
+    }
 
+    PDFView.prototype._init = function (deferred) {
         var self = this;
+        var file = self.file;
+        var $container = self.$container;
 
         file.stat(function(err, stats) {
-            var fileSize;
-            if(err) {
-                fileSize = "Unknown";
-            } else {
+            var fileSize = "";
+            if(!err) {
                 fileSize = StringUtils.prettyPrintBytes(stats._size, 2);
             }
 
@@ -63,8 +65,10 @@ define(function (require, exports, module) {
             $container.append(self.$el);
 
             ThemePrefs.on("change", "theme", self._updateTheme.bind(self));
+
+            deferred.resolve(file);
         });
-    }
+    };
 
     PDFView.prototype._updateTheme = function () {
         var theme = ThemePrefs.get("theme");
@@ -118,15 +122,18 @@ define(function (require, exports, module) {
      */
     function create(file, pane) {
         var view = pane.getViewForPath(file.fullPath);
+        var deferred = new $.Deferred();
 
         if (view) {
             pane.showView(view);
+            deferred.resolve(file);
         } else {
             view = new PDFView(file, pane.$content);
+            view._init(deferred);
             pane.addView(view, true);
         }
 
-        return new $.Deferred().resolve(view.getFile()).promise();
+        return deferred.promise();
     }
 
     exports.create = create;
