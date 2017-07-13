@@ -156,9 +156,9 @@ define(function (require, exports, module) {
         if(percent < 10) {
             $projectSizeIndicator.addClass("hidden");
             return;
-        } else {
-            $projectSizeIndicator.removeClass("hidden");
         }
+
+        $projectSizeIndicator.removeClass("hidden");
 
         if(percent > 80 && percent < 100) {
             $projectSizeIndicator.addClass("project-size-warning");
