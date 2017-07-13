@@ -1,7 +1,11 @@
 <style class="font-face" data-src="{{{url}}}?ver={{now}}">
     @font-face {
-        font-family: "FontDisplay";
+        font-family: {{ fontName }};
         src: url("{{{url}}}?ver={{now}}");
+    }
+
+    .font-display-{{ fontName }} {
+        font-family: {{ fontName }};
     }
 </style>
 
@@ -12,7 +16,7 @@
             {{ Strings.FONT_FILE }}<span class="divider">&bull;</span><span class="font-data">&nbsp;</span>
         </div>
 
-        <div class="font-display">
+        <div class="font-display font-display-{{ fontName }}">
             ABCDEFGHIJKLMNOPQRSTUVWXYZ<br />
             abcdefghijklmnopqrstuvwxyz<br />
             0123456789<br />
@@ -36,11 +40,11 @@ p {
         <div class="font-samples">
             <div class="sample">
                 <h3>{{ Strings.FONT_TYPE_NORMAL }}</h3>
-                <p class="normal">The quick brown fox jumped over the lazy dog.</p>
+                <p class="normal font-display-{{ fontName }}">The quick brown fox jumped over the lazy dog.</p>
             </div>
             <div class="sample">
                 <h3>{{ Strings.FONT_TYPE_ITALIC }}</h3>
-                <p class="italic">The quick brown fox jumped over the lazy dog.</p>
+                <p class="italic font-display-{{ fontName }}">The quick brown fox jumped over the lazy dog.</p>
                 <ul class="code-sample">
                     <li><strong>HTML</strong> &rarr; {{{ Strings.FONT_BOLD_HTML_TAG }}}</li>
                     <li><strong>CSS</strong> &rarr; {{{ Strings.FONT_BOLD_CSS_RULE }}}</li>
@@ -48,7 +52,7 @@ p {
             </div>
             <div class="sample">
                 <h3>{{ Strings.FONT_TYPE_BOLD }}</h3>
-                <p class="bold">The quick brown fox jumped over the lazy dog.</p>
+                <p class="bold font-display-{{ fontName }}">The quick brown fox jumped over the lazy dog.</p>
                 <ul class="code-sample">
                     <li><strong>HTML</strong> &rarr; {{{ Strings.FONT_ITALIC_HTML_TAG }}}</li>
                     <li><strong>CSS</strong> &rarr; {{{ Strings.FONT_ITALIC_CSS_RULE }}}</li>
