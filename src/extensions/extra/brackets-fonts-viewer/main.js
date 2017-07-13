@@ -22,13 +22,14 @@
  */
 
 /*jslint vars: true, plusplus: true, devel: true, nomen: true, indent: 4, maxerr: 50, unparam: true */
-/*global define, $, window, brackets, Mustache */
+/*global define, $, window, brackets */
 
 define(function (require, exports, module) {
     "use strict";
 
     var AppInit            = brackets.getModule("utils/AppInit"),
         ExtensionUtils     = brackets.getModule("utils/ExtensionUtils"),
+        Mustache           = brackets.getModule("thirdparty/mustache/mustache"),
         StringUtils        = brackets.getModule("utils/StringUtils"),
         Strings            = brackets.getModule("strings"),
         DocumentManager    = brackets.getModule("document/DocumentManager"),
@@ -38,8 +39,8 @@ define(function (require, exports, module) {
         UrlCache           = brackets.getModule("filesystem/impls/filer/UrlCache"),
         Content            = brackets.getModule("filesystem/impls/filer/lib/content"),
         Path               = brackets.getModule("filesystem/impls/filer/BracketsFiler").Path,
-        FontHolderTemplate = require("text!htmlContent/font-holder.html"),
-        _                  = brackets.getModule("thirdparty/lodash");
+        _                  = brackets.getModule("thirdparty/lodash"),
+        FontHolderTemplate = require("text!htmlContent/font-holder.html");
 
     /** @type {Array.<FontView>} */
     var _viewers = {};
@@ -48,7 +49,7 @@ define(function (require, exports, module) {
     function _getFontName(file) {
         var fileNameWithoutExtension = Path.basename(file.name).replace(Path.extname(file.name), "");
         fileNameWithoutExtension = fileNameWithoutExtension.replace(/\s+/g, "-").trim();
-        return fileNameWithoutExtension
+        return fileNameWithoutExtension;
     }
 
     // Get a URL out of the cache
@@ -73,7 +74,6 @@ define(function (require, exports, module) {
             Strings  : Strings
         }));
 
-
         $container.append(this.$el);
 
         this.$fontFace    = this.$el.find(".font-face");
@@ -84,7 +84,7 @@ define(function (require, exports, module) {
         this._updateStats();
 
         // make sure we always show the right file name
-        $(DocumentManager).on("fileNameChange", _.bind(this._onFilenameChange, this));
+        DocumentManager.on("fileNameChange", _.bind(this._onFilenameChange, this));
 
         _viewers[file.fullPath] = this;
     }
@@ -158,7 +158,7 @@ define(function (require, exports, module) {
      */
     FontView.prototype.destroy = function () {
         delete _viewers[this.file.fullPath];
-        $(DocumentManager).off("fileNameChange", _.bind(this._onFilenameChange, this));
+        DocumentManager.off("fileNameChange", _.bind(this._onFilenameChange, this));
     };
 
     /*
