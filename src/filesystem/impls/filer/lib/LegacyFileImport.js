@@ -38,6 +38,7 @@ define(function (require, exports, module) {
         StringUtils     = require("utils/StringUtils"),
         Filer           = require("filesystem/impls/filer/BracketsFiler"),
         Path            = Filer.Path,
+        fs              = Filer.fs(),
         Content         = require("filesystem/impls/filer/lib/content"),
         ArchiveUtils    = require("filesystem/impls/filer/ArchiveUtils");
 
