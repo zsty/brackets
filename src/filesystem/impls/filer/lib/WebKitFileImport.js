@@ -35,6 +35,7 @@ define(function (require, exports, module) {
         FileSystem      = require("filesystem/FileSystem"),
         FileUtils       = require("file/FileUtils"),
         Strings         = require("strings"),
+        StringUtils     = require("utils/StringUtils"),
         Filer           = require("filesystem/impls/filer/BracketsFiler"),
         Path            = Filer.Path,
         fs              = Filer.fs(),
@@ -132,7 +133,7 @@ define(function (require, exports, module) {
                     onError(deferred, filename, err);
                     return;
                 }
-                                
+
                 // See if this file is worth trying to open in the editor or not
                 if(shouldOpenFile(filename, encoding)) {
                     pathList.push(filename);

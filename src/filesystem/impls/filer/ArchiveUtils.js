@@ -166,8 +166,12 @@ define(function (require, exports, module) {
                     }
 
                     fs.stat(path.absPath, function(err, stats) {
-                        if(err && err.code !== "ENOENT") {
-                            return callback(err);
+                        if(err) {
+                            if(err.code !== "ENOENT") {
+                                return callback(err);
+                            }
+
+                            return FilerUtils.writeFileAsBinary(path.absPath, path.data, callback);
                         }
 
                         if (stats.type !== "FILE") {
