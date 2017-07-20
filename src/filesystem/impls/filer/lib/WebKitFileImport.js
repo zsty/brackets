@@ -145,42 +145,41 @@ define(function (require, exports, module) {
 
         function handleRegularFile(deferred, file, filename, buffer, encoding) {
             fs.exists(filename, function(doesExist) {
-                if (doesExist) {
-                    console.log("File: ", filename, " already exists!");
-
-                    // File exists. Prompt user for action
-                    Dialogs.showModalDialog(
-                        DefaultDialogs.DIALOG_ID_INFO,
-                        Strings.FILE_EXISTS_HEADER,
-                        StringUtils.format(Strings.DND_FILE_REPLACE, FileUtils.getBaseName(filename)),
-                        [
-                            {
-                                className : Dialogs.DIALOG_BTN_CLASS_NORMAL,
-                                id        : Dialogs.DIALOG_BTN_CANCEL,
-                                text      : Strings.CANCEL
-                            },
-                            {
-                                className : Dialogs.DIALOG_BTN_CLASS_NORMAL,
-                                id        : Dialogs.DIALOG_BTN_IMPORT,
-                                text      : Strings.USE_IMPORTED
-                            },
-                            {
-                                className : Dialogs.DIALOG_BTN_CLASS_PRIMARY,
-                                id        : Dialogs.DIALOG_BTN_OK,
-                                text      : Strings.KEEP_EXISTING
-                            }
-                        ]
-                    )
-                    .done(function(id) {
-                        if (id === Dialogs.DIALOG_BTN_IMPORT) {
-                            // Override file per user's request
-                            saveFile(deferred, file, filename, buffer, encoding);
-                        }
-                    });
-                } else {
+                if (!doesExist) {
                     // File doesn't exist. Save without prompt
                     saveFile(deferred, file, filename, buffer, encoding);
+                    return;
                 }
+
+                // File exists. Prompt user for action
+                Dialogs.showModalDialog(
+                    DefaultDialogs.DIALOG_ID_INFO,
+                    Strings.FILE_EXISTS_HEADER,
+                    StringUtils.format(Strings.DND_FILE_REPLACE, FileUtils.getBaseName(filename)),
+                    [
+                        {
+                            className : Dialogs.DIALOG_BTN_CLASS_NORMAL,
+                            id        : Dialogs.DIALOG_BTN_CANCEL,
+                            text      : Strings.CANCEL
+                        },
+                        {
+                            className : Dialogs.DIALOG_BTN_CLASS_NORMAL,
+                            id        : Dialogs.DIALOG_BTN_IMPORT,
+                            text      : Strings.USE_IMPORTED
+                        },
+                        {
+                            className : Dialogs.DIALOG_BTN_CLASS_PRIMARY,
+                            id        : Dialogs.DIALOG_BTN_OK,
+                            text      : Strings.KEEP_EXISTING
+                        }
+                    ]
+                )
+                .done(function(id) {
+                    if (id === Dialogs.DIALOG_BTN_IMPORT) {
+                        // Override file per user's request
+                        saveFile(deferred, file, filename, buffer, encoding);
+                    }
+                });
             });
         }
 
