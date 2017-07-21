@@ -84,6 +84,8 @@ define(function (require, exports, module) {
 
         // Audio
         case '.oga':
+        // fallsthrough
+        case '.ogg':
             return 'audio/ogg';
         case '.mpa':
         // fallsthrough
@@ -145,6 +147,11 @@ define(function (require, exports, module) {
         isCSS: function(ext) {
             var id = _getLanguageId(ext);
             return id === "css";
+        },
+
+        isScript: function(ext) {
+            var info = new FileInfo(ext);
+            return info.subType === "javascript";
         },
 
         needsRewriting: function(ext) {
