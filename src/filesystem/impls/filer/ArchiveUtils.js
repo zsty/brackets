@@ -55,7 +55,7 @@ define(function (require, exports, module) {
         return false;
     }
 
-    function _refreshFilesystem(callback) {
+    function _refreshFileTree(callback) {
         // Update the file tree to show the new files
         CommandManager.execute(Commands.FILE_REFRESH).always(callback);
     }
@@ -63,6 +63,7 @@ define(function (require, exports, module) {
     // zipfile can be a path (string) to a zipfile, or raw binary data.
     function unzip(zipfile, options, callback) {
         var projectPrefix = StartupState.project("zipFilenamePrefix").replace(/\/?$/, "/");
+        var pathsToOpen = [];
 
         if(typeof options === 'function') {
             callback = options;
@@ -108,6 +109,16 @@ define(function (require, exports, module) {
             function decompress(path, callback) {
                 var basedir = Path.dirname(path.absPath);
 
+                function writeFile() {
+                    FilerUtils
+                        .writeFileAsBinary(path.absPath, path.data)
+                        .done(function() {
+                            pathsToOpen.push(path.absPath);
+                            callback();
+                        })
+                        .fail(callback);
+                }
+
                 if(path.isDirectory) {
                     fs.mkdirp(path.absPath, callback);
                 } else {
@@ -124,10 +135,10 @@ define(function (require, exports, module) {
                                     return callback(err);
                                 }
 
-                                FilerUtils.writeFileAsBinary(path.absPath, path.data, callback);
+                                writeFile();
                             });
                         } else {
-                            FilerUtils.writeFileAsBinary(path.absPath, path.data, callback);
+                            writeFile();
                         }
                     });
                 }
@@ -138,7 +149,7 @@ define(function (require, exports, module) {
                     return callback(err);
                 }
 
-                _refreshFilesystem(function(err) {
+                _refreshFileTree(function(err) {
                     if(err) {
                         return callback(err);
                     }
@@ -147,7 +158,7 @@ define(function (require, exports, module) {
                         DefaultDialogs.DIALOG_ID_INFO,
                         Strings.DND_SUCCESS_UNZIP_TITLE
                     ).getPromise().then(function() {
-                        callback(null);
+                        callback(null, pathsToOpen);
                     }, callback);
                 });
             });
@@ -247,6 +258,7 @@ define(function (require, exports, module) {
         options = options || {};
         callback = callback || function(){};
 
+        var pathsToOpen = [];
         var untarWorker = new Worker("thirdparty/bitjs/bitjs-untar.min.js");
         var root = options.root || StartupState.project("root");
         var pending = null;
@@ -264,7 +276,13 @@ define(function (require, exports, module) {
                     return callback(err);
                 }
 
-                FilerUtils.writeFileAsBinary(path, new Buffer(data), callback);
+                FilerUtils
+                    .writeFileAsBinary(path, new Buffer(data))
+                    .done(function() {
+                        pathsToOpen.push(path.absPath);
+                        callback();
+                    })
+                    .fail(callback);
             });
         }
 
@@ -272,7 +290,7 @@ define(function (require, exports, module) {
             untarWorker.terminate();
             untarWorker = null;
 
-            _refreshFilesystem(function(err) {
+            _refreshFileTree(function(err) {
                 if(err) {
                     return callback(err);
                 }
@@ -281,7 +299,7 @@ define(function (require, exports, module) {
                     DefaultDialogs.DIALOG_ID_INFO,
                     Strings.DND_SUCCESS_UNTAR_TITLE
                 ).getPromise().then(function() {
-                    callback(null);
+                    callback(null, pathsToOpen);
                 }, callback);
             });
         }

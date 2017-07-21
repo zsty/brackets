@@ -55,14 +55,18 @@ define(function (require, exports, module) {
         // If we are given a sub-dir within the project, use that.  Otherwise use project root.
         parentPath = parentPath || BrambleStartupState.project("root");
 
-        return strategy.import(source, parentPath, function(err) {
+        return strategy.import(source, parentPath, function(err, pathsToOpen) {
             if(err) {
                 return callback(err);
             }
-            FileSystemCache.refresh(function() {
-                LiveDevMultiBrowser.reload();
-                callback();
+
+            // Filter out any paths to open for which we can't provide an editor
+            pathsToOpen = pathsToOpen.filter(function(path) {
+                return Content.isEditable(Path.extname(path));
             });
+
+            LiveDevMultiBrowser.reload();
+            callback(null, pathsToOpen);
         });
     };
 });

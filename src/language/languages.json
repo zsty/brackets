@@ -68,12 +68,6 @@
         "isBinary": true
     },
 
-    "image": {
-        "name": "Image",
-        "fileExtensions": ["gif", "png", "jpe", "jpeg", "jpg", "ico", "bmp", "webp"],
-        "isBinary": true
-    },
-
     "binary": {
         "name": "Other Binary",
         "fileExtensions": [
