@@ -195,16 +195,24 @@ define(function (require, exports, module) {
                 return callback(_mapError(err));
             }
 
-            UrlCache.rename(oldPath, newPath, function(err, removed) {
+            UrlCache.rename(oldPath, newPath, function(err) {
                 if(err) {
                     return callback(_mapError(err));
                 }
 
-                removed.forEach(function(pathInfo) {
-                    BrambleEvents.triggerFileRenamed(pathInfo.oldPath, pathInfo.newPath);
-                });
+                // NOTE: we deal with rename events per file higher-up in the Bramble API.
+                // and only send a single event for a file rename here vs. a folder + children.
+                stat(newPath, function(err, stat) {
+                    if(err) {
+                        return callback(_mapError(err));
+                    }
 
-                callback();
+                    if(stat.isFile) {
+                        BrambleEvents.triggerFileRenamed(oldPath, newPath);
+                    }
+
+                    callback();
+                });
             });
         }
 

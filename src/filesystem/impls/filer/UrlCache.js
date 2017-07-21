@@ -272,9 +272,7 @@ define(function (require, exports, module) {
              .done(function() {
                  callback(null, removed);
              })
-             .fail(function(err) {
-                 callback(err);
-             });
+             .fail(callback);
     };
     CacheStorageUrlProvider.prototype.rename = function(oldPath, newPath, callback) {
         var self = this;
@@ -339,9 +337,7 @@ define(function (require, exports, module) {
              .done(function() {
                  callback(null, renamed);
              })
-             .fail(function(err) {
-                 callback(err);
-             });
+             .fail(callback);
     };
 
 
