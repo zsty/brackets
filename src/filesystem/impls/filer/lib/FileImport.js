@@ -9,7 +9,9 @@ define(function (require, exports, module) {
         WebKitFileImport    = require("filesystem/impls/filer/lib/WebKitFileImport"),
         FileSystemCache     = require("filesystem/impls/filer/FileSystemCache"),
         BrambleStartupState = require("bramble/StartupState"),
-        LiveDevMultiBrowser = require("LiveDevelopment/LiveDevMultiBrowser");
+        LiveDevMultiBrowser = require("LiveDevelopment/LiveDevMultiBrowser"),
+        Path                = require("filesystem/impls/filer/FilerUtils").Path,
+        Content             = require("filesystem/impls/filer/lib/content");
 
     /**
      * XXXBramble: the Drag and Drop and File APIs are a mess of incompatible
