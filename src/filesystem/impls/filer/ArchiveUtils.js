@@ -63,7 +63,6 @@ define(function (require, exports, module) {
     // zipfile can be a path (string) to a zipfile, or raw binary data.
     function unzip(zipfile, options, callback) {
         var projectPrefix = StartupState.project("zipFilenamePrefix").replace(/\/?$/, "/");
-        var pathsToOpen = [];
 
         if(typeof options === 'function') {
             callback = options;
@@ -110,13 +109,7 @@ define(function (require, exports, module) {
                 var basedir = Path.dirname(path.absPath);
 
                 function writeFile() {
-                    FilerUtils
-                        .writeFileAsBinary(path.absPath, path.data)
-                        .done(function() {
-                            pathsToOpen.push(path.absPath);
-                            callback();
-                        })
-                        .fail(callback);
+                    FilerUtils.writeFileAsBinary(path.absPath, path.data, callback);
                 }
 
                 if(path.isDirectory) {
@@ -158,7 +151,8 @@ define(function (require, exports, module) {
                         DefaultDialogs.DIALOG_ID_INFO,
                         Strings.DND_SUCCESS_UNZIP_TITLE
                     ).getPromise().then(function() {
-                        callback(null, pathsToOpen);
+                        // We don't bother sending a list of files to open for archives.
+                        callback(null, []);
                     }, callback);
                 });
             });
@@ -258,7 +252,6 @@ define(function (require, exports, module) {
         options = options || {};
         callback = callback || function(){};
 
-        var pathsToOpen = [];
         var untarWorker = new Worker("thirdparty/bitjs/bitjs-untar.min.js");
         var root = options.root || StartupState.project("root");
         var pending = null;
@@ -276,13 +269,7 @@ define(function (require, exports, module) {
                     return callback(err);
                 }
 
-                FilerUtils
-                    .writeFileAsBinary(path, new Buffer(data))
-                    .done(function() {
-                        pathsToOpen.push(path.absPath);
-                        callback();
-                    })
-                    .fail(callback);
+                FilerUtils.writeFileAsBinary(path, new Buffer(data), callback);
             });
         }
 
@@ -299,7 +286,8 @@ define(function (require, exports, module) {
                     DefaultDialogs.DIALOG_ID_INFO,
                     Strings.DND_SUCCESS_UNTAR_TITLE
                 ).getPromise().then(function() {
-                    callback(null, pathsToOpen);
+                    // We don't bother sending a list of files to open for archives.
+                    callback(null, []);
                 }, callback);
             });
         }
