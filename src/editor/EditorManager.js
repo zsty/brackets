@@ -66,8 +66,8 @@ define(function (require, exports, module) {
         InlineTextEditor    = require("editor/InlineTextEditor").InlineTextEditor,
         Strings             = require("strings"),
         LanguageManager     = require("language/LanguageManager"),
-        DeprecationWarning  = require("utils/DeprecationWarning");
-
+        DeprecationWarning  = require("utils/DeprecationWarning"),
+        InlineProviderIndicator = require("editor/InlineProviderIndicator");
 
     /**
      * Currently focused Editor (full-size, inline, or otherwise)
@@ -141,34 +141,6 @@ define(function (require, exports, module) {
         }
     }
 
-    /**
-     * Finds out if an editor provider exists for the given editor and position or not.
-     * Returns True if one does, otherwise False.
-     */
-    function _queryEditorProviders(editor) {
-        if(_queryProviders(editor, _inlineEditProviders)) {
-            console.log("editorProviderAvailable");
-            exports.trigger("editorProviderAvailable");
-        }
-    }
-
-    /**
-     * Finds out if a doc provider exists for the given editor and position or not.
-     * Returns True if one does, otherwise False.
-     */
-    function _queryDocProviders(editor) {
-        if(_queryProviders(editor, _inlineDocsProviders)) {
-            console.log("docProviderAvailable");
-            exports.trigger("docProviderAvailable");
-        }
-    }
-
-    function _checkCurrentPositionForProviders(e) {
-        var editor = e.target;
-        _queryEditorProviders(editor);
-        _queryDocProviders(editor);
-    }
-
     function _queryProviders(editor, providers) {
         var pos = editor.getCursorPos();
         for (var i = 0, len = providers.length; i < len; i++) {
@@ -178,6 +150,33 @@ define(function (require, exports, module) {
             }
         }
         return false;
+    }
+
+    /**
+     * Finds out if an editor provider exists for the given editor and position or not.
+     */
+    function _queryEditorProviders(editor) {
+        return _queryProviders(editor, _inlineEditProviders);
+    }
+
+    /**
+     * Finds out if a doc provider exists for the given editor and position or not.
+     */
+    function _queryDocProviders(editor) {
+        return _queryProviders(editor, _inlineDocsProviders);
+    }
+
+    function _checkCurrentPositionForProviders(e) {
+        var editor = e.target;
+        var editorProviderAvailable = _queryEditorProviders(editor);
+        var docsProviderAvailable = _queryDocProviders(editor);
+
+        if(!(editorProviderAvailable || docsProviderAvailable)) {
+            InlineProviderIndicator.hide();
+            return;
+        }
+
+        InlineProviderIndicator.show(editor, docsProviderAvailable, editorProviderAvailable);
     }
 
 	/**
