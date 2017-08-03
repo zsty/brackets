@@ -1,12 +1,26 @@
 define(function (require, exports, module) {
     "use strict";
 
-    var PopoverWidget = require("editor/PopoverWidget");
+    var Commands       = require("command/Commands");
+    var CommandManager = require("command/CommandManager");
+    var PopoverWidget  = require("editor/PopoverWidget");
 
     var popoverContent = {
-        docsOnly: "<button type=\"button\" class=\"btn btn-default btn-doc-provider\">Docs</button>",
-        editorOnly: "<button type=\"button\" class=\"btn btn-default btn-editor-provider\">Editor</button>"
+        docsOnly: "<button type=\"button\" onclick=\"return window.triggerDocsProvider();\" class=\"btn btn-default btn-doc-provider\">Docs</button>",
+        editorOnly: "<button type=\"button\" onclick=\"return window.triggerEditorProvider();\" class=\"btn btn-default btn-editor-provider\">Editor</button>"
     };
+
+    function triggerDocsProvider() {
+        CommandManager.execute(Commands.TOGGLE_QUICK_DOCS);
+        hideIndicator();
+        return false;
+    }
+
+    function triggerEditorProvider() {
+        CommandManager.execute(Commands.TOGGLE_QUICK_EDIT);
+        hideIndicator();
+        return false;
+    }
 
     function hideIndicator() {
         PopoverWidget.hide();
@@ -40,4 +54,8 @@ define(function (require, exports, module) {
 
     exports.show = showIndicator;
     exports.hide = hideIndicator;
+
+    // HACK: for testing
+    window.triggerDocsProvider = triggerDocsProvider;
+    window.triggerEditorProvider = triggerEditorProvider;
 });
