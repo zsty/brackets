@@ -14,85 +14,76 @@
 
 #popover-container {
     display: none;
-
-    -webkit-transition: opacity 0.125s ease-in, -webkit-transform 0.125s;
-    transition: opacity 0.125s ease-in, transform 0.125s;
-
-    -webkit-transform: scale(0);
-    transform: scale(0);
     opacity: 0;
-
-    background: @bc-panel-bg;
-    position: absolute;
     z-index: 5000;
+    position: absolute;
 
-    padding: 8px;
+    transition: opacity 0.125s ease-in, transform 0.125s;
+    transform: scale(0);
+
+    background: @dark-bc-panel-bg;
+    padding: 3px;
     text-align: center;
 
-    border-radius: 4px;
+    border-radius: 16px;
     box-shadow: 0 4px 15px @bc-shadow-large;
 
     .dark & {
-        background: @dark-bc-panel-bg;
-        box-shadow: 0 4px 15px @dark-bc-shadow-large;
+      background: white;
+      box-shadow: 0 4px 15px @dark-bc-shadow-large;
+    }
+
+    button {
+      padding: 0;
+      margin: 0;
+      border: none;
+      display: block;
+      box-shadow: none;
+      border: none;
+      outline: none;
+      width: 26px;
+      height: 26px;
+      border-radius: 13px;
+      cursor: pointer;
+      position: relative;
+      background: pink;
+      background: linear-gradient(-45deg, #502bb5, #8e47c4);
+
+      &:hover {
+        background: linear-gradient(-45deg, #5033bc, #9352cc);
+      }
+
+      &:active {
+        background: linear-gradient(-225deg, #502bb5, #8e47c4);
+      }
+
+
+      &:active:after {
+          transform: scale(.9);
+      }
+
+      &:after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: url(images/icons/lightning.svg);
+        background-position: center;
+        background-size: 11px;
+        background-repeat: no-repeat;
+      }
     }
 }
 
 #popover-container.active {
-    -webkit-transform: scale(1);
     transform: scale(1);
     opacity: 1;
 }
 
-#popover-container .content {
-    background-image: url(images/preview-bg.svg);
-    border-radius: 2px;
-    box-shadow: 0 -1px 2px @bc-shadow-small, 0 1px 0 @bc-highlight;
-
-    .dark & {
-        box-shadow: 0 -1px 2px @dark-bc-shadow-small, 0 1px 0 @dark-bc-highlight;
-        background-image: url(images/preview-bg-dark.svg);
-    }
-}
-
-/**
-#popover-container .color-swatch {
-    width: 40px;
-    height: 40px;
-    background-size: 100%;
-}
-
-#popover-container .image-preview {
-    line-height: 0;
-}
-
-#popover-container .image-preview img {
-    min-width: 100px;
-    max-width: 200px;
-    max-height: 200px;
-}
-
-#popover-container .img-size {
-    background-color: @bc-panel-bg-promoted;
-    border-top: 1px solid @bc-highlight;
-    font-size: 0.9em;
-    color: @bc-text;
-    padding-left: 3px;
-    margin-top: 0;
-    text-align: left;
-    text-shadow: 0 1px 0px @bc-highlight;
-
-    .dark & {
-        background-color: @dark-bc-panel-bg-promoted;
-        border-top: 1px solid @dark-bc-highlight;
-        color: @dark-bc-text;
-        text-shadow: 0 1px 0px @dark-bc-highlight;
-    }
-}
-**/
 
 #popover-container.bubble-above {
-    -webkit-transform-origin: center bottom;
     transform-origin: center bottom;
 }
 
@@ -108,28 +99,25 @@
     position: absolute;
     left: 50%;
     bottom: -9px;
-    margin-left: -10px;
+    margin-left: -5px;
     z-index: 999;
     display: block;
-    border-top: 10px solid @bc-panel-bg;
-    border-left: 10px solid transparent;
-    border-right: 10px solid transparent;
-    -webkit-filter: drop-shadow(0px 1px 0 rgba(0, 0, 0, 0.18));
+    border-top: 10px solid @dark-bc-panel-bg;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    box-shadow: 0px 1px 0 rgba(0, 0, 0, 0.18);
 
     .dark & {
-        border-top: 10px solid @dark-bc-panel-bg;
+      border-top: 10px solid white;
     }
 }
 
 #popover-container.bubble-below {
-    -webkit-transform-origin: center top;
     transform-origin: center top;
 }
 
 #popover-container.bubble-below:before {
-    -webkit-filter: drop-shadow(0px 1px 0 rgba(255, 255, 255, 0.18));
-    filter: drop-shadow(0px 1px 0 rgba(255, 255, 255, 0.18));
-    -webkit-transform: rotate(180deg);
+    box-shadow: 0px 1px 0 rgba(255, 255, 255, 0.18);
     transform: rotate(180deg);
     top: -9px;
 }
