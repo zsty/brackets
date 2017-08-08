@@ -141,42 +141,31 @@ define(function (require, exports, module) {
         }
     }
 
-    function _queryProviders(editor, providers) {
+    /**
+     * Finds out if an editor provider exists for the given editor and position or not.
+     */
+    function _queryEditorProviders(editor) {
         var pos = editor.getCursorPos();
+        var providers = _inlineEditProviders;
+
         for (var i = 0, len = providers.length; i < len; i++) {
             var query = providers[i].provider.query;
-            if(query(editor, pos)) {
+            if(query && query(editor, pos)) {
                 return true;
             }
         }
         return false;
     }
 
-    /**
-     * Finds out if an editor provider exists for the given editor and position or not.
-     */
-    function _queryEditorProviders(editor) {
-        return _queryProviders(editor, _inlineEditProviders);
-    }
-
-    /**
-     * Finds out if a doc provider exists for the given editor and position or not.
-     */
-    function _queryDocProviders(editor) {
-        return _queryProviders(editor, _inlineDocsProviders);
-    }
-
     function _checkCurrentPositionForProviders(e) {
         var editor = e.target;
         var editorProviderAvailable = _queryEditorProviders(editor);
-        var docsProviderAvailable = _queryDocProviders(editor);
 
-        if(!(editorProviderAvailable || docsProviderAvailable)) {
+        if(editorProviderAvailable) {
+            InlineProviderIndicator.show(editor);
+        } else {
             InlineProviderIndicator.hide();
-            return;
         }
-
-        InlineProviderIndicator.show(editor, docsProviderAvailable, editorProviderAvailable);
     }
 
 	/**
@@ -301,6 +290,9 @@ define(function (require, exports, module) {
         // If one of them will provide a widget, show it inline once ready
         if (inlinePromise) {
             inlinePromise.done(function (inlineWidget) {
+                // XXXBramble: hide inline editor indicator if showing
+                InlineProviderIndicator.hide();
+
                 editor.addInlineWidget(pos, inlineWidget).done(function () {
                     PerfUtils.addMeasurement(PerfUtils.INLINE_WIDGET_OPEN);
                     result.resolve();
@@ -462,7 +454,6 @@ define(function (require, exports, module) {
             priority = 0;
         }
 
-
         // Augment the provider with a query function
         provider.query = queryFunction || defaultQueryFunction;
 
@@ -479,24 +470,13 @@ define(function (require, exports, module) {
      * @param {number=} priority
      * The provider returns a promise that will be resolved with an InlineWidget, or returns a string
      * indicating why the provider cannot respond to this case (or returns null to indicate no reason).
-     * @param {function(!Editor, !{line:number, ch:number}):?(boolean)} queryFunction
-     * An optional function used to query the provider to determine whether it could show a docs provider
-     * for the given cursor position.
      */
-    function registerInlineDocsProvider(provider, priority, queryFunction) {
-        if (typeof priority === "function") {
-            queryFunction = priority;
-            priority = 0;
-        }
-
+    function registerInlineDocsProvider(provider, priority) {
         if (priority === undefined) {
             priority = 0;
         }
 
-        // Augment the provider with a query function
-        provider.query = queryFunction || defaultQueryFunction;
-
-        _insertProviderSorted(_inlineDocsProviders, provider, priority);
+        _insertProviderSorted(_inlineDocsProviders, provider);
     }
 
     /**

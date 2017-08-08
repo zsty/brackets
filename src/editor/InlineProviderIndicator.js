@@ -5,16 +5,7 @@ define(function (require, exports, module) {
     var CommandManager = require("command/CommandManager");
     var PopoverWidget  = require("editor/PopoverWidget");
 
-    var popoverContent = {
-        docsOnly: "<button type=\"button\" onclick=\"return window.triggerDocsProvider();\" class=\"btn btn-default btn-doc-provider\">Docs</button>",
-        editorOnly: "<button type=\"button\" onclick=\"return window.triggerEditorProvider();\" class=\"btn btn-default btn-editor-provider\"></button>"
-    };
-
-    function triggerDocsProvider() {
-        CommandManager.execute(Commands.TOGGLE_QUICK_DOCS);
-        hideIndicator();
-        return false;
-    }
+    var popoverContent = "<button type=\"button\" onclick=\"return window.triggerEditorProvider();\" class=\"btn btn-default btn-editor-provider\"></button>";
 
     function triggerEditorProvider() {
         CommandManager.execute(Commands.TOGGLE_QUICK_EDIT);
@@ -26,26 +17,14 @@ define(function (require, exports, module) {
         PopoverWidget.hide();
     }
 
-    function showIndicator(editor, docsAvailable, editorAvailable) {
+    function showIndicator(editor) {
         var cm = editor._codeMirror;
         var pos = editor.getCursorPos();
         var coord = cm.charCoords(pos);
-        var token = cm.getTokenAt(pos, true);
-
-        // var content;
-        // if(docsAvailable && editorAvailable) {
-            // content = popoverContent.editorOnly;
-        // } else if (docsAvailable && !editorAvailable) {
-            // content = popoverContent.docsOnly;
-        // } else {
-            // content = popoverContent.editorOnly;
-        // }
-
-        var content = popoverContent.editorOnly;
 
         var popover = {
             editor: editor,
-            content: content,
+            content: popoverContent,
             xpos: coord.left,
             ytop: coord.top,
             ybot: coord.bottom
@@ -58,6 +37,5 @@ define(function (require, exports, module) {
     exports.hide = hideIndicator;
 
     // HACK: for testing
-    window.triggerDocsProvider = triggerDocsProvider;
     window.triggerEditorProvider = triggerEditorProvider;
 });
