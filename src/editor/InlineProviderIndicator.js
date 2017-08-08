@@ -7,7 +7,7 @@ define(function (require, exports, module) {
 
     var popoverContent = {
         docsOnly: "<button type=\"button\" onclick=\"return window.triggerDocsProvider();\" class=\"btn btn-default btn-doc-provider\">Docs</button>",
-        editorOnly: "<button type=\"button\" onclick=\"return window.triggerEditorProvider();\" class=\"btn btn-default btn-editor-provider\">Editor</button>"
+        editorOnly: "<button type=\"button\" onclick=\"return window.triggerEditorProvider();\" class=\"btn btn-default btn-editor-provider\"></button>"
     };
 
     function triggerDocsProvider() {
@@ -32,14 +32,16 @@ define(function (require, exports, module) {
         var coord = cm.charCoords(pos);
         var token = cm.getTokenAt(pos, true);
 
-        var content;
-        if(docsAvailable && editorAvailable) {
-            content = popoverContent.docsOnly + "&nbsp;" + popoverContent.editorOnly;
-        } else if (docsAvailable && !editorAvailable) {
-            content = popoverContent.docsOnly;
-        } else {
-            content = popoverContent.editorOnly;
-        }
+        // var content;
+        // if(docsAvailable && editorAvailable) {
+            // content = popoverContent.editorOnly;
+        // } else if (docsAvailable && !editorAvailable) {
+            // content = popoverContent.docsOnly;
+        // } else {
+            // content = popoverContent.editorOnly;
+        // }
+
+        var content = popoverContent.editorOnly;
 
         var popover = {
             editor: editor,
