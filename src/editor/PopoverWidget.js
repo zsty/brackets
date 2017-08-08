@@ -27,10 +27,10 @@ define(function (require, exports, module) {
     "use strict";
 
     // Brackets modules
-    var EditorManager       = require("editor/EditorManager"),
-        ViewUtils           = require("utils/ViewUtils");
+    var EditorManager        = require("editor/EditorManager"),
+        ViewUtils            = require("utils/ViewUtils");
 
-    var popoverContainerHTML       = require("text!htmlContent/popover-template.html");
+    var popoverContainerHTML = require("text!htmlContent/popover-template.html");
 
     var $popoverContainer,
         $popoverContent;
@@ -50,15 +50,11 @@ define(function (require, exports, module) {
      * @type {{
      *      visible: boolean,
      *      editor: !Editor,
-     *      start: !{line, ch},             - start of matched text range
-     *      end: !{line, ch},               - end of matched text range
      *      content: !string,               - HTML content to display in popover
-     *      onShow: ?function():void,       - called once popover content added to the DOM (may never be called)
-     *        - if specified, must call positionPreview()
+     *      onClick: ?function():void,      - a click handler for the popover's contents
      *      xpos: number,                   - x of center of popover
      *      ytop: number,                   - y of top of matched text (when popover placed above text, normally)
      *      ybot: number,                   - y of bottom of matched text (when popover moved below text, avoiding window top)
-     *      marker: ?CodeMirror.TextMarker  - only set once visible==true
      * }}
      */
     var popoverState = null;
@@ -80,6 +76,10 @@ define(function (require, exports, module) {
             $popoverContent.empty();
             $popoverContainer.hide();
             $popoverContainer.removeClass("active");
+
+            if(popoverState.onClick) {
+                $popoverContent.off("click", popoverState.onClick);
+            }
         }
         popoverState = null;
     }
@@ -144,8 +144,11 @@ define(function (require, exports, module) {
 
         $popoverContent.append(popoverState.content);
         $popoverContainer.show();
-
         popoverState.visible = true;
+
+        if(popoverState.onClick) {
+            $popoverContent.on("click", popoverState.onClick);
+        }
 
         positionPopover(editor, popoverState.xpos, popoverState.ytop, popoverState.ybot);
     }

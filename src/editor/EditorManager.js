@@ -290,8 +290,8 @@ define(function (require, exports, module) {
         // If one of them will provide a widget, show it inline once ready
         if (inlinePromise) {
             inlinePromise.done(function (inlineWidget) {
-                // XXXBramble: hide inline editor indicator if showing
-                InlineProviderIndicator.hide();
+                // XXXBramble: hide inline editor indicator if showing, and keep it closed until widget is closed
+                InlineProviderIndicator.disable();
 
                 editor.addInlineWidget(pos, inlineWidget).done(function () {
                     PerfUtils.addMeasurement(PerfUtils.INLINE_WIDGET_OPEN);
@@ -336,6 +336,9 @@ define(function (require, exports, module) {
                 // an inline widget's editor has focus, so close it
                 PerfUtils.markStart(PerfUtils.INLINE_WIDGET_CLOSE);
                 inlineWidget.close().done(function () {
+                    // XXXBramble: re-enable inline editor indicator
+                    InlineProviderIndicator.enable();
+
                     PerfUtils.addMeasurement(PerfUtils.INLINE_WIDGET_CLOSE);
                     // return a resolved promise to CommandManager
                     result.resolve(false);
@@ -419,6 +422,9 @@ define(function (require, exports, module) {
 
             hostEditor.focus();
         }
+
+        // XXXBramble: re-enable inline editor indicator
+        InlineProviderIndicator.enable();
 
         return hostEditor.removeInlineWidget(inlineWidget);
     }
