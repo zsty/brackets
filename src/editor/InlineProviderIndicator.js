@@ -34,7 +34,6 @@ define(function (require, exports, module) {
         var coord = cm.charCoords(pos);
 
         if(disabled) {
-            console.log('bailing, disabled');
             return;
         }
 
