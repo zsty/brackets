@@ -160,7 +160,6 @@ define(function (require, exports, module) {
     function _checkCurrentPositionForProviders(e) {
         var editor = e.target;
         var editorProviderAvailable = _queryEditorProviders(editor);
-
         if(editorProviderAvailable) {
             InlineProviderIndicator.show(editor);
         } else {

@@ -28,7 +28,8 @@ define(function (require, exports, module) {
 
     // Brackets modules
     var EditorManager        = require("editor/EditorManager"),
-        ViewUtils            = require("utils/ViewUtils");
+        ViewUtils            = require("utils/ViewUtils"),
+        AppInit              = require("utils/AppInit");
 
     var popoverContainerHTML = require("text!htmlContent/popover-template.html");
 
@@ -60,7 +61,6 @@ define(function (require, exports, module) {
     var popoverState = null;
 
 
-
     // Popover widget management ----------------------------------------------
 
     /**
@@ -84,7 +84,12 @@ define(function (require, exports, module) {
         popoverState = null;
     }
 
-    function positionPopover(editor, xpos, ypos, ybot) {
+    function positionPopover() {
+        var editor = popoverState.editor,
+            xpos = popoverState.xpos,
+            ypos = popoverState.ytop,
+            ybot = popoverState.ybot;
+
         var previewWidth  = $popoverContainer.outerWidth(),
             top           = ypos - $popoverContainer.outerHeight() - POINTER_HEIGHT,
             left          = xpos - previewWidth / 2,
@@ -128,20 +133,9 @@ define(function (require, exports, module) {
      * its matching text in the editor.
      */
     function show(popover) {
-        var editor = popover.editor;
-        var cm;
-
         hidePopover();
 
-        if (!editor || !editor._codeMirror) {
-            hidePopover();
-            return;
-        }
-
-        cm = editor._codeMirror;
-
         popoverState = popover;
-
         $popoverContent.append(popoverState.content);
         $popoverContainer.show();
         popoverState.visible = true;
@@ -150,7 +144,7 @@ define(function (require, exports, module) {
             $popoverContent.on("click", popoverState.onClick);
         }
 
-        positionPopover(editor, popoverState.xpos, popoverState.ytop, popoverState.ybot);
+        positionPopover();
     }
 
     function onActiveEditorChange(event, current, previous) {
@@ -166,6 +160,25 @@ define(function (require, exports, module) {
         }
     }
 
+    AppInit.appReady(function() {
+        // We only want to listen for scroll events after the first click (e.g., focus) on an editor
+        // otherwise the initial popover will get hidden immediately upon creation.
+        var ignoreFirstScroll = true;
+
+        // Note: listening to "scroll" also catches text edits, which bubble a scroll event
+        // up from the hidden text area. This means/ we auto-hide on text edit, which is
+        // probably actually a good thing.
+        function handleScroll() {
+            if(ignoreFirstScroll) {
+                ignoreFirstScroll = false;
+                return;
+            }
+            hidePopover();
+        }
+
+        var editorHolder = $("#editor-holder")[0];
+        editorHolder.addEventListener("scroll", handleScroll, true);
+    });
 
     // Create the preview container
     $popoverContainer = $(popoverContainerHTML).appendTo($("body"));
