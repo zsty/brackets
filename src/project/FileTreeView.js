@@ -520,7 +520,7 @@ define(function (require, exports, module) {
             } else if (Content.isPDF(ext)) {
                 fileType = "pdf";
             } else {
-                fileType = LanguageManager.getLanguageForPath(fullname).isBinary() ? "binary" : "default";
+                fileType = "binary";
             }
 
             var insClassName = "jstree-icon-" + fileType;
