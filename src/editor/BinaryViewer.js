@@ -103,9 +103,9 @@ define(function (require, exports, module) {
             return false;
         });
 
-        this.file.stat(function (err, stat) {
-            var deferred = self.deffered;
-            delete self.deferred;
+        file.stat(function (err, stat) {
+            var deferred = self.deferred;
+            self.deferred = null;
 
             if (err) {
                 if(deferred) {
