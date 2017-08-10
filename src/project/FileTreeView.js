@@ -520,7 +520,13 @@ define(function (require, exports, module) {
             } else if (Content.isPDF(ext)) {
                 fileType = "pdf";
             } else {
-                fileType = "binary";
+                // If it doesn't match anything else, do one last check for a text/* type
+                // and if it isn't that, assume binary.
+                if (mime.indexOf("text/") === 0) {
+                    fileType = "default";
+                } else {
+                    fileType = "binary";
+                }
             }
 
             var insClassName = "jstree-icon-" + fileType;

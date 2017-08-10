@@ -30,10 +30,6 @@ define(function (require, exports, module) {
         case '.htm':
         // fallsthrough
         case '.htx':
-        // fallsthrough
-        case '.md':
-        // fallsthrough
-        case '.markdown':
             return 'text/html';
 
         // CSS
@@ -50,6 +46,14 @@ define(function (require, exports, module) {
         case '.json':
             return 'application/javascript';
         case '.txt':
+        // fallsthrough
+        case '.markdown':
+        // fallsthrough
+        case '.md':
+        // fallsthrough
+        case '.ini':
+        // fallsthrough
+        case '.cfg':
             return 'text/plain';
 
         // Images
