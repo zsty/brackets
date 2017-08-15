@@ -74,7 +74,7 @@ define(function (require, exports, module) {
 
         _viewers[file.fullPath] = this;
 
-        this.$binaryData = this.$el.find(".binary-data");
+        this.$fileSize = this.$el.find(".file-details");
 
         this.$binaryDownload = this.$el.find(".binary-download");
         this.$binaryDownload.on("click", function(e) {
@@ -115,7 +115,7 @@ define(function (require, exports, module) {
             }
 
             var sizeString = stat.size ? StringUtils.prettyPrintBytes(stat.size, 2) : "";
-            self.$binaryData.html(sizeString);
+            self.$fileSize.html(sizeString);
 
             if(deferred) {
                 deferred.resolve(file);
