@@ -16,7 +16,7 @@ define(function (require, exports, module) {
     // Prefix for URLs that live in the virtual filesystem cache.
     // NOTE: if you change this string, also update the regex in
     // src/bramble-live-dev-cache-sw.js
-    var vfsPrefix = "thimble-sw-vfs-cached-url";
+    var vfsPrefix = "thimble-sw-vfs-cached-url" + "/" + brackets.getLocale();
 
     var _provider;
 
